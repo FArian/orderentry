@@ -2,6 +2,7 @@
 
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 interface Patient {
@@ -23,6 +24,8 @@ const truncate = (text: string, max: number) =>
   text && text.length > max ? `${text.slice(0, max)}...` : text;
 
 export default function PatientPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [query, setQuery] = useState("");
   const [items, setItems] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(false);
@@ -55,14 +58,20 @@ export default function PatientPage() {
   }, []);
 
   useEffect(() => {
-    // initial load of all patients
-    fetchPatients("", 1);
-  }, [fetchPatients]);
+    // initial load honoring URL query (?q=...)
+    const initialQ = (searchParams?.get("q") || "").toString();
+    setQuery(initialQ);
+    fetchPatients(initialQ, 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const onSearch = useCallback(() => {
     setPage(1);
-    fetchPatients(query, 1);
-  }, [fetchPatients, query]);
+    const q = query.trim();
+    const href = q ? `/patient?q=${encodeURIComponent(q)}` : "/patient";
+    router.replace(href, { scroll: false });
+    fetchPatients(q, 1);
+  }, [fetchPatients, query, router]);
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -80,12 +89,15 @@ export default function PatientPage() {
     window.clearTimeout(debounceRef.current);
     debounceRef.current = window.setTimeout(() => {
       setPage(1);
-      fetchPatients(query, 1);
+      const q = query.trim();
+      const href = q ? `/patient?q=${encodeURIComponent(q)}` : "/patient";
+      router.replace(href, { scroll: false });
+      fetchPatients(q, 1);
     }, debounceMs);
     return () => {
       window.clearTimeout(debounceRef.current);
     };
-  }, [query, fetchPatients]);
+  }, [query, fetchPatients, router]);
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
