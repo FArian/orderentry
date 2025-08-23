@@ -111,9 +111,9 @@ export async function GET(request: Request) {
     const entries = bundle.entry || [];
     data = entries
       .map((e) => e.resource)
-      .filter((r): r is FhirPatient => !!r && r.resourceType === "Patient")
+      .filter((r): r is FhirPatient => !!r && r.resourceType === "Patient" && !!r.id)
       .map((p): PatientOut => ({
-        id: p.id || crypto.randomUUID(),
+        id: p.id as string,
         name: nameToString(p.name),
         address: addressToString(p.address),
         createdAt: p.meta?.lastUpdated || "",

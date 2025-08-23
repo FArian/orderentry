@@ -151,7 +151,23 @@ export default function PatientPage() {
     }
 
     const rows = items.map((patient) => (
-      <tr key={patient.id} className="odd:bg-white even:bg-gray-50 h-14">
+      <tr
+        key={patient.id}
+        className="odd:bg-white even:bg-gray-50 h-14 cursor-pointer hover:bg-blue-50 focus:bg-blue-100 outline-none"
+        tabIndex={0}
+        onClick={() => {
+          if (patient.id) window.location.href = `/patient/${encodeURIComponent(patient.id)}`;
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            if (patient.id)
+              window.location.href = `/patient/${encodeURIComponent(patient.id)}`;
+          }
+        }}
+        role="button"
+        aria-label={`Patient öffnen: ${patient.name}`}
+      >
         <td className="w-64 px-6 py-0 align-middle truncate" title={patient.name}>{truncate(patient.name, 20)}</td>
         <td className="w-96 px-6 py-0 align-middle truncate">{patient.address}</td>
         <td className="w-40 px-6 py-0 align-middle truncate">{formatDate(patient.createdAt)}</td>
