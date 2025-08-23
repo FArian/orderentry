@@ -78,6 +78,38 @@ function genderLabel(g?: string): string {
   }
 }
 
+function systemLabel(system?: string): string {
+  switch (system) {
+    case "phone":
+      return "Telefon";
+    case "email":
+      return "E‑Mail";
+    case "fax":
+      return "Fax";
+    case "url":
+      return "Web";
+    default:
+      return "Kontakt";
+  }
+}
+
+function useLabel(use?: string): string | undefined {
+  switch (use) {
+    case "home":
+      return "privat";
+    case "work":
+      return "geschäftlich";
+    case "mobile":
+      return "mobil";
+    case "temp":
+      return "temporär";
+    case "old":
+      return "alt";
+    default:
+      return use || undefined;
+  }
+}
+
 export default function PatientDetailClient({ id }: { id: string }) {
   const [data, setData] = useState<Patient | null>(null);
   const [loading, setLoading] = useState(true);
@@ -118,10 +150,12 @@ export default function PatientDetailClient({ id }: { id: string }) {
     if (p.birthDate) list.push({ label: "Geburtsdatum", value: formatDate(p.birthDate) });
     if (p.address && p.address.length) list.push({ label: "Adresse", value: addressToString(p.address) });
     if (p.telecom && p.telecom.length) {
-      const tel = p.telecom
-        .map((t) => [t.system, t.value, t.use].filter(Boolean).join(": "))
-        .join("; ");
-      if (tel) list.push({ label: "Kontakt", value: tel });
+      p.telecom.forEach((t) => {
+        const labelBase = systemLabel(t.system);
+        const variant = useLabel(t.use);
+        const label = variant ? `${labelBase} (${variant})` : labelBase;
+        if (t.value) list.push({ label, value: t.value });
+      });
     }
     if (p.identifier && p.identifier.length) {
       const idf = p.identifier
@@ -170,4 +204,3 @@ export default function PatientDetailClient({ id }: { id: string }) {
     </div>
   );
 }
-
