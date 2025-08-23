@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -23,7 +23,7 @@ const formatDate = (date: string) => {
 const truncate = (text: string, max: number) =>
   text && text.length > max ? `${text.slice(0, max)}...` : text;
 
-export default function PatientPage() {
+function PatientPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState("");
@@ -340,5 +340,13 @@ export default function PatientPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PatientPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <PatientPageContent />
+    </Suspense>
   );
 }

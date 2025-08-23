@@ -1,16 +1,6 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import Image from "next/image";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -24,12 +14,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className="antialiased">
         <header className="w-full border-b bg-gray-100 shadow-sm">
           <div className="mx-auto max-w-7xl px-6 py-4 text-center">
-            <img src="/logo.svg" alt="zetLab logo" className="mx-auto h-12 w-auto select-none" />
+            <Image
+              src="/logo.svg"
+              alt="zetLab logo"
+              width={48}
+              height={48}
+              className="mx-auto h-12 w-auto select-none"
+            />
           </div>
         </header>
         {children}

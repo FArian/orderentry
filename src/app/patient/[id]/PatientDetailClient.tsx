@@ -93,7 +93,7 @@ function systemLabel(system?: string): string {
   }
 }
 
-function useLabel(use?: string): string | undefined {
+function labelForUse(use?: string): string | undefined {
   switch (use) {
     case "home":
       return "privat";
@@ -152,7 +152,7 @@ export default function PatientDetailClient({ id }: { id: string }) {
     if (p.telecom && p.telecom.length) {
       p.telecom.forEach((t) => {
         const labelBase = systemLabel(t.system);
-        const variant = useLabel(t.use);
+        const variant = labelForUse(t.use);
         const label = variant ? `${labelBase} (${variant})` : labelBase;
         if (t.value) list.push({ label, value: t.value });
       });
