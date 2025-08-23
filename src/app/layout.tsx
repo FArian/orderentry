@@ -27,6 +27,11 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <header className="w-full border-b bg-gray-100 shadow-sm">
+          <div className="mx-auto max-w-7xl px-6 py-4 text-center">
+            <img src="/logo.svg" alt="zetLab logo" className="mx-auto h-12 w-auto select-none" />
+          </div>
+        </header>
         {children}
       </body>
     </html>
