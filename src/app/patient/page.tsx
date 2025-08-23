@@ -1,15 +1,38 @@
 interface Patient {
   id: number;
   name: string;
-  age: number;
-  condition: string;
+  address: string;
+  createdAt: string;
 }
 
 const patients: Patient[] = [
-  { id: 1, name: "John Doe", age: 45, condition: "Diabetes" },
-  { id: 2, name: "Jane Smith", age: 30, condition: "Hypertension" },
-  { id: 3, name: "Sam Johnson", age: 62, condition: "Asthma" },
+  {
+    id: 1,
+    name: "John Doe",
+    address: "123 Main St, Springfield",
+    createdAt: "2024-06-10",
+  },
+  {
+    id: 2,
+    name: "Jane Smith",
+    address: "456 Elm St, Riverside",
+    createdAt: "2024-07-22",
+  },
+  {
+    id: 3,
+    name: "Sam Johnson",
+    address: "789 Oak St, Lakeside",
+    createdAt: "2024-05-18",
+  },
 ];
+
+const formatDate = (date: string) => {
+  const d = new Date(date);
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+  return `${day}.${month}.${year}`;
+};
 
 export default function PatientPage() {
   return (
@@ -23,10 +46,10 @@ export default function PatientPage() {
                 Name
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Age
+                Address
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Condition
+                Creation Date
               </th>
             </tr>
           </thead>
@@ -34,8 +57,8 @@ export default function PatientPage() {
             {patients.map((patient) => (
               <tr key={patient.id}>
                 <td className="px-6 py-4 whitespace-nowrap">{patient.name}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{patient.age}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{patient.condition}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{patient.address}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{formatDate(patient.createdAt)}</td>
               </tr>
             ))}
           </tbody>
