@@ -1,5 +1,6 @@
 import Link from "next/link";
 import PatientDetailClient from "./PatientDetailClient";
+import PatientBreadcrumb from "./PatientBreadcrumb";
 
 export default async function PatientDetailPage({
   params,
@@ -9,23 +10,7 @@ export default async function PatientDetailPage({
   const { id } = await params;
   return (
     <div className="p-4">
-      <nav className="mb-2 text-sm text-gray-600" aria-label="Brotkrumen">
-        <ol className="flex items-center gap-2">
-          <li>
-            <Link href="/" className="text-blue-600 hover:underline">
-              Startseite
-            </Link>
-          </li>
-          <li className="text-gray-400">/</li>
-          <li>
-            <Link href="/patient" className="text-blue-600 hover:underline">
-              Patienten
-            </Link>
-          </li>
-          <li className="text-gray-400">/</li>
-          <li className="text-gray-700">{id}</li>
-        </ol>
-      </nav>
+      <PatientBreadcrumb id={id} />
 
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-2xl font-bold">Patientenakte</h1>
