@@ -28,7 +28,7 @@ export default function PatientPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-  const pageSize = 10;
+  const pageSize = 20;
   const [total, setTotal] = useState(0);
   const debounceRef = useRef<number | undefined>(undefined);
   const initializedRef = useRef(false);
@@ -44,8 +44,9 @@ export default function PatientPage() {
       const data = (await res.json()) as { data: Patient[]; total: number; page: number; pageSize: number };
       setItems(data.data);
       setTotal(data.total);
-    } catch (e: any) {
-      setError(e?.message || "Failed to load patients");
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e);
+      setError(message || "Failed to load patients");
       setItems([]);
       setTotal(0);
     } finally {
@@ -164,19 +165,19 @@ export default function PatientPage() {
   return (
     <div className="p-4">
       {/* Breadcrumb */}
-      <nav className="mb-2 text-sm text-gray-600" aria-label="Breadcrumb">
+      <nav className="mb-2 text-sm text-gray-600" aria-label="Brotkrumen">
         <ol className="flex items-center gap-2">
           <li>
             <Link href="/" className="text-blue-600 hover:underline">
-              Home
+              Startseite
             </Link>
           </li>
           <li className="text-gray-400">/</li>
-          <li className="text-gray-700">Patients</li>
+          <li className="text-gray-700">Patienten</li>
         </ol>
       </nav>
 
-      <h1 className="text-2xl font-bold mb-4">Patients</h1>
+      <h1 className="text-2xl font-bold mb-4">Patienten</h1>
 
       <div className="mb-4 flex items-center gap-2">
         <input
@@ -184,7 +185,7 @@ export default function PatientPage() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={onKeyDown}
-          placeholder="Search by name or address"
+          placeholder="Nach Name oder Adresse suchen"
           className="w-full max-w-md rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <button
@@ -192,22 +193,31 @@ export default function PatientPage() {
           className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
           disabled={loading}
         >
-          Search
+          Suchen
         </button>
       </div>
 
       <div className="overflow-x-auto">
         <table className="min-w-full table-fixed divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+          <thead className="border-b border-gray-200">
             <tr>
-              <th scope="col" className="w-64 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th
+                scope="col"
+                className="sticky top-0 z-20 w-64 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-white/85 dark:bg-gray-900/80 backdrop-blur-sm shadow-sm"
+              >
                 Name
               </th>
-              <th scope="col" className="w-96 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Address
+              <th
+                scope="col"
+                className="sticky top-0 z-20 w-96 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-white/85 dark:bg-gray-900/80 backdrop-blur-sm shadow-sm"
+              >
+                Adresse
               </th>
-              <th scope="col" className="w-40 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Creation Date
+              <th
+                scope="col"
+                className="sticky top-0 z-20 w-40 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-white/85 dark:bg-gray-900/80 backdrop-blur-sm shadow-sm"
+              >
+                Erstellungsdatum
               </th>
             </tr>
           </thead>
@@ -220,10 +230,10 @@ export default function PatientPage() {
         <div className="text-sm text-gray-600">
           {total > 0 ? (
             <span>
-              Showing {(page - 1) * pageSize + 1}-{Math.min(page * pageSize, total)} of {total}
+              Zeige {(page - 1) * pageSize + 1}-{Math.min(page * pageSize, total)} von {total}
             </span>
           ) : (
-            <span>Showing 0 of 0</span>
+            <span>Zeige 0 von 0</span>
           )}
         </div>
         <div className="flex items-center gap-2">
@@ -235,7 +245,7 @@ export default function PatientPage() {
             }}
             disabled={page <= 1 || loading}
           >
-            First
+            Erste
           </button>
 
           <button
@@ -247,7 +257,7 @@ export default function PatientPage() {
             }}
             disabled={page <= 1 || loading}
           >
-            Prev
+            Zurück
           </button>
 
           {total > 0 && visiblePages.length > 0 && (
@@ -285,7 +295,7 @@ export default function PatientPage() {
             }}
             disabled={page >= totalPages || loading}
           >
-            Next
+            Weiter
           </button>
 
           <button
@@ -297,7 +307,7 @@ export default function PatientPage() {
             }}
             disabled={page >= totalPages || loading}
           >
-            Last
+            Letzte
           </button>
         </div>
       </div>

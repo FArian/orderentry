@@ -34,7 +34,10 @@ export default function ZetLabLogo({
   iconOnly = false,
   colors = {},
 }: ZetLabLogoProps) {
-  const palette = { ...DEFAULTS, ...colors } as Required<ZetLabLogoProps["colors"]>;
+  const palette: { blue: string; lightBlue: string; purple: string } = {
+    ...DEFAULTS,
+    ...(colors ?? {}),
+  };
 
   // If iconOnly, shrink the viewBox to the 64x64 emblem; otherwise leave room for wordmark
   const viewBox = iconOnly ? "0 0 64 64" : "0 0 500 80";
@@ -51,7 +54,7 @@ export default function ZetLabLogo({
       <title>{title}</title>
       <desc>
         Stylized Z built from a blue triangle, a light-blue diagonal stroke, and a purple rounded
-        bar; followed by a light-blue "etLab" wordmark and a purple period.
+        bar; followed by a light-blue &quot;etLab&quot; wordmark and a purple period.
       </desc>
 
       {/* Emblem container (64x64) */}
@@ -94,4 +97,3 @@ export default function ZetLabLogo({
     </svg>
   );
 }
-

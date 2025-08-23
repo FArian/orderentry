@@ -118,9 +118,10 @@ export async function GET(request: Request) {
         address: addressToString(p.address),
         createdAt: p.meta?.lastUpdated || "",
       }));
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json(
-      { data: [], total: 0, page, pageSize, error: err?.message || "Network error" },
+      { data: [], total: 0, page, pageSize, error: message || "Network error" },
       { status: 500 }
     );
   }
