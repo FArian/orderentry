@@ -231,19 +231,19 @@ function PatientPageContent() {
             <tr>
               <th
                 scope="col"
-                className="sticky top-0 z-20 w-64 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-white/85 dark:bg-gray-900/80 backdrop-blur-sm shadow-sm"
+                className="sticky top-0 z-20 w-64 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-white/85 backdrop-blur-sm shadow-sm"
               >
                 Name
               </th>
               <th
                 scope="col"
-                className="sticky top-0 z-20 w-96 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-white/85 dark:bg-gray-900/80 backdrop-blur-sm shadow-sm"
+                className="sticky top-0 z-20 w-96 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-white/85 backdrop-blur-sm shadow-sm"
               >
                 Adresse
               </th>
               <th
                 scope="col"
-                className="sticky top-0 z-20 w-40 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-white/85 dark:bg-gray-900/80 backdrop-blur-sm shadow-sm"
+                className="sticky top-0 z-20 w-40 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-white/85 backdrop-blur-sm shadow-sm"
               >
                 Erstellungsdatum
               </th>

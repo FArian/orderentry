@@ -30,4 +30,3 @@ export async function GET(
     return NextResponse.json({ error: message || "Network error" }, { status: 500 });
   }
 }
-

@@ -1,0 +1,11 @@
+# GET https://hapi.fhir.org/baseR4/ObservationDefinition
+# Accept: application/fhir+json
+
+# GET https://hapi.fhir.org/baseR4/AllergyIntolerance
+# Accept: application/fhir+json
+
+
+# GET https://hapi.fhir.org/baseR4/CodeSystem/allergy-intolerance-category
+
+
+GET https://hapi.fhir.org/baseR4/ValueSet/$expand?url=http://hl7.org/fhir/ValueSet/allergy-intolerance-category
