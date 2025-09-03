@@ -15,7 +15,7 @@ export default async function PatientDetailPage({
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-2xl font-bold">Patientenakte</h1>
         <Link
-          href={`/auftrag/${id}`}
+          href={`/order/${id}`}
           className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
         >
           Neuer Auftrag

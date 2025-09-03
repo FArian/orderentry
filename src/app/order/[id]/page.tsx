@@ -1,8 +1,7 @@
-import AllergyMenu from "@/components/AllergyMenu";
 import PatientBreadcrumb from "../../patient/[id]/PatientBreadcrumb";
-import AuftragClient from "./AuftragClient";
+import OrderClient from "./OrderClient";
 
-export default async function AuftragPage({
+export default async function OrderPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -14,7 +13,7 @@ export default async function AuftragPage({
         <PatientBreadcrumb id={id} />
         <h1 className="text-2xl font-bold">AUFTRAG</h1>
       </div>
-      <AuftragClient id={id} />
+      <OrderClient id={id} />
     </div>
   );
 }

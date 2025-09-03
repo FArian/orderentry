@@ -9,9 +9,9 @@ import type {
 } from "@/lib/fhir";
 import { fhirGet, fhirPost, FHIR_BASE, fetchActivityAndObservation, ObservationDefinition, ActivityDefinition } from "@/lib/fhir";
 
-type TabKey = "Allergologie" | "Routinelabor" | "Mikrobiologie" | "Z-Point";
+type TabKey = "Allergy" | "Routine lab" | "Microbiology";
 
-const TABS: TabKey[] = ["Allergologie", "Routinelabor", "Mikrobiologie", "Z-Point"];
+const TABS: TabKey[] = ["Allergy", "Routine lab", "Microbiology"];
 
 const SPECIMENS: SpecimenChoice[] = [
   {
@@ -26,46 +26,61 @@ const SPECIMENS: SpecimenChoice[] = [
   },
 ];
 
-// Local mock ValueSet expansions if remote listing returns none
-const MOCK_VS: { summary: ValueSetSummary; items: ValueSetExpansion[] }[] = [
-  {
-    summary: { url: "http://example.org/fhir/ValueSet/inhalationsallergene-tiere", title: "Inhalationsallergene – Tiere" },
-    items: [
-      { system: "http://loinc.org", code: "74845-2", display: "Anti-factor Xa activity" },
-      { system: "http://loinc.org", code: "4548-4", display: "Hemoglobin A1c/Hemoglobin.total in Blood" },
-      { system: "http://loinc.org", code: "718-7", display: "Hemoglobin [Mass/volume] in Blood" },
-      { system: "http://loinc.org", code: "718-7", display: "Duplicate Hemoglobin (for UI)" },
-      { system: "http://loinc.org", code: "15074-8", display: "Glucose [Moles/volume] in Blood" },
-      { system: "http://loinc.org", code: "6299-2", display: "Urea nitrogen [Mass/volume] in Serum or Plasma" },
-    ],
-  },
-  {
-    summary: { url: "http://example.org/fhir/ValueSet/nahrungsmittelallergen-screen", title: "Nahrungsmittelallergen – Screen" },
-    items: [
-      { system: "http://loinc.org", code: "4544-3", display: "ALT [Enzymatic activity/volume] in Serum or Plasma" },
-      { system: "http://loinc.org", code: "13457-7", display: "Cholesterol in LDL [Mass/volume] in Serum or Plasma" },
-      { system: "http://loinc.org", code: "2093-3", display: "Cholesterol [Mass/volume] in Serum or Plasma" },
-      { system: "http://loinc.org", code: "14647-2", display: "C reactive protein [Mass/volume] in Serum or Plasma" },
-      { system: "http://loinc.org", code: "33244-9", display: "Fibrin D-dimer FEU [Mass/volume] in Platelet poor plasma" },
-    ],
-  },
-];
-
-type ExpandResponse = {
-  resourceType: "ValueSet";
-  expansion?: { contains?: Array<{ system?: string; code?: string; display?: string }> };
+// Local static categories and items per main tab
+const LOCAL_VS: Record<TabKey, { summary: ValueSetSummary; items: ValueSetExpansion[] }[]> = {
+  "Allergy": [],
+  "Routine lab": [
+    { summary: { url: "local:routine:haematology", title: "Haematology" }, items: [] },
+    { summary: { url: "local:routine:haemostasis", title: "Haemostasis" }, items: [] },
+    { summary: { url: "local:routine:clinical-chemistry", title: "Clinical chemistry" }, items: [] },
+    { summary: { url: "local:routine:drugs-toxicology", title: "Drugs/Toxicology" }, items: [] },
+    { summary: { url: "local:routine:immunology", title: "Immunology" }, items: [] },
+    { summary: { url: "local:routine:immunohaematology", title: "Immunohaematology" }, items: [] },
+    { summary: { url: "local:routine:infectious-diseases", title: "Infectious diseases" }, items: [] },
+    { summary: { url: "local:routine:punctate-csf", title: "Punctate/cerebrospinal fluid" }, items: [] },
+    { summary: { url: "local:routine:urine", title: "Urine" }, items: [] },
+    { summary: { url: "local:routine:further-analyses", title: "Further analyses" }, items: [] },
+  ],
+  "Microbiology": [
+    { summary: { url: "local:micro:direct-material", title: "Direct material" }, items: [] },
+    { summary: { url: "local:micro:smears", title: "Smears" }, items: [] },
+    { summary: { url: "local:micro:punctate-tissue", title: "Punctate/ Tissue" }, items: [] },
+    { summary: { url: "local:micro:blood-culture", title: "Blood culture" }, items: [] },
+    { summary: { url: "local:micro:foreign-material", title: "Foreign material" }, items: [] },
+  ],
 };
+
+// no remote expansion type needed; using local catalog
 
 type BundleEntry = { fullUrl?: string; response?: { location?: string } };
 
-export default function AuftragClient({ id }: { id: string }) {
-  const [selectedTab, setSelectedTab] = useState<TabKey>("Allergologie");
+export default function OrderClient({ id }: { id: string }) {
+  const [selectedTab, setSelectedTab] = useState<TabKey>("Allergy");
   const [categories, setCategories] = useState<ValueSetSummary[]>([]);
   const [categoriesNotice, setCategoriesNotice] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<ValueSetSummary | null>(null);
-  const [availableTests, setAvailableTests] = useState<ValueSetExpansion[]>([]);
-  const [selectedTests, setSelectedTests] = useState<ValueSetExpansion[]>([]);
+  type MiddleItem = ValueSetExpansion & {
+    specimenRef?: string;
+    quantityValue?: number | string;
+    quantityUnit?: string;
+    // AllergyIntolerance details
+    resourceId?: string;
+    categories?: string[];
+    criticality?: string;
+    reactions?: string[];
+    severity?: string;
+    notes?: string[];
+  };
+  const [availableTests, setAvailableTests] = useState<MiddleItem[]>([]);
+  const [testsLoading, setTestsLoading] = useState(false);
+  const [selectedTests, setSelectedTests] = useState<MiddleItem[]>([]);
   const [selectedSpecimens, setSelectedSpecimens] = useState<SpecimenChoice[]>([]);
+  // Cache resolved specimen labels (type display) by reference (e.g., "Specimen/2001")
+  const [specimenLabelCache, setSpecimenLabelCache] = useState<Record<string, string>>({});
+  // Track per-analysis material contributions for later subtraction
+  const [analysisContribs, setAnalysisContribs] = useState<Record<string, Array<{ specimenRef: string; num?: number; unit?: string; label: string }>>>({});
+
+  // removed results viewer section (requested)
 
   const [catQuery, setCatQuery] = useState("");
   const [testQuery, setTestQuery] = useState("");
@@ -81,42 +96,55 @@ export default function AuftragClient({ id }: { id: string }) {
   const catDebounce = useRef<number | undefined>(undefined);
   const testDebounce = useRef<number | undefined>(undefined);
 
-  // Load categories once
+  // Load or switch categories when tab changes
   useEffect(() => {
-    let active = true;
+    let cancelled = false;
     setCategoriesNotice(null);
-    // Fixed discovery pattern as per spec
-    fhirGet(`/ValueSet?_summary=true&name:contains=Allergie`)
-      .then((json) => {
-        if (!active) return;
-        const arr: ValueSetSummary[] = (json.entry || [])
-          .map((e: any) => e.resource)
-          .filter((r: any) => r && r.resourceType === "ValueSet" && r.url)
-          .map((r: any) => ({ url: r.url as string, name: r.name, title: r.title }));
-        if (!arr.length) {
-          setCategoriesNotice(
-            `Keine ValueSets gefunden. Zeige lokale Beispiele (Testmodus).`
+    setSelectedCategory(null);
+
+    async function load() {
+      if (selectedTab === "Allergy") {
+        try {
+          const json = await fhirGet(
+            "/ValueSet/$expand?url=" +
+              encodeURIComponent("http://hl7.org/fhir/ValueSet/allergy-intolerance-category")
           );
-          setCategories(MOCK_VS.map((m) => m.summary));
-        } else {
-          setCategories(arr);
+          const list: ValueSetSummary[] = (json?.expansion?.contains || []).map(
+            (c: { code?: string; display?: string }) => ({
+              url: `fhir:allergy-category:${c.code || "unknown"}`,
+              name: c.code,
+              title: c.display || c.code || "Unknown",
+            })
+          );
+          if (!cancelled) {
+            setCategories(list);
+          }
+          return;
+        } catch (e) {
+          if (!cancelled) setCategoriesNotice("Failed to load categories");
         }
-      })
-      .catch(() => {
-        if (!active) return;
-        setCategoriesNotice(
-          `FHIR-Auflistung fehlgeschlagen. Zeige lokale Beispiele (Testmodus).`
-        );
-        setCategories(MOCK_VS.map((m) => m.summary));
-      });
+      }
+
+      const local = LOCAL_VS[selectedTab] || [];
+      if (!cancelled) {
+        if (local.length > 0) {
+          setCategories(local.map((m) => m.summary));
+        } else {
+          setCategories([]);
+          setCategoriesNotice("No categories available for this tab.");
+        }
+      }
+    }
+
+    load();
     return () => {
-      active = false;
+      cancelled = true;
     };
-  }, []);
+  }, [selectedTab]);
 
   // Restore local draft
   useEffect(() => {
-    const key = `auftrag:${id}`;
+    const key = `order:${id}`;
     try {
       const raw = localStorage.getItem(key);
       if (raw) {
@@ -153,20 +181,126 @@ export default function AuftragClient({ id }: { id: string }) {
   }, [availableTests, testQuery]);
 
   const isSelected = useCallback(
-    (t: ValueSetExpansion) => selectedTests.some((x) => x.system === t.system && x.code === t.code),
+    (t: MiddleItem) => selectedTests.some((x) => x.system === t.system && x.code === t.code),
     [selectedTests]
   );
 
-  const toggleTest = useCallback(
-    (t: ValueSetExpansion) => {
-      setSelectedTests((prev) => {
-        const exists = prev.some((x) => x.system === t.system && x.code === t.code);
-        if (exists) return prev.filter((x) => !(x.system === t.system && x.code === t.code));
-        return [...prev, t];
+  const [materialsFromAnalyses, setMaterialsFromAnalyses] = useState<Record<string, { label: string; value?: string }>>({});
+
+  const fetchMaterialsForAnalysis = useCallback(async (t: MiddleItem) => {
+    try {
+      const token = t.system && t.code ? `${t.system}|${t.code}` : t.code;
+      const qs = new URLSearchParams();
+      if (token) qs.set("code", token);
+      qs.set("category", "laboratory");
+      qs.set("subject", `Patient/${id}`);
+      // Include linked Specimen to avoid extra round trips and trim Observation fields
+      qs.set("_include", "Observation:specimen");
+      qs.set("_elements", "id,code,specimen,valueQuantity");
+      const bundle = await fhirGet(`/Observation?${qs.toString()}`);
+      const entries: any[] = bundle?.entry || [];
+      const specimenDisplays: Record<string, string> = {};
+      for (const e of entries) {
+        const r = e?.resource;
+        if (r?.resourceType === "Specimen") {
+          const ref = r.id ? `Specimen/${r.id}` : undefined;
+          const disp = r?.type?.coding?.[0]?.display || r?.type?.text || ref || "Specimen";
+          if (ref) specimenDisplays[ref] = disp;
+        }
+      }
+      if (Object.keys(specimenDisplays).length) {
+        setSpecimenLabelCache((prev) => ({ ...prev, ...specimenDisplays }));
+      }
+      const out: Array<{ specimenRef: string; num?: number; unit?: string; label: string }> = [];
+      for (const e of entries) {
+        const r = e?.resource;
+        if (!r || r.resourceType !== "Observation") continue;
+        const specimenRef: string | undefined = r.specimen?.reference;
+        const valueQ = r.valueQuantity;
+        let num: number | undefined;
+        let unit: string | undefined;
+        if (valueQ && (valueQ.value !== undefined && valueQ.value !== null)) {
+          num = Number(valueQ.value);
+          unit = valueQ.unit || valueQ.code || undefined;
+        }
+        if (specimenRef) {
+          const label = specimenDisplays[specimenRef] || specimenLabelCache[specimenRef] || specimenRef;
+          out.push({ specimenRef, num, unit, label });
+        }
+      }
+      return out;
+    } catch {
+      return [];
+    }
+  }, [id, specimenLabelCache]);
+
+  const toggleTest = useCallback((t: MiddleItem) => {
+    const existsNow = selectedTests.some((x) => x.system === t.system && x.code === t.code);
+    setSelectedTests((prev) => {
+      const exists = prev.some((x) => x.system === t.system && x.code === t.code);
+      return exists
+        ? prev.filter((x) => !(x.system === t.system && x.code === t.code))
+        : [...prev, t];
+    });
+
+    if (!existsNow) {
+      // Log the full selected analysis object for debugging/inspection
+      // Includes system, code, display, and any attached specimen/value
+      console.log("Selected analysis:", t);
+      // Load materials via Observation by analysis code (value + unit, specimen ref)
+      fetchMaterialsForAnalysis(t).then((items) => {
+        if (!items || items.length === 0) return;
+        const key = `${t.system}|${t.code}`;
+        setAnalysisContribs((prev) => ({ ...prev, [key]: items }));
+        setMaterialsFromAnalyses((prev) => {
+          const next = { ...prev } as Record<string, { label: string; value?: string }>;
+          for (const it of items) {
+            const aggKey = it.specimenRef;
+            const current = next[aggKey];
+            if (it.num !== undefined) {
+              const curNum = current?.value ? Number(current.value.split(' ')[0]) : 0;
+              const curUnit = current?.value ? current.value.split(' ').slice(1).join(' ') : undefined;
+              const unit = it.unit || curUnit;
+              const sum = (curNum || 0) + (Number(it.num) || 0);
+              next[aggKey] = { label: it.label, value: `${sum}${unit ? ` ${unit}` : ''}` };
+            } else {
+              next[aggKey] = { label: it.label, value: current?.value };
+            }
+          }
+          return next;
+        });
       });
-    },
-    []
-  );
+    }
+
+    // If removing, clear materials derived from this analysis code
+    if (existsNow) {
+      const key = `${t.system}|${t.code}`;
+      const contribs = analysisContribs[key] || [];
+      setMaterialsFromAnalyses((prev) => {
+        const next: Record<string, { label: string; value?: string }> = { ...prev };
+        for (const it of contribs) {
+          const aggKey = it.specimenRef;
+          const current = next[aggKey];
+          if (!current) continue;
+          if (it.num !== undefined) {
+            const curNum = current.value ? Number(current.value.split(' ')[0]) : 0;
+            const curUnit = current.value ? current.value.split(' ').slice(1).join(' ') : undefined;
+            const unit = it.unit || curUnit;
+            const remainder = Math.max(0, (curNum || 0) - (Number(it.num) || 0));
+            if (remainder > 0) next[aggKey] = { label: current.label, value: `${remainder}${unit ? ` ${unit}` : ''}` };
+            else delete next[aggKey];
+          } else {
+            if (!current.value) delete next[aggKey];
+          }
+        }
+        return next;
+      });
+      setAnalysisContribs((prev) => {
+        const { [key]: _, ...rest } = prev;
+        return rest;
+      });
+    }
+  }, [selectedTests, fetchMaterialsForAnalysis, analysisContribs]);
 
   const toggleInfo = useCallback(async (t: ValueSetExpansion) => {
     const key = `${t.system}|${t.code}`;
@@ -191,6 +325,8 @@ export default function AuftragClient({ id }: { id: string }) {
     });
   }, []);
 
+  // Note: removed manual material loader; materials now derive from selected analyses only
+
   const canSubmit = selectedTests.length > 0 && selectedSpecimens.length > 0 && !submitting;
 
   // Expand a ValueSet when selected
@@ -199,36 +335,90 @@ export default function AuftragClient({ id }: { id: string }) {
       setSelectedCategory(vs);
       setAvailableTests([]);
       setTestQuery("");
-      // If local mock matches
-      const mock = MOCK_VS.find((m) => m.summary.url === vs.url);
-      if (mock) {
-        setAvailableTests(mock.items);
+      setTestsLoading(true);
+      // Use local items when present for the current tab
+      const local = (LOCAL_VS[selectedTab] || []).find(
+        (m) => m.summary.url === vs.url
+      );
+      if (local) {
+        setAvailableTests(local.items);
+        setTestsLoading(false);
         return;
       }
-      try {
-        const params = {
-          resourceType: "Parameters",
-          parameter: [
-            { name: "url", valueUri: vs.url },
-            { name: "count", valueInteger: 500 },
-          ],
-        };
-        const json = (await fhirPost("/ValueSet/$expand", params)) as ExpandResponse;
-        const list =
-          json?.expansion?.contains?.
-            map((c) => ({ system: c.system || "", code: c.code || "", display: c.display }))
-            .filter((x) => x.system && x.code) || [];
-        setAvailableTests(list);
-      } catch (e) {
-        setAvailableTests([]);
+      // For Allergy, fetch AllergyIntolerance list filtered by category and optional codes
+      if (selectedTab === "Allergy") {
+        try {
+          const categoryCode = vs.name || vs.url.split(":").pop() || ""; // e.g., food | medication | environment | biologic
+          // Placeholder mapping for additional code filters per category.
+          // Replace values as you provide specific code lists.
+          const codeFilters: Record<string, string> = {
+            environment: "256259004,418689008", // example provided
+          };
+          const qs = new URLSearchParams();
+          if (categoryCode) qs.set("category", categoryCode);
+          const codes = codeFilters[categoryCode];
+          if (codes) qs.set("code", codes);
+          const path = `/AllergyIntolerance?${qs.toString()}`;
+          const json = await fhirGet(path);
+          const entries: any[] = json?.entry || [];
+          const list: MiddleItem[] = [];
+          const seen = new Set<string>();
+          for (const e of entries) {
+            const r = e?.resource;
+            const coding = r?.code?.coding?.[0];
+            const sys = coding?.system || "";
+            const code = coding?.code || "";
+            const display = coding?.display || r?.code?.text || "Allergen";
+            if (!sys || !code) continue;
+            const key = `${sys}|${code}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            // Extract useful AllergyIntolerance details for inline display
+            const categories: string[] = Array.isArray(r?.category) ? r.category : [];
+            const criticality: string | undefined = r?.criticality;
+            const reactions: string[] = Array.isArray(r?.reaction)
+              ? r.reaction
+                  .flatMap((rx: any) =>
+                    Array.isArray(rx?.manifestation)
+                      ? rx.manifestation.map((m: any) =>
+                          m?.coding?.[0]?.display || m?.text || m?.coding?.[0]?.code
+                        )
+                      : []
+                  )
+                  .filter(Boolean)
+              : [];
+            const severity: string | undefined = r?.reaction?.[0]?.severity;
+            const notes: string[] = Array.isArray(r?.note) ? r.note.map((n: any) => n?.text).filter(Boolean) : [];
+            list.push({
+              system: sys,
+              code,
+              display,
+              resourceId: r?.id,
+              categories,
+              criticality,
+              reactions,
+              severity,
+              notes,
+            });
+          }
+          setAvailableTests(list);
+          setTestsLoading(false);
+          return;
+        } catch {
+          // swallow errors; keep empty
+          setTestsLoading(false);
+        }
       }
+      // Default: keep empty
+      setAvailableTests([]);
+      setTestsLoading(false);
     },
-    []
+    [selectedTab]
   );
 
   // Save local draft
   const saveDraft = useCallback(() => {
-    const key = `auftrag:${id}`;
+    const key = `order:${id}`;
     const payload = { selectedTests, selectedSpecimens, ts: Date.now() };
     localStorage.setItem(key, JSON.stringify(payload));
     setSubmitMsg("Entwurf gespeichert (lokal)");
@@ -329,7 +519,7 @@ export default function AuftragClient({ id }: { id: string }) {
       setSelectedTests([]);
       setSelectedSpecimens([]);
       try {
-        localStorage.removeItem(`auftrag:${id}`);
+        localStorage.removeItem(`order:${id}`);
       } catch {}
     } catch (e: any) {
       setSubmitErr(e?.message || String(e));
@@ -362,9 +552,9 @@ export default function AuftragClient({ id }: { id: string }) {
       </div>
 
       {/* Main 3 columns */}
-      <div className="mx-auto max-w-7xl flex-1 grid grid-cols-12 gap-4 p-4">
+      <div className="w-full flex-1 grid grid-cols-[18rem_minmax(0,1fr)_22rem] gap-4 p-4">
         {/* Left: Categories */}
-        <div className="col-span-3 min-h-0 flex flex-col rounded border bg-white">
+        <div className="min-h-0 flex flex-col rounded border bg-white">
           <div className="p-2 border-b">
             <input
               type="text"
@@ -381,7 +571,7 @@ export default function AuftragClient({ id }: { id: string }) {
           {categoriesNotice && (
             <div className="px-2 py-1 text-xs text-amber-700 bg-amber-50 border-b">{categoriesNotice}</div>
           )}
-          <div className="flex-1 overflow-auto">
+          <div className="flex-1 overflow-y-scroll overflow-x-hidden">
             {filteredCategories.map((c) => {
               const label = c.title || c.name || c.url;
               const active = selectedCategory?.url === c.url;
@@ -394,7 +584,7 @@ export default function AuftragClient({ id }: { id: string }) {
                   }`}
                   title={c.url}
                 >
-                  {label}
+                  <span className="block w-full truncate">{label}</span>
                 </button>
               );
             })}
@@ -405,7 +595,7 @@ export default function AuftragClient({ id }: { id: string }) {
         </div>
 
         {/* Middle: Available tests */}
-        <div className="col-span-6 min-h-0 flex flex-col rounded border bg-white">
+        <div className="min-h-0 flex flex-col rounded border bg-white">
           <div className="p-2 border-b flex items-center gap-2">
             <input
               type="text"
@@ -419,10 +609,13 @@ export default function AuftragClient({ id }: { id: string }) {
               className="w-full rounded border px-2 py-1 text-sm"
             />
             <div className="text-xs text-gray-500">
-              {availableTests.length} Tests
+              {testsLoading ? "Lädt…" : `${availableTests.length} Tests`}
             </div>
           </div>
-          <div className="flex-1 overflow-auto">
+          <div className="flex-1 overflow-y-scroll overflow-x-hidden">
+            {testsLoading && (
+              <div className="p-3 text-sm text-gray-500">Analysen werden geladen…</div>
+            )}
             {filteredTests.map((t) => {
               const key = `${t.system}|${t.code}`;
               const details = infoCache[key];
@@ -453,6 +646,7 @@ export default function AuftragClient({ id }: { id: string }) {
                     </button>
                     <span className="text-xs text-gray-500">{t.code}</span>
                   </label>
+                  {/* No inline details in middle column as requested */}
                   {open && (
                     <div className="px-3 pb-3 text-xs text-gray-700">
                       {infoLoading[key] && <div className="text-gray-500">Lade Details…</div>}
@@ -490,17 +684,17 @@ export default function AuftragClient({ id }: { id: string }) {
                 </div>
               );
             })}
-            {selectedCategory && filteredTests.length === 0 && (
+            {!testsLoading && selectedCategory && filteredTests.length === 0 && (
               <div className="p-3 text-sm text-gray-500">Keine Tests für Filter</div>
             )}
-            {!selectedCategory && (
+            {!testsLoading && !selectedCategory && (
               <div className="p-3 text-sm text-gray-500">Bitte links eine Kategorie wählen</div>
             )}
           </div>
         </div>
 
         {/* Right: Selected + Specimens */}
-        <div className="col-span-3 min-h-0 flex flex-col gap-4">
+        <div className="min-h-0 flex flex-col gap-4">
           <div className="rounded border bg-white">
             <div className="px-3 py-2 border-b font-medium">Ausgewählte Analysen</div>
             <div className="p-3 flex flex-wrap gap-2">
@@ -524,19 +718,21 @@ export default function AuftragClient({ id }: { id: string }) {
           <div className="rounded border bg-white">
             <div className="px-3 py-2 border-b font-medium">Ausgewähltes Material</div>
             <div className="p-3 flex flex-col gap-2">
-              {SPECIMENS.map((s) => (
-                <label key={s.id} className="inline-flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={!!selectedSpecimens.find((x) => x.id === s.id)}
-                    onChange={() => toggleSpecimen(s)}
-                    className="accent-blue-600"
-                  />
-                  <span>{s.label}</span>
-                </label>
+              {Object.keys(materialsFromAnalyses).length === 0 && (
+                <div className="text-xs text-gray-500">Noch kein Material (wird aus ausgewählten Analysen abgeleitet)</div>
+              )}
+              {Object.entries(materialsFromAnalyses).map(([specRef, m]) => (
+                <div key={specRef} className="rounded border bg-indigo-50 px-2 py-1 text-sm">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="truncate">{m.label}</div>
+                    {m.value && <div className="text-xs text-indigo-700 whitespace-nowrap">{m.value}</div>}
+                  </div>
+                </div>
               ))}
             </div>
           </div>
+
+          {/* Results viewer removed as requested */}
         </div>
       </div>
 

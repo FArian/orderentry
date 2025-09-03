@@ -8,4 +8,8 @@
 # GET https://hapi.fhir.org/baseR4/CodeSystem/allergy-intolerance-category
 
 
-GET https://hapi.fhir.org/baseR4/ValueSet/$expand?url=http://hl7.org/fhir/ValueSet/allergy-intolerance-category
+# GET https://hapi.fhir.org/baseR4/ValueSet/$expand?url=http://hl7.org/fhir/ValueSet/allergy-intolerance-category
+
+
+GET https://hapi.fhir.org/baseR4/SpecimenDefinition
+# Accept: application/fhir+json

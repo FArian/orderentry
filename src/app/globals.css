@@ -3,6 +3,8 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  /* Force light UI primitives (forms, scrollbars) */
+  color-scheme: light;
 }
 
 @theme inline {
