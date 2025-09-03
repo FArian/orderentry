@@ -1,30 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type {
-  FhirCoding,
-  SpecimenChoice,
-  ValueSetExpansion,
-  ValueSetSummary,
-} from "@/lib/fhir";
+import type { FhirCoding, SpecimenChoice, ValueSetExpansion, ValueSetSummary } from "@/lib/fhir";
 import { fhirGet, fhirPost, FHIR_BASE, fetchActivityAndObservation, ObservationDefinition, ActivityDefinition } from "@/lib/fhir";
 
 type TabKey = "Allergy" | "Routine lab" | "Microbiology";
 
 const TABS: TabKey[] = ["Allergy", "Routine lab", "Microbiology"];
 
-const SPECIMENS: SpecimenChoice[] = [
-  {
-    id: "serum",
-    label: "Serum",
-    code: { system: "http://snomed.info/sct", code: "119297000", display: "Serum specimen" },
-  },
-  {
-    id: "citrate",
-    label: "Citrate plasma",
-    code: { system: "http://snomed.info/sct", code: "122575003", display: "Citrate plasma" },
-  },
-];
+// removed unused SPECIMENS sample list
 
 // Local static categories and items per main tab
 const LOCAL_VS: Record<TabKey, { summary: ValueSetSummary; items: ValueSetExpansion[] }[]> = {
@@ -53,6 +37,48 @@ const LOCAL_VS: Record<TabKey, { summary: ValueSetSummary; items: ValueSetExpans
 // no remote expansion type needed; using local catalog
 
 type BundleEntry = { fullUrl?: string; response?: { location?: string } };
+
+// Type guards and helpers to avoid explicit any
+function isObject(x: unknown): x is Record<string, unknown> {
+  return typeof x === "object" && x !== null;
+}
+
+function getEntries(x: unknown): Array<{ resource?: unknown }> {
+  if (isObject(x) && Array.isArray((x as { entry?: unknown }).entry)) {
+    return (x as { entry: Array<{ resource?: unknown }> }).entry;
+  }
+  return [];
+}
+
+type FhirSpecimen = {
+  resourceType: "Specimen";
+  id?: string;
+  type?: { coding?: FhirCoding[]; text?: string };
+};
+function isSpecimen(r: unknown): r is FhirSpecimen {
+  return isObject(r) && (r as { resourceType?: unknown }).resourceType === "Specimen";
+}
+
+type FhirObservation = {
+  resourceType: "Observation";
+  specimen?: { reference?: string };
+  valueQuantity?: { value?: number | string | null; unit?: string; code?: string };
+};
+function isObservation(r: unknown): r is FhirObservation {
+  return isObject(r) && (r as { resourceType?: unknown }).resourceType === "Observation";
+}
+
+type AllergyIntolerance = {
+  id?: string;
+  code?: { coding?: FhirCoding[]; text?: string };
+  category?: string[];
+  criticality?: string;
+  reaction?: Array<{ severity?: string; manifestation?: Array<{ coding?: FhirCoding[]; text?: string }> }>;
+  note?: Array<{ text?: string }>;
+};
+function isAllergyIntolerance(r: unknown): r is AllergyIntolerance {
+  return isObject(r) && (r as { resourceType?: unknown }).resourceType === "AllergyIntolerance";
+}
 
 export default function OrderClient({ id }: { id: string }) {
   const [selectedTab, setSelectedTab] = useState<TabKey>("Allergy");
@@ -109,8 +135,23 @@ export default function OrderClient({ id }: { id: string }) {
             "/ValueSet/$expand?url=" +
               encodeURIComponent("http://hl7.org/fhir/ValueSet/allergy-intolerance-category")
           );
-          const list: ValueSetSummary[] = (json?.expansion?.contains || []).map(
-            (c: { code?: string; display?: string }) => ({
+          const contains = ((): Array<{ code?: string; display?: string }> => {
+            if (
+              isObject(json) &&
+              isObject((json as { expansion?: unknown }).expansion) &&
+              Array.isArray(
+                ((json as { expansion: { contains?: unknown } }).expansion).contains
+              )
+            ) {
+              return (
+                (json as { expansion: { contains: Array<{ code?: string; display?: string }> } })
+                  .expansion.contains
+              );
+            }
+            return [];
+          })();
+          const list: ValueSetSummary[] = contains.map(
+            (c) => ({
               url: `fhir:allergy-category:${c.code || "unknown"}`,
               name: c.code,
               title: c.display || c.code || "Unknown",
@@ -120,7 +161,7 @@ export default function OrderClient({ id }: { id: string }) {
             setCategories(list);
           }
           return;
-        } catch (e) {
+        } catch {
           if (!cancelled) setCategoriesNotice("Failed to load categories");
         }
       }
@@ -198,13 +239,13 @@ export default function OrderClient({ id }: { id: string }) {
       qs.set("_include", "Observation:specimen");
       qs.set("_elements", "id,code,specimen,valueQuantity");
       const bundle = await fhirGet(`/Observation?${qs.toString()}`);
-      const entries: any[] = bundle?.entry || [];
+      const entries = getEntries(bundle);
       const specimenDisplays: Record<string, string> = {};
       for (const e of entries) {
         const r = e?.resource;
-        if (r?.resourceType === "Specimen") {
+        if (isSpecimen(r)) {
           const ref = r.id ? `Specimen/${r.id}` : undefined;
-          const disp = r?.type?.coding?.[0]?.display || r?.type?.text || ref || "Specimen";
+          const disp = r.type?.coding?.[0]?.display || r.type?.text || ref || "Specimen";
           if (ref) specimenDisplays[ref] = disp;
         }
       }
@@ -214,7 +255,7 @@ export default function OrderClient({ id }: { id: string }) {
       const out: Array<{ specimenRef: string; num?: number; unit?: string; label: string }> = [];
       for (const e of entries) {
         const r = e?.resource;
-        if (!r || r.resourceType !== "Observation") continue;
+        if (!isObservation(r)) continue;
         const specimenRef: string | undefined = r.specimen?.reference;
         const valueQ = r.valueQuantity;
         let num: number | undefined;
@@ -296,8 +337,9 @@ export default function OrderClient({ id }: { id: string }) {
         return next;
       });
       setAnalysisContribs((prev) => {
-        const { [key]: _, ...rest } = prev;
-        return rest;
+        const next = { ...prev };
+        delete next[key];
+        return next;
       });
     }
   }, [selectedTests, fetchMaterialsForAnalysis, analysisContribs]);
@@ -316,14 +358,6 @@ export default function OrderClient({ id }: { id: string }) {
       setInfoLoading((p) => ({ ...p, [key]: false }));
     }
   }, [infoCache, infoLoading]);
-
-  const toggleSpecimen = useCallback((s: SpecimenChoice) => {
-    setSelectedSpecimens((prev) => {
-      const exists = prev.some((x) => x.id === s.id);
-      if (exists) return prev.filter((x) => x.id !== s.id);
-      return [...prev, s];
-    });
-  }, []);
 
   // Note: removed manual material loader; materials now derive from selected analyses only
 
@@ -360,40 +394,44 @@ export default function OrderClient({ id }: { id: string }) {
           if (codes) qs.set("code", codes);
           const path = `/AllergyIntolerance?${qs.toString()}`;
           const json = await fhirGet(path);
-          const entries: any[] = json?.entry || [];
+          const entries = getEntries(json);
           const list: MiddleItem[] = [];
           const seen = new Set<string>();
           for (const e of entries) {
             const r = e?.resource;
-            const coding = r?.code?.coding?.[0];
+            if (!isAllergyIntolerance(r)) continue;
+            const coding = r.code?.coding?.[0];
             const sys = coding?.system || "";
             const code = coding?.code || "";
-            const display = coding?.display || r?.code?.text || "Allergen";
+            const display = coding?.display || r.code?.text || "Allergen";
             if (!sys || !code) continue;
             const key = `${sys}|${code}`;
             if (seen.has(key)) continue;
             seen.add(key);
             // Extract useful AllergyIntolerance details for inline display
-            const categories: string[] = Array.isArray(r?.category) ? r.category : [];
-            const criticality: string | undefined = r?.criticality;
-            const reactions: string[] = Array.isArray(r?.reaction)
+            const categories: string[] = Array.isArray(r.category) ? r.category : [];
+            const criticality: string | undefined = r.criticality;
+            const reactions: string[] = Array.isArray(r.reaction)
               ? r.reaction
-                  .flatMap((rx: any) =>
+                  .flatMap((rx) =>
                     Array.isArray(rx?.manifestation)
-                      ? rx.manifestation.map((m: any) =>
-                          m?.coding?.[0]?.display || m?.text || m?.coding?.[0]?.code
-                        )
+                      ? rx.manifestation
+                          .map((m) => m?.coding?.[0]?.display || m?.text || m?.coding?.[0]?.code)
+                          .filter((v): v is string => typeof v === "string")
                       : []
                   )
-                  .filter(Boolean)
               : [];
-            const severity: string | undefined = r?.reaction?.[0]?.severity;
-            const notes: string[] = Array.isArray(r?.note) ? r.note.map((n: any) => n?.text).filter(Boolean) : [];
+            const severity: string | undefined = r.reaction?.[0]?.severity;
+            const notes: string[] = Array.isArray(r.note)
+              ? r.note
+                  .map((n) => n?.text)
+                  .filter((v): v is string => typeof v === "string")
+              : [];
             list.push({
               system: sys,
               code,
               display,
-              resourceId: r?.id,
+              resourceId: r.id,
               categories,
               criticality,
               reactions,
@@ -507,12 +545,15 @@ export default function OrderClient({ id }: { id: string }) {
         ],
       } as const;
 
-      const resp = await fhirPost("/", bundle);
+      const resp = await fhirPost("/", bundle as unknown as Record<string, unknown>);
       let ids: string[] = [];
-      if (resp?.entry && Array.isArray(resp.entry)) {
-        ids = (resp.entry as BundleEntry[])
+      if (
+        isObject(resp) &&
+        Array.isArray((resp as { entry?: unknown }).entry)
+      ) {
+        ids = ((resp as { entry: BundleEntry[] }).entry)
           .map((e) => e.response?.location)
-          .filter(Boolean) as string[];
+          .filter((v): v is string => typeof v === "string");
       }
       setSubmitMsg(`Auftrag gesendet. IDs: ${ids.join(", ") || "ok"}`);
       setSubmitErr(null);
@@ -521,8 +562,8 @@ export default function OrderClient({ id }: { id: string }) {
       try {
         localStorage.removeItem(`order:${id}`);
       } catch {}
-    } catch (e: any) {
-      setSubmitErr(e?.message || String(e));
+    } catch (e: unknown) {
+      setSubmitErr(e instanceof Error ? e.message : String(e));
       setSubmitMsg(null);
     } finally {
       setSubmitting(false);

@@ -10,7 +10,7 @@ export type ActivityDefinition = {
   kind?: string;
   code?: { coding?: FhirCoding[] };
   observationResultRequirement?: Array<{ reference?: string; display?: string }>;
-  contained?: any[];
+  contained?: unknown[];
 };
 
 export type ObservationDefinition = {
@@ -26,7 +26,7 @@ export const FHIR_BASE: string =
   (typeof process !== "undefined" && process.env.NEXT_PUBLIC_FHIR_BASE) ||
   "https://hapi.fhir.org/baseR4";
 
-export async function handleResponse(res: Response): Promise<any> {
+export async function handleResponse(res: Response): Promise<unknown | string> {
   if (!res.ok) {
     let text = "Request failed";
     try {
@@ -50,7 +50,7 @@ export async function fhirGet(path: string, init?: RequestInit) {
   return handleResponse(res);
 }
 
-export async function fhirPost(path: string, body: any, init?: RequestInit) {
+export async function fhirPost(path: string, body: Record<string, unknown>, init?: RequestInit) {
   const url = `${FHIR_BASE}${path.startsWith("/") ? "" : "/"}${path}`;
   const res = await fetch(url, {
     method: "POST",
@@ -65,10 +65,15 @@ export async function fhirPost(path: string, body: any, init?: RequestInit) {
   return handleResponse(res);
 }
 
-export type FhirBundle<T = any> = { resourceType: "Bundle"; entry?: Array<{ resource?: T }> };
+export type FhirBundle<T = unknown> = { resourceType: "Bundle"; entry?: Array<{ resource?: T }> };
 
-export function isBundle(r: any): r is FhirBundle<any> {
-  return r && typeof r === "object" && r.resourceType === "Bundle";
+export function isBundle(r: unknown): r is FhirBundle<unknown> {
+  return (
+    typeof r === "object" &&
+    r !== null &&
+    "resourceType" in r &&
+    (r as { resourceType?: unknown }).resourceType === "Bundle"
+  );
 }
 
 export async function fetchActivityAndObservation(system: string, code: string): Promise<{
@@ -85,13 +90,25 @@ export async function fetchActivityAndObservation(system: string, code: string):
   const path = `/ActivityDefinition?${qs.toString()}`;
   const bundle = await fhirGet(path);
   if (!isBundle(bundle)) return {};
-  const entries: any[] = bundle.entry || [];
+  const entries: Array<{ resource?: unknown }> = bundle.entry || [];
   const ads: ActivityDefinition[] = entries
     .map((e) => e.resource)
-    .filter((r: any) => r && r.resourceType === "ActivityDefinition");
+    .filter(
+      (r): r is ActivityDefinition =>
+        typeof r === "object" &&
+        r !== null &&
+        "resourceType" in r &&
+        (r as { resourceType?: unknown }).resourceType === "ActivityDefinition"
+    );
   const obsList: ObservationDefinition[] = entries
     .map((e) => e.resource)
-    .filter((r: any) => r && r.resourceType === "ObservationDefinition");
+    .filter(
+      (r): r is ObservationDefinition =>
+        typeof r === "object" &&
+        r !== null &&
+        "resourceType" in r &&
+        (r as { resourceType?: unknown }).resourceType === "ObservationDefinition"
+    );
 
   const activity = ads[0];
   let observation = obsList[0];
@@ -101,8 +118,17 @@ export async function fetchActivityAndObservation(system: string, code: string):
     const localRef = activity.observationResultRequirement[0]?.reference; // e.g. "#obs1"
     if (localRef && localRef.startsWith("#")) {
       const id = localRef.slice(1);
-      const match = activity.contained.find((c: any) => c?.resourceType === "ObservationDefinition" && c?.id === id);
-      if (match) observation = match as ObservationDefinition;
+      const match = activity.contained.find((c): c is ObservationDefinition => {
+        return (
+          typeof c === "object" &&
+          c !== null &&
+          "resourceType" in c &&
+          (c as { resourceType?: unknown }).resourceType === "ObservationDefinition" &&
+          "id" in c &&
+          (c as { id?: unknown }).id === id
+        );
+      });
+      if (match) observation = match;
     }
   }
 
