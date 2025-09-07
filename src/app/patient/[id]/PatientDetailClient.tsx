@@ -3,12 +3,30 @@
 import { useEffect, useMemo, useState } from "react";
 
 // Minimal FHIR Patient typing for fields we display
-type HumanName = { text?: string; given?: string[]; family?: string; prefix?: string[]; suffix?: string[] };
-type Address = { text?: string; line?: string[]; city?: string; state?: string; postalCode?: string; country?: string };
+type HumanName = {
+  text?: string;
+  given?: string[];
+  family?: string;
+  prefix?: string[];
+  suffix?: string[];
+};
+type Address = {
+  text?: string;
+  line?: string[];
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  country?: string;
+};
 type Coding = { display?: string };
 type CodeableConcept = { text?: string; coding?: Coding[] };
 type Telecom = { system?: string; value?: string; use?: string };
-type Identifier = { system?: string; value?: string };
+type Identifier = {
+  system?: string;
+  value?: string;
+  assigner?: { display?: string };
+  type?: CodeableConcept;
+};
 type Patient = {
   resourceType: "Patient";
   id?: string;
@@ -144,11 +162,16 @@ export default function PatientDetailClient({ id }: { id: string }) {
     if (!p) return [] as Array<{ label: string; value: string }>;
     const list: Array<{ label: string; value: string }> = [];
     list.push({ label: "Patienten-ID", value: p.id || "-" });
-    if (typeof p.active === "boolean") list.push({ label: "Aktiv", value: p.active ? "Ja" : "Nein" });
-    if (p.name && p.name.length) list.push({ label: "Name", value: nameToString(p.name) });
-    if (p.gender) list.push({ label: "Geschlecht", value: genderLabel(p.gender) });
-    if (p.birthDate) list.push({ label: "Geburtsdatum", value: formatDate(p.birthDate) });
-    if (p.address && p.address.length) list.push({ label: "Adresse", value: addressToString(p.address) });
+    if (typeof p.active === "boolean")
+      list.push({ label: "Aktiv", value: p.active ? "Ja" : "Nein" });
+    if (p.name && p.name.length)
+      list.push({ label: "Name", value: nameToString(p.name) });
+    if (p.gender)
+      list.push({ label: "Geschlecht", value: genderLabel(p.gender) });
+    if (p.birthDate)
+      list.push({ label: "Geburtsdatum", value: formatDate(p.birthDate) });
+    if (p.address && p.address.length)
+      list.push({ label: "Adresse", value: addressToString(p.address) });
     if (p.telecom && p.telecom.length) {
       p.telecom.forEach((t) => {
         const labelBase = systemLabel(t.system);
@@ -168,30 +191,106 @@ export default function PatientDetailClient({ id }: { id: string }) {
       if (ms) list.push({ label: "Familienstand", value: ms });
     }
     if (typeof p.deceasedBoolean === "boolean")
-      list.push({ label: "Verstorben", value: p.deceasedBoolean ? "Ja" : "Nein" });
+      list.push({
+        label: "Verstorben",
+        value: p.deceasedBoolean ? "Ja" : "Nein",
+      });
     if (p.deceasedDateTime)
-      list.push({ label: "Verstorben am", value: formatDate(p.deceasedDateTime) });
+      list.push({
+        label: "Verstorben am",
+        value: formatDate(p.deceasedDateTime),
+      });
     if (p.managingOrganization?.display)
-      list.push({ label: "Einrichtung", value: p.managingOrganization.display });
+      list.push({
+        label: "Einrichtung",
+        value: p.managingOrganization.display,
+      });
     if (p.meta?.lastUpdated)
-      list.push({ label: "Letzte Aktualisierung", value: formatDate(p.meta.lastUpdated) });
+      list.push({
+        label: "Letzte Aktualisierung",
+        value: formatDate(p.meta.lastUpdated),
+      });
     return list;
   }, [data]);
 
   if (loading) return <div className="text-gray-600">Laden…</div>;
-  if (error) return <div className="text-red-600">Fehler beim Laden: {error}</div>;
+  if (error)
+    return <div className="text-red-600">Fehler beim Laden: {error}</div>;
   if (!data) return null;
+
+  // Extract fields for the two-column summary
+  const leftCol = [
+    { label: "Geschlecht", value: genderLabel(data.gender) },
+    { label: "Name", value: nameToString(data.name) },
+    { label: "Geburtsdatum", value: formatDate(data.birthDate) },
+  ];
+
+  function pickIdentifier(includes: string[]): Identifier | undefined {
+    const lowerIncludes = includes.map((s) => s.toLowerCase());
+    return (data.identifier || []).find((i) =>
+      lowerIncludes.some(
+        (s) =>
+          (i.system || "").toLowerCase().includes(s) ||
+          (i.type?.text || "").toLowerCase().includes(s)
+      )
+    );
+  }
+
+  // Prefer identifier[1] for insurance details per spec: identifier[1].assigner.display is Krankenkasse
+  const explicitInsurance = (data.identifier || [])[1];
+  const insuranceId =
+    explicitInsurance ||
+    pickIdentifier([
+      "insurance",
+      "versich",
+      "krankenkasse",
+      "payor",
+      "kvg",
+      "kk",
+    ]);
+  const cardId = pickIdentifier([
+    "card",
+    "karte",
+    "versicherungskarte",
+    "versichertencard",
+  ]);
+
+  const insurerName =
+    insuranceId?.assigner?.display || data.managingOrganization?.display || "";
+  const insuredNumber = insuranceId?.value || "";
+  const cardNumber = cardId?.value || "";
+
+  const rightCol = [
+    { label: "Krankenkasse", value: insurerName },
+    { label: "Versicherten-Nummer", value: insuredNumber },
+    { label: "Versicherungskarten-Nr.", value: cardNumber },
+  ];
 
   return (
     <div>
-      <dl className="divide-y divide-gray-200">
-        {rows.map((r) => (
-          <div key={r.label} className="py-3 grid grid-cols-3 gap-4">
-            <dt className="text-sm text-gray-500">{r.label}</dt>
-            <dd className="text-sm text-gray-900 col-span-2">{r.value || "-"}</dd>
-          </div>
-        ))}
-      </dl>
+      {/* Top: two-column patient summary */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <dl className="divide-y divide-gray-200">
+          {leftCol.map((r) => (
+            <div key={r.label} className="py-2 grid grid-cols-3 gap-4">
+              <dt className="text-sm text-gray-500">{r.label}</dt>
+              <dd className="text-sm text-gray-900 col-span-2">
+                {r.value || "-"}
+              </dd>
+            </div>
+          ))}
+        </dl>
+        <dl className="divide-y divide-gray-200">
+          {rightCol.map((r) => (
+            <div key={r.label} className="py-2 grid grid-cols-3 gap-4">
+              <dt className="text-sm text-gray-500">{r.label}</dt>
+              <dd className="text-sm text-gray-900 col-span-2">
+                {r.value || "-"}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </div>
 
       <details className="mt-6">
         <summary className="cursor-pointer text-sm text-gray-600 hover:text-gray-800">

@@ -24,6 +24,7 @@ export default function OrderClient({ id }: { id: string }) {
   const [selectedTopTab, setSelectedTopTab] = useState<string | null>(null);
   const [allAds, setAllAds] = useState<ActivityDefinition[]>([]);
   const [pageLoading, setPageLoading] = useState<boolean>(true);
+  const [patientLoading, setPatientLoading] = useState<boolean>(true);
   const [categories, setCategories] = useState<ValueSetSummary[]>([]);
   const [categoriesNotice, setCategoriesNotice] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<ValueSetSummary | null>(null);
@@ -76,7 +77,7 @@ export default function OrderClient({ id }: { id: string }) {
     return u;
   }, []);
 
-  // Load ActivityDefinition list for topic=MIBI
+  // Load ActivityDefinition lists for topics MIBI and ROUTINE
   useEffect(() => {
     let cancelled = false;
     setCategoriesNotice(null);
@@ -85,14 +86,29 @@ export default function OrderClient({ id }: { id: string }) {
     async function load() {
       try {
         setPageLoading(true);
-        const json = (await fhirGet("/ActivityDefinition?topic=MIBI")) as ActivityDefinitionSearchBundle;
-        const entries = Array.isArray(json.entry) ? json.entry : [];
-        const ads: ActivityDefinition[] = entries
+        // Fetch both topics; if server supports repeated param OR, split fetches ensures both are covered
+        const mibiJson = (await fhirGet("/ActivityDefinition?topic=MIBI")) as ActivityDefinitionSearchBundle;
+        const routineJson = (await fhirGet("/ActivityDefinition?topic=ROUTINE")) as ActivityDefinitionSearchBundle;
+        const entries = [
+          ...(Array.isArray(mibiJson.entry) ? mibiJson.entry : []),
+          ...(Array.isArray(routineJson.entry) ? routineJson.entry : []),
+        ];
+        const rawAds = entries
           .map((e) => e.resource)
           .filter(
             (r): r is ActivityDefinition =>
               isObject(r) && (r as { resourceType?: unknown }).resourceType === "ActivityDefinition"
           );
+        // Deduplicate by resource id if available
+        const seen = new Set<string>();
+        const ads: ActivityDefinition[] = [];
+        for (const a of rawAds) {
+          const id = (a as unknown as { id?: string }).id || "";
+          const key = id || JSON.stringify((a as unknown as { code?: { coding?: Array<{ system?: string; code?: string }> } }).code?.coding?.[0] || {});
+          if (seen.has(key)) continue;
+          seen.add(key);
+          ads.push(a);
+        }
         const tabsSet = new Set<string>();
         for (const ad of ads) {
           const display = getTopicDisplay(ad);
@@ -100,7 +116,23 @@ export default function OrderClient({ id }: { id: string }) {
         }
         if (!cancelled) {
           setAllAds(ads);
-          const tabs = Array.from(tabsSet);
+          // Build tabs and sort so Mikrobiologie/MIBI first, Routine second
+          const original = Array.from(tabsSet);
+          const score = (t: string) => {
+            const l = t.toLowerCase();
+            if (l === "mibi" || /mikro/i.test(t)) return 0;
+            if (l === "routine") return 1;
+            return 2;
+          };
+          const tabs = original
+            .map((t, i) => ({ t, i }))
+            .sort((a, b) => {
+              const sa = score(a.t);
+              const sb = score(b.t);
+              if (sa !== sb) return sa - sb;
+              return a.i - b.i; // stable within same bucket
+            })
+            .map((x) => x.t);
           setTopTabs(tabs);
         }
       } catch {
@@ -116,9 +148,33 @@ export default function OrderClient({ id }: { id: string }) {
     };
   }, [getTopicDisplay]);
 
-  // Ensure a default top tab is selected once tabs load
+  // Also wait for Patient to load before removing the loading spinner
   useEffect(() => {
-    if (!selectedTopTab && topTabs.length > 0) setSelectedTopTab(topTabs[0]);
+    let active = true;
+    setPatientLoading(true);
+    fetch(`/api/patients/${encodeURIComponent(id)}`)
+      .then(() => {
+        if (active) setPatientLoading(false);
+      })
+      .catch(() => {
+        // Even on error, do not block the UI indefinitely
+        if (active) setPatientLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [id]);
+
+  // Ensure a default top tab is selected once tabs load
+  // Prefer MIBI/Mikrobiologie if present
+  useEffect(() => {
+    if (!selectedTopTab && topTabs.length > 0) {
+      const preferred =
+        topTabs.find((t) => t.toLowerCase() === "mibi") ||
+        topTabs.find((t) => /mikro/i.test(t)) ||
+        topTabs[0];
+      setSelectedTopTab(preferred);
+    }
   }, [topTabs, selectedTopTab]);
 
   // Restore local draft
@@ -480,8 +536,8 @@ export default function OrderClient({ id }: { id: string }) {
 
   return (
     <div className="flex-1 flex flex-col relative">
-      {pageLoading && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70 backdrop-blur-sm">
+      {(pageLoading || patientLoading) && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/70 backdrop-blur-sm">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600" role="status" aria-label="Loading">
             <span className="sr-only">Loading</span>
           </div>

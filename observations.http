@@ -17,3 +17,6 @@
 
 GET https://hapi.fhir.org/baseR4/ActivityDefinition
 Accept: application/fhir+json
+
+
+ROUTINE

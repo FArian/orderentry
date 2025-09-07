@@ -51,9 +51,16 @@ export default function PatientBreadcrumb({ id }: { id: string }) {
           </Link>
         </li>
         <li className="text-gray-400">/</li>
-        <li className="text-gray-700">{label}</li>
+        <li>
+          <Link
+            href={`/patient/${encodeURIComponent(id)}`}
+            className="text-blue-600 hover:underline"
+            aria-label={`Patientendetails öffnen: ${label}`}
+          >
+            {label}
+          </Link>
+        </li>
       </ol>
     </nav>
   );
 }
-
