@@ -11,5 +11,9 @@
 # GET https://hapi.fhir.org/baseR4/ValueSet/$expand?url=http://hl7.org/fhir/ValueSet/allergy-intolerance-category
 
 
-GET https://hapi.fhir.org/baseR4/SpecimenDefinition
+# GET https://hapi.fhir.org/baseR4/SpecimenDefinition
 # Accept: application/fhir+json
+
+
+GET https://hapi.fhir.org/baseR4/ActivityDefinition
+Accept: application/fhir+json

@@ -1,87 +1,29 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { FhirCoding, SpecimenChoice, ValueSetExpansion, ValueSetSummary } from "@/lib/fhir";
-import { fhirGet, fhirPost, FHIR_BASE, fetchActivityAndObservation, ObservationDefinition, ActivityDefinition } from "@/lib/fhir";
+import type { FhirCoding, SpecimenChoice, ValueSetExpansion, ValueSetSummary, ActivityDefinitionSearchBundle } from "@/lib/fhir";
+import { fhirGet, fhirPost, FHIR_BASE, fetchActivityAndObservation, ObservationDefinition, ActivityDefinition, SpecimenDefinition, SpecimenDefinitionSearchBundle } from "@/lib/fhir";
 
-type TabKey = "Allergy" | "Routine lab" | "Microbiology";
-
-const TABS: TabKey[] = ["Allergy", "Routine lab", "Microbiology"];
-
-// removed unused SPECIMENS sample list
-
-// Local static categories and items per main tab
-const LOCAL_VS: Record<TabKey, { summary: ValueSetSummary; items: ValueSetExpansion[] }[]> = {
-  "Allergy": [],
-  "Routine lab": [
-    { summary: { url: "local:routine:haematology", title: "Haematology" }, items: [] },
-    { summary: { url: "local:routine:haemostasis", title: "Haemostasis" }, items: [] },
-    { summary: { url: "local:routine:clinical-chemistry", title: "Clinical chemistry" }, items: [] },
-    { summary: { url: "local:routine:drugs-toxicology", title: "Drugs/Toxicology" }, items: [] },
-    { summary: { url: "local:routine:immunology", title: "Immunology" }, items: [] },
-    { summary: { url: "local:routine:immunohaematology", title: "Immunohaematology" }, items: [] },
-    { summary: { url: "local:routine:infectious-diseases", title: "Infectious diseases" }, items: [] },
-    { summary: { url: "local:routine:punctate-csf", title: "Punctate/cerebrospinal fluid" }, items: [] },
-    { summary: { url: "local:routine:urine", title: "Urine" }, items: [] },
-    { summary: { url: "local:routine:further-analyses", title: "Further analyses" }, items: [] },
-  ],
-  "Microbiology": [
-    { summary: { url: "local:micro:direct-material", title: "Direct material" }, items: [] },
-    { summary: { url: "local:micro:smears", title: "Smears" }, items: [] },
-    { summary: { url: "local:micro:punctate-tissue", title: "Punctate/ Tissue" }, items: [] },
-    { summary: { url: "local:micro:blood-culture", title: "Blood culture" }, items: [] },
-    { summary: { url: "local:micro:foreign-material", title: "Foreign material" }, items: [] },
-  ],
-};
+// removed static tabs and local value sets; categories now come from FHIR ActivityDefinition
 
 // no remote expansion type needed; using local catalog
 
 type BundleEntry = { fullUrl?: string; response?: { location?: string } };
 
-// Type guards and helpers to avoid explicit any
+// Type guard to avoid explicit any
 function isObject(x: unknown): x is Record<string, unknown> {
   return typeof x === "object" && x !== null;
 }
 
-function getEntries(x: unknown): Array<{ resource?: unknown }> {
-  if (isObject(x) && Array.isArray((x as { entry?: unknown }).entry)) {
-    return (x as { entry: Array<{ resource?: unknown }> }).entry;
-  }
-  return [];
-}
 
-type FhirSpecimen = {
-  resourceType: "Specimen";
-  id?: string;
-  type?: { coding?: FhirCoding[]; text?: string };
-};
-function isSpecimen(r: unknown): r is FhirSpecimen {
-  return isObject(r) && (r as { resourceType?: unknown }).resourceType === "Specimen";
-}
 
-type FhirObservation = {
-  resourceType: "Observation";
-  specimen?: { reference?: string };
-  valueQuantity?: { value?: number | string | null; unit?: string; code?: string };
-};
-function isObservation(r: unknown): r is FhirObservation {
-  return isObject(r) && (r as { resourceType?: unknown }).resourceType === "Observation";
-}
-
-type AllergyIntolerance = {
-  id?: string;
-  code?: { coding?: FhirCoding[]; text?: string };
-  category?: string[];
-  criticality?: string;
-  reaction?: Array<{ severity?: string; manifestation?: Array<{ coding?: FhirCoding[]; text?: string }> }>;
-  note?: Array<{ text?: string }>;
-};
-function isAllergyIntolerance(r: unknown): r is AllergyIntolerance {
-  return isObject(r) && (r as { resourceType?: unknown }).resourceType === "AllergyIntolerance";
-}
+// removed AllergyIntolerance helpers; not used in current flow
 
 export default function OrderClient({ id }: { id: string }) {
-  const [selectedTab, setSelectedTab] = useState<TabKey>("Allergy");
+  const [topTabs, setTopTabs] = useState<string[]>([]);
+  const [selectedTopTab, setSelectedTopTab] = useState<string | null>(null);
+  const [allAds, setAllAds] = useState<ActivityDefinition[]>([]);
+  const [pageLoading, setPageLoading] = useState<boolean>(true);
   const [categories, setCategories] = useState<ValueSetSummary[]>([]);
   const [categoriesNotice, setCategoriesNotice] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<ValueSetSummary | null>(null);
@@ -101,8 +43,6 @@ export default function OrderClient({ id }: { id: string }) {
   const [testsLoading, setTestsLoading] = useState(false);
   const [selectedTests, setSelectedTests] = useState<MiddleItem[]>([]);
   const [selectedSpecimens, setSelectedSpecimens] = useState<SpecimenChoice[]>([]);
-  // Cache resolved specimen labels (type display) by reference (e.g., "Specimen/2001")
-  const [specimenLabelCache, setSpecimenLabelCache] = useState<Record<string, string>>({});
   // Track per-analysis material contributions for later subtraction
   const [analysisContribs, setAnalysisContribs] = useState<Record<string, Array<{ specimenRef: string; num?: number; unit?: string; label: string }>>>({});
 
@@ -116,64 +56,57 @@ export default function OrderClient({ id }: { id: string }) {
 
   // Cache for ActivityDefinition/ObservationDefinition by coding key
   const [infoOpen, setInfoOpen] = useState<Record<string, boolean>>({});
-  const [infoCache, setInfoCache] = useState<Record<string, { ad?: ActivityDefinition; od?: ObservationDefinition }>>({});
+  const [infoCache, setInfoCache] = useState<Record<string, { ad?: ActivityDefinition; od?: ObservationDefinition; sd?: SpecimenDefinition; minVol?: { value?: number; unit?: string; code?: string } }>>({});
   const [infoLoading, setInfoLoading] = useState<Record<string, boolean>>({});
 
   const catDebounce = useRef<number | undefined>(undefined);
   const testDebounce = useRef<number | undefined>(undefined);
 
-  // Load or switch categories when tab changes
+  // Helper: extract topic coding display from ActivityDefinition
+  const getTopicDisplay = useCallback((ad: ActivityDefinition): string | undefined => {
+    const t = ad.topic;
+    if (Array.isArray(t)) return t[0]?.coding?.[0]?.display;
+    return t?.coding?.[0]?.display;
+  }, []);
+
+  // Normalize unit strings to avoid duplicate material entries due to unit variants
+  const normalizeUnit = useCallback((u?: string): string | undefined => {
+    if (!u) return u;
+    if (u.toLowerCase() === 'ul') return 'µl';
+    return u;
+  }, []);
+
+  // Load ActivityDefinition list for topic=MIBI
   useEffect(() => {
     let cancelled = false;
     setCategoriesNotice(null);
     setSelectedCategory(null);
 
     async function load() {
-      if (selectedTab === "Allergy") {
-        try {
-          const json = await fhirGet(
-            "/ValueSet/$expand?url=" +
-              encodeURIComponent("http://hl7.org/fhir/ValueSet/allergy-intolerance-category")
+      try {
+        setPageLoading(true);
+        const json = (await fhirGet("/ActivityDefinition?topic=MIBI")) as ActivityDefinitionSearchBundle;
+        const entries = Array.isArray(json.entry) ? json.entry : [];
+        const ads: ActivityDefinition[] = entries
+          .map((e) => e.resource)
+          .filter(
+            (r): r is ActivityDefinition =>
+              isObject(r) && (r as { resourceType?: unknown }).resourceType === "ActivityDefinition"
           );
-          const contains = ((): Array<{ code?: string; display?: string }> => {
-            if (
-              isObject(json) &&
-              isObject((json as { expansion?: unknown }).expansion) &&
-              Array.isArray(
-                ((json as { expansion: { contains?: unknown } }).expansion).contains
-              )
-            ) {
-              return (
-                (json as { expansion: { contains: Array<{ code?: string; display?: string }> } })
-                  .expansion.contains
-              );
-            }
-            return [];
-          })();
-          const list: ValueSetSummary[] = contains.map(
-            (c) => ({
-              url: `fhir:allergy-category:${c.code || "unknown"}`,
-              name: c.code,
-              title: c.display || c.code || "Unknown",
-            })
-          );
-          if (!cancelled) {
-            setCategories(list);
-          }
-          return;
-        } catch {
-          if (!cancelled) setCategoriesNotice("Failed to load categories");
+        const tabsSet = new Set<string>();
+        for (const ad of ads) {
+          const display = getTopicDisplay(ad);
+          if (display) tabsSet.add(display);
         }
-      }
-
-      const local = LOCAL_VS[selectedTab] || [];
-      if (!cancelled) {
-        if (local.length > 0) {
-          setCategories(local.map((m) => m.summary));
-        } else {
-          setCategories([]);
-          setCategoriesNotice("No categories available for this tab.");
+        if (!cancelled) {
+          setAllAds(ads);
+          const tabs = Array.from(tabsSet);
+          setTopTabs(tabs);
         }
+      } catch {
+        if (!cancelled) setCategoriesNotice("Failed to load categories");
+      } finally {
+        if (!cancelled) setPageLoading(false);
       }
     }
 
@@ -181,7 +114,12 @@ export default function OrderClient({ id }: { id: string }) {
     return () => {
       cancelled = true;
     };
-  }, [selectedTab]);
+  }, [getTopicDisplay]);
+
+  // Ensure a default top tab is selected once tabs load
+  useEffect(() => {
+    if (!selectedTopTab && topTabs.length > 0) setSelectedTopTab(topTabs[0]);
+  }, [topTabs, selectedTopTab]);
 
   // Restore local draft
   useEffect(() => {
@@ -199,13 +137,36 @@ export default function OrderClient({ id }: { id: string }) {
   const filteredCategories = useMemo(() => {
     const q = catQuery.trim().toLowerCase();
     return categories.filter((c) => {
-      // Local filter by tab is intentionally shallow; keep all for now
       const label = (c.title || c.name || c.url).toLowerCase();
       return !q || label.includes(q);
     });
   }, [categories, catQuery]);
 
-  // Auto-expand first category once categories are loaded
+  // Build subcategories (descriptions) when top tab or ad list changes
+  useEffect(() => {
+    const current = selectedTopTab;
+    if (!current) {
+      setCategories([]);
+      setCategoriesNotice("No categories available for this tab.");
+      return;
+    }
+    const seen = new Set<string>();
+    const list: ValueSetSummary[] = [];
+    for (const ad of allAds) {
+      const tdisp = getTopicDisplay(ad);
+      if (tdisp !== current) continue;
+      const desc = ad.description?.trim();
+      if (!desc) continue;
+      if (seen.has(desc)) continue;
+      seen.add(desc);
+      list.push({ url: `fhir:subcategory:${encodeURIComponent(desc)}`, title: desc });
+    }
+    setCategories(list);
+    setCategoriesNotice(list.length === 0 ? "No categories available for this tab." : null);
+    setSelectedCategory(null);
+  }, [allAds, selectedTopTab, getTopicDisplay]);
+
+  // Auto-select first category once categories are loaded
   useEffect(() => {
     if (!selectedCategory && categories.length > 0) {
       expandCategory(categories[0]);
@@ -228,52 +189,39 @@ export default function OrderClient({ id }: { id: string }) {
 
   const [materialsFromAnalyses, setMaterialsFromAnalyses] = useState<Record<string, { label: string; value?: string }>>({});
 
-  const fetchMaterialsForAnalysis = useCallback(async (t: MiddleItem) => {
-    try {
-      const token = t.system && t.code ? `${t.system}|${t.code}` : t.code;
-      const qs = new URLSearchParams();
-      if (token) qs.set("code", token);
-      qs.set("category", "laboratory");
-      qs.set("subject", `Patient/${id}`);
-      // Include linked Specimen to avoid extra round trips and trim Observation fields
-      qs.set("_include", "Observation:specimen");
-      qs.set("_elements", "id,code,specimen,valueQuantity");
-      const bundle = await fhirGet(`/Observation?${qs.toString()}`);
-      const entries = getEntries(bundle);
-      const specimenDisplays: Record<string, string> = {};
-      for (const e of entries) {
-        const r = e?.resource;
-        if (isSpecimen(r)) {
-          const ref = r.id ? `Specimen/${r.id}` : undefined;
-          const disp = r.type?.coding?.[0]?.display || r.type?.text || ref || "Specimen";
-          if (ref) specimenDisplays[ref] = disp;
-        }
+  // Build material volume item from current ActivityDefinition (no extra API calls)
+  const getMinimalVolumeItems = useCallback(
+    (t: MiddleItem): Array<{ specimenRef: string; num?: number; unit?: string; label: string }> => {
+      const items: Array<{ specimenRef: string; num?: number; unit?: string; label: string }> = [];
+      const currentTab = selectedTopTab || "";
+      const currentSub = (selectedCategory?.title || selectedCategory?.name || "").trim();
+      for (const ad of allAds) {
+        const tdisp = getTopicDisplay(ad);
+        if (tdisp !== currentTab) continue;
+        if ((ad.description || "").trim() !== currentSub) continue;
+        const coding = ad.code?.coding?.[0];
+        if (!coding || coding.system !== t.system || coding.code !== t.code) continue;
+        const volExt = Array.isArray(ad.extension)
+          ? ad.extension.find((ex) => (ex as { url?: string }).url ===
+              "https://www.zetlab.ch/fhir/StructureDefinition/minimal-volume-microliter")
+          : undefined;
+        const vq = (volExt as unknown as { valueQuantity?: { value?: number; unit?: string; code?: string } })?.valueQuantity;
+        const value = vq?.value;
+        const unit = normalizeUnit(vq?.unit || vq?.code);
+        const specExt = Array.isArray(ad.extension)
+          ? ad.extension.find((ex) => (ex as { url?: string }).url ===
+              "https://www.zetlab.ch/StructureDefinition/specimen-definition")
+          : undefined;
+        const specId = (specExt as unknown as { valueReference?: { identifier?: { value?: string } } })?.valueReference?.identifier?.value;
+        const specimenRef = specId ? `kind:${specId}` : `kind:unknown`;
+        const label = specId ? `Specimen ${specId}` : "Material";
+        if (value !== undefined) items.push({ specimenRef, num: value, unit, label });
+        break; // only the matching AD is needed
       }
-      if (Object.keys(specimenDisplays).length) {
-        setSpecimenLabelCache((prev) => ({ ...prev, ...specimenDisplays }));
-      }
-      const out: Array<{ specimenRef: string; num?: number; unit?: string; label: string }> = [];
-      for (const e of entries) {
-        const r = e?.resource;
-        if (!isObservation(r)) continue;
-        const specimenRef: string | undefined = r.specimen?.reference;
-        const valueQ = r.valueQuantity;
-        let num: number | undefined;
-        let unit: string | undefined;
-        if (valueQ && (valueQ.value !== undefined && valueQ.value !== null)) {
-          num = Number(valueQ.value);
-          unit = valueQ.unit || valueQ.code || undefined;
-        }
-        if (specimenRef) {
-          const label = specimenDisplays[specimenRef] || specimenLabelCache[specimenRef] || specimenRef;
-          out.push({ specimenRef, num, unit, label });
-        }
-      }
-      return out;
-    } catch {
-      return [];
-    }
-  }, [id, specimenLabelCache]);
+      return items;
+    },
+    [allAds, getTopicDisplay, selectedTopTab, selectedCategory, normalizeUnit]
+  );
 
   const toggleTest = useCallback((t: MiddleItem) => {
     const existsNow = selectedTests.some((x) => x.system === t.system && x.code === t.code);
@@ -285,12 +233,8 @@ export default function OrderClient({ id }: { id: string }) {
     });
 
     if (!existsNow) {
-      // Log the full selected analysis object for debugging/inspection
-      // Includes system, code, display, and any attached specimen/value
-      console.log("Selected analysis:", t);
-      // Load materials via Observation by analysis code (value + unit, specimen ref)
-      fetchMaterialsForAnalysis(t).then((items) => {
-        if (!items || items.length === 0) return;
+      const items = getMinimalVolumeItems(t);
+      if (items.length > 0) {
         const key = `${t.system}|${t.code}`;
         setAnalysisContribs((prev) => ({ ...prev, [key]: items }));
         setMaterialsFromAnalyses((prev) => {
@@ -301,7 +245,7 @@ export default function OrderClient({ id }: { id: string }) {
             if (it.num !== undefined) {
               const curNum = current?.value ? Number(current.value.split(' ')[0]) : 0;
               const curUnit = current?.value ? current.value.split(' ').slice(1).join(' ') : undefined;
-              const unit = it.unit || curUnit;
+              const unit = normalizeUnit(it.unit || curUnit);
               const sum = (curNum || 0) + (Number(it.num) || 0);
               next[aggKey] = { label: it.label, value: `${sum}${unit ? ` ${unit}` : ''}` };
             } else {
@@ -310,7 +254,7 @@ export default function OrderClient({ id }: { id: string }) {
           }
           return next;
         });
-      });
+      }
     }
 
     // If removing, clear materials derived from this analysis code
@@ -342,7 +286,7 @@ export default function OrderClient({ id }: { id: string }) {
         return next;
       });
     }
-  }, [selectedTests, fetchMaterialsForAnalysis, analysisContribs]);
+  }, [selectedTests, getMinimalVolumeItems, analysisContribs, normalizeUnit]);
 
   const toggleInfo = useCallback(async (t: ValueSetExpansion) => {
     const key = `${t.system}|${t.code}`;
@@ -351,7 +295,29 @@ export default function OrderClient({ id }: { id: string }) {
     try {
       setInfoLoading((p) => ({ ...p, [key]: true }));
       const { activity, observation } = await fetchActivityAndObservation(t.system, t.code);
-      setInfoCache((p) => ({ ...p, [key]: { ad: activity, od: observation } }));
+      // Minimal volume (uL) from ActivityDefinition.extension
+      let minVol: { value?: number; unit?: string; code?: string } | undefined;
+      if (activity && Array.isArray(activity.extension)) {
+        const volExt = activity.extension.find((ex) => ex && (ex as { url?: string }).url === "https://www.zetlab.ch/fhir/StructureDefinition/minimal-volume-microliter");
+        const vq = (volExt as unknown as { valueQuantity?: { value?: number; unit?: string; code?: string } })?.valueQuantity;
+        if (vq) minVol = { value: vq.value, unit: vq.unit, code: vq.code };
+      }
+      let sd: SpecimenDefinition | undefined = undefined;
+      // Try to resolve SpecimenDefinition via ActivityDefinition.extension valueReference.identifier
+      if (activity && Array.isArray(activity.extension)) {
+        const specExt = activity.extension.find((ex) => ex && (ex as { url?: string }).url === "https://www.zetlab.ch/StructureDefinition/specimen-definition");
+        const idVal = (specExt as unknown as { valueReference?: { identifier?: { value?: string } } })?.valueReference?.identifier?.value;
+        if (idVal) {
+          try {
+            const bundle = (await fhirGet(`/SpecimenDefinition?identifier=${encodeURIComponent(idVal)}`)) as SpecimenDefinitionSearchBundle;
+            const entry = Array.isArray(bundle.entry) ? bundle.entry.find((e) => e.resource && (e.resource as { resourceType?: string }).resourceType === "SpecimenDefinition") : undefined;
+            if (entry && entry.resource) sd = entry.resource as SpecimenDefinition;
+          } catch {
+            // ignore specimen errors
+          }
+        }
+      }
+      setInfoCache((p) => ({ ...p, [key]: { ad: activity, od: observation, sd, minVol } }));
     } catch {
       // swallow errors; UI remains minimal
     } finally {
@@ -364,95 +330,37 @@ export default function OrderClient({ id }: { id: string }) {
   const canSubmit = selectedTests.length > 0 && selectedSpecimens.length > 0 && !submitting;
 
   // Expand a ValueSet when selected
-  const expandCategory = useCallback(
-    async (vs: ValueSetSummary) => {
-      setSelectedCategory(vs);
-      setAvailableTests([]);
-      setTestQuery("");
-      setTestsLoading(true);
-      // Use local items when present for the current tab
-      const local = (LOCAL_VS[selectedTab] || []).find(
-        (m) => m.summary.url === vs.url
-      );
-      if (local) {
-        setAvailableTests(local.items);
-        setTestsLoading(false);
-        return;
+  const expandCategory = useCallback(async (vs: ValueSetSummary) => {
+    setSelectedCategory(vs);
+    setAvailableTests([]);
+    setTestQuery("");
+    setTestsLoading(true);
+    try {
+      const current = selectedTopTab || "";
+      const subcat = (vs.title || vs.name || "").trim();
+      const list: MiddleItem[] = [];
+      const seen = new Set<string>();
+      for (const ad of allAds) {
+        // Filter by selected top tab (topic display) and subcategory (description)
+        const tdisp = getTopicDisplay(ad);
+        if (tdisp !== current) continue;
+        if ((ad.description || "").trim() !== subcat) continue;
+        const coding = ad.code?.coding?.[0];
+        if (!coding || !coding.system || !coding.code) continue;
+        const key = `${coding.system}|${coding.code}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        list.push({
+          system: coding.system,
+          code: coding.code,
+          display: ad.subtitle || coding.display || coding.code,
+        });
       }
-      // For Allergy, fetch AllergyIntolerance list filtered by category and optional codes
-      if (selectedTab === "Allergy") {
-        try {
-          const categoryCode = vs.name || vs.url.split(":").pop() || ""; // e.g., food | medication | environment | biologic
-          // Placeholder mapping for additional code filters per category.
-          // Replace values as you provide specific code lists.
-          const codeFilters: Record<string, string> = {
-            environment: "256259004,418689008", // example provided
-          };
-          const qs = new URLSearchParams();
-          if (categoryCode) qs.set("category", categoryCode);
-          const codes = codeFilters[categoryCode];
-          if (codes) qs.set("code", codes);
-          const path = `/AllergyIntolerance?${qs.toString()}`;
-          const json = await fhirGet(path);
-          const entries = getEntries(json);
-          const list: MiddleItem[] = [];
-          const seen = new Set<string>();
-          for (const e of entries) {
-            const r = e?.resource;
-            if (!isAllergyIntolerance(r)) continue;
-            const coding = r.code?.coding?.[0];
-            const sys = coding?.system || "";
-            const code = coding?.code || "";
-            const display = coding?.display || r.code?.text || "Allergen";
-            if (!sys || !code) continue;
-            const key = `${sys}|${code}`;
-            if (seen.has(key)) continue;
-            seen.add(key);
-            // Extract useful AllergyIntolerance details for inline display
-            const categories: string[] = Array.isArray(r.category) ? r.category : [];
-            const criticality: string | undefined = r.criticality;
-            const reactions: string[] = Array.isArray(r.reaction)
-              ? r.reaction
-                  .flatMap((rx) =>
-                    Array.isArray(rx?.manifestation)
-                      ? rx.manifestation
-                          .map((m) => m?.coding?.[0]?.display || m?.text || m?.coding?.[0]?.code)
-                          .filter((v): v is string => typeof v === "string")
-                      : []
-                  )
-              : [];
-            const severity: string | undefined = r.reaction?.[0]?.severity;
-            const notes: string[] = Array.isArray(r.note)
-              ? r.note
-                  .map((n) => n?.text)
-                  .filter((v): v is string => typeof v === "string")
-              : [];
-            list.push({
-              system: sys,
-              code,
-              display,
-              resourceId: r.id,
-              categories,
-              criticality,
-              reactions,
-              severity,
-              notes,
-            });
-          }
-          setAvailableTests(list);
-          setTestsLoading(false);
-          return;
-        } catch {
-          // swallow errors; keep empty
-          setTestsLoading(false);
-        }
-      }
-      // Default: keep empty
-      setAvailableTests([]);
+      setAvailableTests(list);
+    } finally {
       setTestsLoading(false);
-    },
-    [selectedTab]
-  );
+    }
+  }, [allAds, selectedTopTab, getTopicDisplay]);
 
   // Save local draft
   const saveDraft = useCallback(() => {
@@ -571,22 +479,32 @@ export default function OrderClient({ id }: { id: string }) {
   }, [canSubmit, id, selectedSpecimens, selectedTests]);
 
   return (
-    <div className="flex-1 flex flex-col">
+    <div className="flex-1 flex flex-col relative">
+      {pageLoading && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70 backdrop-blur-sm">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600" role="status" aria-label="Loading">
+            <span className="sr-only">Loading</span>
+          </div>
+        </div>
+      )}
       {/* Tabs */}
       <div className="border-b bg-white">
         <div className="mx-auto max-w-7xl px-4">
-          <div className="flex gap-6">
-            {TABS.map((t) => (
+          <div className="flex gap-6 items-center">
+            {topTabs.map((t) => (
               <button
                 key={t}
-                onClick={() => setSelectedTab(t)}
+                onClick={() => setSelectedTopTab(t)}
                 className={`py-3 text-sm ${
-                  t === selectedTab ? "border-b-2 border-blue-600 text-blue-700" : "text-gray-600 hover:text-gray-800"
+                  t === selectedTopTab ? "border-b-2 border-blue-600 text-blue-700" : "text-gray-600 hover:text-gray-800"
                 }`}
               >
                 {t}
               </button>
             ))}
+            {topTabs.length === 0 && (
+              <div className="py-3 text-sm text-gray-500">Keine Kategorien</div>
+            )}
             <div className="ml-auto text-xs text-gray-400">FHIR: {FHIR_BASE.replace(/^https?:\/\//, "")}</div>
           </div>
         </div>
@@ -717,6 +635,23 @@ export default function OrderClient({ id }: { id: string }) {
                             </div>
                           ) : (
                             <div className="text-gray-500">Keine ObservationDefinition gefunden.</div>
+                          )}
+                          {details?.sd && (
+                            <div className="mt-2 space-y-1">
+                              <div><span className="font-medium">Material:</span> {details.sd.typeCollected?.text || details.sd.typeCollected?.coding?.[0]?.display}</div>
+                              {Array.isArray(details.sd.container) && details.sd.container[0]?.description && (
+                                <div>
+                                  <span className="font-medium">Behälter:</span>
+                                  <span className="ml-1">{details.sd.container[0]?.description}</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {details?.minVol && (details.minVol.value !== undefined) && (
+                            <div className="mt-1">
+                              <span className="font-medium">Mindestvolumen:</span>
+                              <span className="ml-1">{details.minVol.value}{details.minVol.unit ? ` ${details.minVol.unit}` : details.minVol.code ? ` ${details.minVol.code}` : ''}</span>
+                            </div>
                           )}
                         </div>
                       )}

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { FHIR_BASE } from "@/lib/fhir";
 
 interface PatientOut {
   id: string;
@@ -37,7 +38,6 @@ type FhirBundle = {
   entry?: Array<{ resource?: FhirPatient }>;
 };
 
-const FHIR_BASE = "https://hapi.fhir.org/baseR4";
 
 function nameToString(n?: FhirHumanName[]): string {
   if (!n || n.length === 0) return "Unknown";

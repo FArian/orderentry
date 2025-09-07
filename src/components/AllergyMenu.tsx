@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { fhirGet } from '@/lib/fhir';
 
 interface Category {
   code: string;
@@ -47,11 +48,9 @@ export default function AllergyMenu() {
     async function fetchCategories() {
       try {
         setCatLoading(true);
-        const res = await fetch(
-          'https://hapi.fhir.org/baseR4/ValueSet/$expand?url=http://hl7.org/fhir/ValueSet/allergy-intolerance-category'
-        );
-        if (!res.ok) throw new Error(res.statusText);
-        const data = await res.json();
+        const data = (await fhirGet(
+          '/ValueSet/$expand?url=http://hl7.org/fhir/ValueSet/allergy-intolerance-category'
+        )) as { expansion?: { contains?: Array<{ code: string; display: string }> } };
         const fetched = (data.expansion?.contains || []).map(
           (item: { code: string; display: string }) => ({
             code: item.code,
@@ -76,11 +75,9 @@ export default function AllergyMenu() {
     setLoading((prev) => ({ ...prev, [key]: true }));
     setError((prev) => ({ ...prev, [key]: '' }));
     try {
-      const res = await fetch(
-        `https://hapi.fhir.org/baseR4/AllergyIntolerance?category=${categoryCode}`
-      );
-      if (!res.ok) throw new Error(res.statusText);
-      const data = await res.json();
+      const data = (await fhirGet(
+        `/AllergyIntolerance?category=${categoryCode}`
+      )) as { entry?: Array<{ resource: AllergyIntolerance }> };
       const arr = (data.entry || []).map(
         (e: { resource: AllergyIntolerance }) => e.resource
       );
@@ -158,4 +155,3 @@ export default function AllergyMenu() {
     </div>
   );
 }
-

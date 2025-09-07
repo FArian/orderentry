@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-
-const FHIR_BASE = "https://hapi.fhir.org/baseR4";
+import { FHIR_BASE } from "@/lib/fhir";
 
 export async function GET(
   _request: Request,

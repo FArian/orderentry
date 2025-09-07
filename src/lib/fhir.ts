@@ -5,10 +5,33 @@ export type SpecimenChoice = { code: FhirCoding; label: string; id: string };
 export type ActivityDefinition = {
   resourceType: "ActivityDefinition";
   id?: string;
+  url?: string;
+  identifier?: Array<{ system?: string; value?: string }>;
   name?: string;
   title?: string;
+  subtitle?: string;
+  status?: string;
+  description?: string;
+  /**
+   * Server may return a single topic or an array; coding.display is what we render in tabs.
+   */
+  topic?:
+    | { coding?: FhirCoding[]; text?: string }
+    | Array<{ coding?: FhirCoding[]; text?: string }>;
   kind?: string;
   code?: { coding?: FhirCoding[] };
+  /** Minimal extension typing for values used in UI */
+  extension?: Array<
+    | {
+        url: string;
+        valueQuantity?: { value?: number; unit?: string; system?: string; code?: string };
+      }
+    | {
+        url: string;
+        valueReference?: { identifier?: { system?: string; value?: string } };
+      }
+  >;
+  location?: { identifier?: { system?: string; value?: string } };
   observationResultRequirement?: Array<{ reference?: string; display?: string }>;
   contained?: unknown[];
 };
@@ -22,9 +45,22 @@ export type ObservationDefinition = {
   quantitativeDetails?: { unit?: { coding?: FhirCoding[]; text?: string } };
 };
 
-export const FHIR_BASE: string =
-  (typeof process !== "undefined" && process.env.NEXT_PUBLIC_FHIR_BASE) ||
-  "https://hapi.fhir.org/baseR4";
+export type SpecimenDefinition = {
+  resourceType: "SpecimenDefinition";
+  id?: string;
+  typeCollected?: { text?: string; coding?: FhirCoding[] };
+  container?: Array<{
+    description?: string;
+    capacity?: { value?: number; unit?: string; code?: string; system?: string };
+    additive?: Array<{ additiveCodeableConcept?: { coding?: FhirCoding[]; text?: string } }>;
+  }>;
+};
+
+export type SpecimenDefinitionSearchBundle = FhirBundle<SpecimenDefinition>;
+
+import { fhirBase } from "@/config";
+
+export const FHIR_BASE: string = fhirBase;
 
 export async function handleResponse(res: Response): Promise<unknown | string> {
   if (!res.ok) {
@@ -65,7 +101,25 @@ export async function fhirPost(path: string, body: Record<string, unknown>, init
   return handleResponse(res);
 }
 
-export type FhirBundle<T = unknown> = { resourceType: "Bundle"; entry?: Array<{ resource?: T }> };
+export type FhirMeta = { lastUpdated?: string; versionId?: string };
+export type FhirBundleLink = { relation?: string; url?: string };
+export type FhirBundleEntry<T = unknown> = {
+  fullUrl?: string;
+  resource?: T;
+  search?: { mode?: string };
+};
+export type FhirBundle<T = unknown> = {
+  resourceType: "Bundle";
+  id?: string;
+  meta?: FhirMeta;
+  type?: string;
+  total?: number;
+  link?: FhirBundleLink[];
+  entry?: Array<FhirBundleEntry<T>>;
+};
+
+/** Specific type for ActivityDefinition search bundle response */
+export type ActivityDefinitionSearchBundle = FhirBundle<ActivityDefinition>;
 
 export function isBundle(r: unknown): r is FhirBundle<unknown> {
   return (
