@@ -219,15 +219,16 @@ export default function PatientDetailClient({ id }: { id: string }) {
   if (!data) return null;
 
   // Extract fields for the two-column summary
+  const p = data as Patient;
   const leftCol = [
-    { label: "Geschlecht", value: genderLabel(data.gender) },
-    { label: "Name", value: nameToString(data.name) },
-    { label: "Geburtsdatum", value: formatDate(data.birthDate) },
+    { label: "Geschlecht", value: genderLabel(p.gender) },
+    { label: "Name", value: nameToString(p.name) },
+    { label: "Geburtsdatum", value: formatDate(p.birthDate) },
   ];
 
   function pickIdentifier(includes: string[]): Identifier | undefined {
     const lowerIncludes = includes.map((s) => s.toLowerCase());
-    return (data.identifier || []).find((i) =>
+    return (p.identifier || []).find((i) =>
       lowerIncludes.some(
         (s) =>
           (i.system || "").toLowerCase().includes(s) ||
@@ -237,7 +238,7 @@ export default function PatientDetailClient({ id }: { id: string }) {
   }
 
   // Prefer identifier[1] for insurance details per spec: identifier[1].assigner.display is Krankenkasse
-  const explicitInsurance = (data.identifier || [])[1];
+  const explicitInsurance = (p.identifier || [])[1];
   const insuranceId =
     explicitInsurance ||
     pickIdentifier([
