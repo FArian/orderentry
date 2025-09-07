@@ -7,8 +7,8 @@ based on FHIR master data (`ActivityDefinition`, `SpecimenDefinition`, `Observat
 
 ## Configuration
 
-- Set `NEXT_PUBLIC_FHIR_BASE` in your environment (e.g. `.env.local`).
-- Example: `NEXT_PUBLIC_FHIR_BASE=https://jwefxdpeebldi4q2.myfritz.net:9443/fhir`
+- Set the FHIR base URL in `src/config.ts` via `fhirBase`.
+- Default: `https://jwefxdpeebldi4q2.myfritz.net:9443/fhir` (edit as needed).
 
 ## 🇬🇧 English Version
 

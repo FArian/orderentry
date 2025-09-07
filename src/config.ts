@@ -1,4 +1,1 @@
-export const fhirBase: string =
-  (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_FHIR_BASE) ||
-  'https://hapi.fhir.org/baseR4';
-
+export const fhirBase: string = 'https://jwefxdpeebldi4q2.myfritz.net:9443/fhir';
