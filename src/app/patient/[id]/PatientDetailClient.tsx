@@ -263,8 +263,8 @@ export default function PatientDetailClient({ id }: { id: string }) {
 
   const rightCol = [
     { label: "Krankenkasse", value: insurerName },
-    { label: "Versicherten-Nummer", value: insuredNumber },
-    { label: "Versicherungskarten-Nr.", value: cardNumber },
+    { label: "Versicherten-Nummer", value: "" },
+    { label: "Versicherungskarten-Nr.", value: insuredNumber },
   ];
 
   return (
