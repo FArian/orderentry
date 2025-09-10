@@ -77,7 +77,7 @@ export default function OrderClient({ id }: { id: string }) {
     return u;
   }, []);
 
-  // Load ActivityDefinition lists for topics MIBI and ROUTINE
+  // Load ActivityDefinitions once (no topic filter) and build tabs from response topics
   useEffect(() => {
     let cancelled = false;
     setCategoriesNotice(null);
@@ -86,13 +86,9 @@ export default function OrderClient({ id }: { id: string }) {
     async function load() {
       try {
         setPageLoading(true);
-        // Fetch both topics; if server supports repeated param OR, split fetches ensures both are covered
-        const mibiJson = (await fhirGet("/ActivityDefinition?topic=MIBI")) as ActivityDefinitionSearchBundle;
-        const routineJson = (await fhirGet("/ActivityDefinition?topic=ROUTINE")) as ActivityDefinitionSearchBundle;
-        const entries = [
-          ...(Array.isArray(mibiJson.entry) ? mibiJson.entry : []),
-          ...(Array.isArray(routineJson.entry) ? routineJson.entry : []),
-        ];
+        // Single call without topic param; categories (tabs) derive from ActivityDefinition.topic
+        const bundle = (await fhirGet("/ActivityDefinition")) as ActivityDefinitionSearchBundle;
+        const entries = Array.isArray(bundle.entry) ? bundle.entry : [];
         const rawAds = entries
           .map((e) => e.resource)
           .filter(

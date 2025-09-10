@@ -220,10 +220,12 @@ export default function PatientDetailClient({ id }: { id: string }) {
 
   // Extract fields for the two-column summary
   const p = data as Patient;
+  const ahvNumber = (p.identifier && p.identifier.length > 0 && p.identifier[0]?.value) || "";
   const leftCol = [
     { label: "Geschlecht", value: genderLabel(p.gender) },
     { label: "Name", value: nameToString(p.name) },
     { label: "Geburtsdatum", value: formatDate(p.birthDate) },
+    { label: "AHV Nummer", value: ahvNumber },
   ];
 
   function pickIdentifier(includes: string[]): Identifier | undefined {
@@ -263,7 +265,6 @@ export default function PatientDetailClient({ id }: { id: string }) {
 
   const rightCol = [
     { label: "Krankenkasse", value: insurerName },
-    { label: "Versicherten-Nummer", value: "" },
     { label: "Versicherungskarten-Nr.", value: insuredNumber },
   ];
 
