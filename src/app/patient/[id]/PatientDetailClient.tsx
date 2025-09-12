@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 // Minimal FHIR Patient typing for fields we display
 type HumanName = {
+  use?: string;
   text?: string;
   given?: string[];
   family?: string;
@@ -11,6 +12,8 @@ type HumanName = {
   suffix?: string[];
 };
 type Address = {
+  use?: string;
+  type?: string;
   text?: string;
   line?: string[];
   city?: string;
@@ -22,6 +25,7 @@ type Coding = { display?: string };
 type CodeableConcept = { text?: string; coding?: Coding[] };
 type Telecom = { system?: string; value?: string; use?: string };
 type Identifier = {
+  use?: string;
   system?: string;
   value?: string;
   assigner?: { display?: string };
@@ -41,7 +45,7 @@ type Patient = {
   deceasedBoolean?: boolean;
   deceasedDateTime?: string;
   managingOrganization?: { display?: string; reference?: string };
-  meta?: { lastUpdated?: string };
+  meta?: { lastUpdated?: string; versionId?: string };
 };
 
 function formatDate(date?: string): string {
@@ -226,6 +230,7 @@ export default function PatientDetailClient({ id }: { id: string }) {
     { label: "Name", value: nameToString(p.name) },
     { label: "Geburtsdatum", value: formatDate(p.birthDate) },
     { label: "AHV Nummer", value: ahvNumber },
+    { label: "Adresse", value: addressToString(p.address) },
   ];
 
   function pickIdentifier(includes: string[]): Identifier | undefined {

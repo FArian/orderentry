@@ -9,12 +9,15 @@ interface PatientOut {
 }
 
 type FhirHumanName = {
+  use?: string;
   text?: string;
   given?: string[];
   family?: string;
 };
 
 type FhirAddress = {
+  use?: string;
+  type?: string;
   text?: string;
   line?: string[];
   city?: string;
@@ -29,7 +32,7 @@ type FhirPatient = {
   name?: FhirHumanName[];
   address?: FhirAddress[];
   birthDate?: string;
-  meta?: { lastUpdated?: string };
+  meta?: { lastUpdated?: string; versionId?: string };
 };
 
 type FhirBundle = {
