@@ -674,9 +674,9 @@ export default function OrderClient({ id }: { id: string }) {
               } as SpecimenChoice;
             });
 
-      // Build Specimen entries with deterministic ids: spec-<ORD>_<SPECID>
+      // Build Specimen entries with deterministic ids: spec-<ORD>-<SPECID>
       const specimenEntries = specimensSource.map((s) => {
-        const specId = `spec-${orderNumber}_${s.id}`;
+        const specId = `spec-${orderNumber}-${s.id}`;
         return {
           resource: {
             resourceType: "Specimen",
@@ -721,7 +721,7 @@ export default function OrderClient({ id }: { id: string }) {
                 : `${selectedTests.length} Untersuchungen`,
           },
           specimen: specimensSource.map((s) => ({
-            reference: `Specimen/spec-${orderNumber}_${s.id}`,
+            reference: `Specimen/spec-${orderNumber}-${s.id}`,
             identifier: {
               system: "https://zetlab.ch/fhir/specimen",
               value: s.id,
