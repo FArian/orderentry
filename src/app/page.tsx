@@ -14,12 +14,12 @@ export default function Home() {
         >
           Anfordern
         </Link>
-        <button
-          type="button"
+        <Link
+          href="/orders"
           className="inline-flex items-center justify-center rounded-md bg-gray-100 px-6 py-3 text-gray-900 shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400"
         >
           Aufträge
-        </button>
+        </Link>
       </div>
     </main>
   );
