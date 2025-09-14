@@ -1,6 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import {
+  DataTable,
+  DataTableHead,
+  DataTableHeadRow,
+  DataTableHeaderCell,
+  DataTableBody,
+  DataTableRow,
+  DataTableCell,
+} from "@/components/Table";
 
 // Minimal FHIR Patient typing for fields we display
 type HumanName = {
@@ -136,6 +145,19 @@ export default function PatientDetailClient({ id }: { id: string }) {
   const [data, setData] = useState<Patient | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [orders, setOrders] = useState<
+    Array<{
+      id: string;
+      status: string;
+      intent: string;
+      codeText: string;
+      authoredOn: string;
+      orderNumber: string;
+      specimenCount: number;
+    }>
+  >([]);
+  const [ordersLoading, setOrdersLoading] = useState(true);
+  const [ordersError, setOrdersError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -155,6 +177,42 @@ export default function PatientDetailClient({ id }: { id: string }) {
       })
       .finally(() => {
         if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [id]);
+
+  // Load ServiceRequests (orders) for the patient
+  useEffect(() => {
+    let active = true;
+    setOrdersLoading(true);
+    setOrdersError(null);
+    setOrders([]);
+    fetch(`/api/patients/${encodeURIComponent(id)}/service-requests`)
+      .then(async (res) => {
+        if (!active) return;
+        if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+        const json = (await res.json()) as {
+          data: Array<{
+            id: string;
+            status: string;
+            intent: string;
+            codeText: string;
+            authoredOn: string;
+            orderNumber: string;
+            specimenCount: number;
+          }>;
+        };
+        setOrders(json.data || []);
+      })
+      .catch((e: unknown) => {
+        const message = e instanceof Error ? e.message : String(e);
+        setOrdersError(message);
+        setOrders([]);
+      })
+      .finally(() => {
+        if (active) setOrdersLoading(false);
       });
     return () => {
       active = false;
@@ -298,6 +356,58 @@ export default function PatientDetailClient({ id }: { id: string }) {
           ))}
         </dl>
       </div>
+
+      {/* Orders table (match patient list styling) */}
+      <h2 className="text-xl font-semibold mb-2">Aufträge</h2>
+      <DataTable>
+        <DataTableHead>
+          <DataTableHeadRow>
+            <DataTableHeaderCell className="w-56">Auftrag</DataTableHeaderCell>
+            <DataTableHeaderCell>Bezeichnung</DataTableHeaderCell>
+            <DataTableHeaderCell className="w-32">Status</DataTableHeaderCell>
+            <DataTableHeaderCell className="w-40">Datum</DataTableHeaderCell>
+            <DataTableHeaderCell className="w-24">Proben</DataTableHeaderCell>
+          </DataTableHeadRow>
+        </DataTableHead>
+        <DataTableBody>
+          {ordersLoading &&
+            Array.from({ length: 5 }, (_, i) => (
+              <DataTableRow key={`ord-skel-${i}`}>
+                <DataTableCell className="text-gray-400">&nbsp;</DataTableCell>
+                <DataTableCell className="text-gray-400">&nbsp;</DataTableCell>
+                <DataTableCell className="text-gray-400">&nbsp;</DataTableCell>
+                <DataTableCell className="text-gray-400">&nbsp;</DataTableCell>
+                <DataTableCell className="text-gray-400">&nbsp;</DataTableCell>
+              </DataTableRow>
+            ))}
+          {!ordersLoading && ordersError && (
+            <DataTableRow>
+              <DataTableCell className="text-red-600" colSpan={5}>
+                Fehler beim Laden: {ordersError}
+              </DataTableCell>
+            </DataTableRow>
+          )}
+          {!ordersLoading && !ordersError && orders.length === 0 && (
+            <DataTableRow>
+              <DataTableCell className="text-gray-500" colSpan={5}>
+                Keine Aufträge gefunden
+              </DataTableCell>
+            </DataTableRow>
+          )}
+          {!ordersLoading && !ordersError &&
+            orders.map((o) => (
+              <DataTableRow key={o.id}>
+                <DataTableCell title={o.orderNumber || o.id}>
+                  {o.orderNumber || o.id}
+                </DataTableCell>
+                <DataTableCell title={o.codeText}>{o.codeText || "-"}</DataTableCell>
+                <DataTableCell>{o.status || "-"}</DataTableCell>
+                <DataTableCell>{formatDate(o.authoredOn)}</DataTableCell>
+                <DataTableCell>{o.specimenCount || 0}</DataTableCell>
+              </DataTableRow>
+            ))}
+        </DataTableBody>
+      </DataTable>
 
       <details className="mt-6">
         <summary className="cursor-pointer text-sm text-gray-600 hover:text-gray-800">

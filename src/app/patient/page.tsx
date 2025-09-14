@@ -4,6 +4,15 @@ import type React from "react";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import {
+  DataTable,
+  DataTableHead,
+  DataTableHeadRow,
+  DataTableHeaderCell,
+  DataTableBody,
+  DataTableRow,
+  DataTableCell,
+} from "@/components/Table";
 
 interface Patient {
   id: string;
@@ -117,33 +126,25 @@ function PatientPageContent() {
 
   const content = useMemo(() => {
     const skeletonRow = (i: number) => (
-      <tr key={`skeleton-${i}`} className="odd:bg-white even:bg-gray-50 animate-pulse h-14">
-        <td className="w-64 px-6 py-0 align-middle truncate">
+      <DataTableRow key={`skeleton-${i}`} className="animate-pulse">
+        <DataTableCell className="w-64">
           <div className="h-4 w-40 bg-gray-200 rounded" />
-        </td>
-        <td className="w-96 px-6 py-0 align-middle truncate">
+        </DataTableCell>
+        <DataTableCell className="w-96">
           <div className="h-4 w-56 bg-gray-200 rounded" />
-        </td>
-        <td className="w-40 px-6 py-0 align-middle truncate">
+        </DataTableCell>
+        <DataTableCell className="w-40">
           <div className="h-4 w-24 bg-gray-200 rounded" />
-        </td>
-      </tr>
+        </DataTableCell>
+      </DataTableRow>
     );
 
     const fillerRow = (i: number, content?: React.ReactNode) => (
-      <tr key={`placeholder-${i}`} className="odd:bg-white even:bg-gray-50 h-14">
-        {content ? (
-          <td className="px-6 py-0 text-gray-500 align-middle" colSpan={3}>
-            {content}
-          </td>
-        ) : (
-          <>
-            <td className="w-64 px-6 py-0 whitespace-nowrap align-middle">&nbsp;</td>
-            <td className="w-96 px-6 py-0 whitespace-nowrap align-middle">&nbsp;</td>
-            <td className="w-40 px-6 py-0 whitespace-nowrap align-middle">&nbsp;</td>
-          </>
-        )}
-      </tr>
+      <DataTableRow key={`placeholder-${i}`}>
+        <DataTableCell className="text-gray-500" colSpan={3}>
+          {content}
+        </DataTableCell>
+      </DataTableRow>
     );
 
     if (loading) {
@@ -163,9 +164,9 @@ function PatientPageContent() {
     }
 
     const rows = items.map((patient) => (
-      <tr
+      <DataTableRow
         key={patient.id}
-        className="odd:bg-white even:bg-gray-50 h-14 cursor-pointer hover:bg-blue-50 focus:bg-blue-100 outline-none"
+        className="cursor-pointer hover:bg-blue-50 focus:bg-blue-100 outline-none"
         tabIndex={0}
         onClick={() => {
           if (patient.id) window.location.href = `/patient/${encodeURIComponent(patient.id)}`;
@@ -180,13 +181,11 @@ function PatientPageContent() {
         role="button"
         aria-label={`Patient öffnen: ${patient.name}`}
       >
-        <td className="w-64 px-6 py-0 align-middle truncate" title={patient.name}>{truncate(patient.name, 20)}</td>
-        <td className="w-96 px-6 py-0 align-middle truncate">{patient.address}</td>
-        <td className="w-40 px-6 py-0 align-middle truncate">{formatDate(patient.createdAt)}</td>
-      </tr>
+        <DataTableCell className="w-64" title={patient.name}>{truncate(patient.name, 20)}</DataTableCell>
+        <DataTableCell className="w-96">{patient.address}</DataTableCell>
+        <DataTableCell className="w-40">{formatDate(patient.createdAt)}</DataTableCell>
+      </DataTableRow>
     ));
-    // Pad with empty rows to maintain consistent height
-    for (let i = items.length; i < pageSize; i++) rows.push(fillerRow(i));
     return rows;
   }, [loading, error, items]);
 
@@ -225,33 +224,16 @@ function PatientPageContent() {
         </button>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="min-w-full table-fixed divide-y divide-gray-200">
-          <thead className="border-b border-gray-200">
-            <tr>
-              <th
-                scope="col"
-                className="sticky top-0 z-20 w-64 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-white/85 backdrop-blur-sm shadow-sm"
-              >
-                Name
-              </th>
-              <th
-                scope="col"
-                className="sticky top-0 z-20 w-96 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-white/85 backdrop-blur-sm shadow-sm"
-              >
-                Adresse
-              </th>
-              <th
-                scope="col"
-                className="sticky top-0 z-20 w-40 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-white/85 backdrop-blur-sm shadow-sm"
-              >
-                Erstellungsdatum
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">{content}</tbody>
-        </table>
-      </div>
+      <DataTable>
+        <DataTableHead>
+          <DataTableHeadRow>
+            <DataTableHeaderCell className="w-64">Name</DataTableHeaderCell>
+            <DataTableHeaderCell className="w-96">Adresse</DataTableHeaderCell>
+            <DataTableHeaderCell className="w-40">Letzte Aktualisierung</DataTableHeaderCell>
+          </DataTableHeadRow>
+        </DataTableHead>
+        <DataTableBody>{content}</DataTableBody>
+      </DataTable>
 
       {/* Pagination */}
       <div className="mt-4 flex items-center justify-between">
