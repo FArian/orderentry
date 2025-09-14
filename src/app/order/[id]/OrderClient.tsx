@@ -634,7 +634,7 @@ export default function OrderClient({ id }: { id: string }) {
     return result;
   }, [patientData]);
 
-  // Simple order number generator: ORD-YYYYMMDD-<hhmmss>
+  // Simple order number generator: ord-YYYYMMDD-<hhmmss>
   const generateOrderNumber = useCallback((): string => {
     const d = new Date();
     const pad = (n: number) => String(n).padStart(2, "0");
@@ -644,7 +644,7 @@ export default function OrderClient({ id }: { id: string }) {
     const h = pad(d.getHours());
     const mm = pad(d.getMinutes());
     const s = pad(d.getSeconds());
-    return `ORD-${y}${m}${day}-${h}${mm}${s}`;
+    return `ord-${y}${m}${day}-${h}${mm}${s}`;
   }, []);
 
   // Build and submit transaction Bundle
