@@ -25,6 +25,7 @@ export default function OrderClient({ id }: { id: string }) {
   const [allAds, setAllAds] = useState<ActivityDefinition[]>([]);
   const [pageLoading, setPageLoading] = useState<boolean>(true);
   const [patientLoading, setPatientLoading] = useState<boolean>(true);
+  const [patientData, setPatientData] = useState<Record<string, unknown> | null>(null);
   const [categories, setCategories] = useState<ValueSetSummary[]>([]);
   const [categoriesNotice, setCategoriesNotice] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<ValueSetSummary | null>(null);
@@ -149,12 +150,23 @@ export default function OrderClient({ id }: { id: string }) {
     let active = true;
     setPatientLoading(true);
     fetch(`/api/patients/${encodeURIComponent(id)}`)
-      .then(() => {
-        if (active) setPatientLoading(false);
+      .then(async (r) => {
+        if (!active) return;
+        try {
+          const json = await r.json();
+          if (active) setPatientData(json);
+        } catch {
+          if (active) setPatientData(null);
+        } finally {
+          if (active) setPatientLoading(false);
+        }
       })
       .catch(() => {
         // Even on error, do not block the UI indefinitely
-        if (active) setPatientLoading(false);
+        if (active) {
+          setPatientData(null);
+          setPatientLoading(false);
+        }
       });
     return () => {
       active = false;
@@ -379,7 +391,10 @@ export default function OrderClient({ id }: { id: string }) {
 
   // Note: removed manual material loader; materials now derive from selected analyses only
 
-  const canSubmit = selectedTests.length > 0 && selectedSpecimens.length > 0 && !submitting;
+  const canSubmit =
+    selectedTests.length > 0 &&
+    ((selectedSpecimens && selectedSpecimens.length > 0) || Object.keys(materialsFromAnalyses).length > 0) &&
+    !submitting;
 
   // Expand a ValueSet when selected
   const expandCategory = useCallback(async (vs: ValueSetSummary) => {
@@ -424,6 +439,33 @@ export default function OrderClient({ id }: { id: string }) {
     window.setTimeout(() => setSubmitMsg(null), 2500);
   }, [id, selectedSpecimens, selectedTests]);
 
+  // Extract identifiers (AHV and insurance card) from patient
+  const getPatientIdentifiers = useCallback((): { ahv?: string; insuranceCard?: string } => {
+    const result: { ahv?: string; insuranceCard?: string } = {};
+    const p = (patientData || {}) as { identifier?: Array<{ system?: string; value?: string; type?: { text?: string } }> };
+    const ids = Array.isArray(p.identifier) ? p.identifier : [];
+    const findId = (pred: (s: string) => boolean) =>
+      ids.find((i) => pred((i.system || i.type?.text || "").toLowerCase()));
+    const ahv = findId((s) => s.includes("2.16.756.5.32") || s.includes("ahv") || s.includes("nss"));
+    const card = findId((s) => s.includes("2.16.756.5.30.1.123.100.1.1") || s.includes("card") || s.includes("karte"));
+    if (ahv?.value) result.ahv = String(ahv.value).replace(/\D+/g, "");
+    if (card?.value) result.insuranceCard = String(card.value).replace(/\s+/g, "");
+    return result;
+  }, [patientData]);
+
+  // Simple order number generator: ORD-YYYYMMDD-<hhmmss>
+  const generateOrderNumber = useCallback((): string => {
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const y = d.getFullYear();
+    const m = pad(d.getMonth() + 1);
+    const day = pad(d.getDate());
+    const h = pad(d.getHours());
+    const mm = pad(d.getMinutes());
+    const s = pad(d.getSeconds());
+    return `ORD-${y}${m}${day}-${h}${mm}${s}`;
+  }, []);
+
   // Build and submit transaction Bundle
   const submitOrder = useCallback(async () => {
     if (!canSubmit) return;
@@ -431,81 +473,76 @@ export default function OrderClient({ id }: { id: string }) {
     setSubmitMsg(null);
     setSubmitErr(null);
     try {
-      const patFullUrl = "urn:uuid:pat-1";
-      const specimenFullUrls = selectedSpecimens.map((_, i) => `urn:uuid:spec-${i + 1}`);
-      const srFullUrls = selectedTests.map((_, i) => `urn:uuid:sr-${i + 1}`);
+      const orderNumber = generateOrderNumber();
+      const srId = `sr-${orderNumber}`;
+      const { ahv, insuranceCard } = getPatientIdentifiers();
 
-      const patientResource = {
-        resourceType: "Patient",
-        identifier: [{ system: "http://example.org/mrn", value: id }],
-        name: [{ family: "Muster", given: ["Max"] }],
-        gender: "male",
-        birthDate: "1990-04-18",
-      };
+      // If user did not select specimens explicitly, derive from materials
+      const specimensSource: SpecimenChoice[] = (selectedSpecimens && selectedSpecimens.length > 0)
+        ? selectedSpecimens
+        : Object.entries(materialsFromAnalyses).map(([specRef, m]) => {
+            const idPart = specRef.startsWith("kind:") ? specRef.slice(5) || "UNK" : specRef || "UNK";
+            const label = m.label || idPart;
+            return {
+              id: idPart,
+              label,
+              code: { system: "", code: idPart, display: label },
+            } as SpecimenChoice;
+          });
 
-      const specimenEntries = selectedSpecimens.map((s, i) => ({
-        fullUrl: specimenFullUrls[i],
-        resource: {
-          resourceType: "Specimen",
-          status: "available",
-          type: { coding: [s.code] },
-          subject: { reference: patFullUrl },
-        },
-        request: { method: "POST", url: "Specimen" },
-      }));
+      // Build Specimen entries with deterministic ids: spec-<ORD>_<SPECID>
+      const specimenEntries = specimensSource.map((s) => {
+        const specId = `spec-${orderNumber}_${s.id}`;
+        return {
+          resource: {
+            resourceType: "Specimen",
+            id: specId,
+            status: "available",
+            identifier: [
+              { system: "https://zetlab.ch/fhir/specimen", value: s.id },
+            ],
+            type: { text: s.label || s.code?.display || s.id },
+          },
+          request: { method: "PUT", url: `Specimen/${specId}` },
+        };
+      });
 
-      const serviceRequestEntries = selectedTests.map((t, i) => ({
-        fullUrl: srFullUrls[i],
+      // Build a single ServiceRequest that references all selected specimens
+      const serviceRequestEntry = {
         resource: {
           resourceType: "ServiceRequest",
+          id: srId,
           status: "active",
           intent: "order",
-          category: [
-            {
-              coding: [
-                {
-                  system: "http://terminology.hl7.org/CodeSystem/service-category",
-                  code: "laboratory",
-                },
-              ],
-            },
+          identifier: [
+            { system: "https://zetlab.ch/fhir/order-numbers", value: orderNumber },
+            ...(ahv ? [{ system: "urn:oid:2.16.756.5.32", value: ahv }] : []),
+            ...(insuranceCard
+              ? [{ system: "urn:oid:2.16.756.5.30.1.123.100.1.1", value: insuranceCard }]
+              : []),
           ],
-          code: { coding: [t as FhirCoding] },
-          subject: { reference: patFullUrl },
-          specimen: specimenFullUrls.map((ref) => ({ reference: ref })),
+          subject: { reference: `Patient/${id}` },
+          code: {
+            text:
+              selectedTests.length === 1
+                ? (selectedTests[0].display || selectedTests[0].code)
+                : `${selectedTests.length} Untersuchungen`,
+          },
+          specimen: specimensSource.map((s) => ({
+            reference: `Specimen/spec-${orderNumber}_${s.id}`,
+            identifier: { system: "https://zetlab.ch/fhir/specimen", value: s.id },
+          })),
         },
-        request: { method: "POST", url: "ServiceRequest" },
-      }));
+        request: { method: "PUT", url: `ServiceRequest/${srId}` },
+      } as const;
 
       const bundle = {
         resourceType: "Bundle",
         type: "transaction",
-        entry: [
-          {
-            fullUrl: patFullUrl,
-            resource: patientResource,
-            request: {
-              method: "POST",
-              url: "Patient",
-              ifNoneExist: `identifier=http://example.org/mrn|${encodeURIComponent(id)}`,
-            },
-          },
-          ...specimenEntries,
-          ...serviceRequestEntries,
-          {
-            resource: {
-              resourceType: "RequestGroup",
-              status: "active",
-              intent: "order",
-              subject: { reference: patFullUrl },
-              action: srFullUrls.map((ref) => ({ resource: { reference: ref } })),
-            },
-            request: { method: "POST", url: "RequestGroup" },
-          },
-        ],
+        entry: [serviceRequestEntry, ...specimenEntries],
       } as const;
 
-      const resp = await fhirPost("/", bundle as unknown as Record<string, unknown>);
+      const resp = await fhirPost("/Bundle", bundle as unknown as Record<string, unknown>);
       let ids: string[] = [];
       if (
         isObject(resp) &&
