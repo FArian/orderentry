@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { createLocalUser } from "@/lib/localAuth";
+import { FORCE_LOCAL_AUTH } from "@/lib/appConfig";
 
 export default function SignupPage() {
   const [username, setUsername] = useState("");
@@ -15,6 +17,13 @@ export default function SignupPage() {
     setMessage(null);
     setError(null);
     try {
+      if (FORCE_LOCAL_AUTH) {
+        await createLocalUser(username, password);
+        setMessage("Account created locally on this device.");
+        setUsername("");
+        setPassword("");
+        return;
+      }
       const res = await fetch("/api/signup", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -22,7 +31,25 @@ export default function SignupPage() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(data?.error || `Error ${res.status}`);
+        const msg: string = data?.error || "";
+        const maybePermIssue =
+          res.status >= 500 ||
+          /permission|eacces|read-only|readonly|eprem|eperm|ero?fs|enoent|mkdir|open|write/i.test(msg);
+        if (maybePermIssue) {
+          // Fallback to local-only user creation on this device
+          try {
+            await createLocalUser(username, password);
+            setMessage("Account created locally on this device.");
+            setError(null);
+            setUsername("");
+            setPassword("");
+          } catch (e: unknown) {
+            const emsg = e instanceof Error ? e.message : String(e);
+            setError(emsg || `Error ${res.status}`);
+          }
+        } else {
+          setError(data?.error || `Error ${res.status}`);
+        }
       } else {
         setMessage("Account created successfully.");
         setUsername("");

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { setLocalSession, verifyLocalUser } from "@/lib/localAuth";
+import { FORCE_LOCAL_AUTH } from "@/lib/appConfig";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -15,6 +17,18 @@ export default function LoginPage() {
     setMessage(null);
     setError(null);
     try {
+      if (FORCE_LOCAL_AUTH) {
+        const local = await verifyLocalUser(username, password);
+        if (!local) {
+          setError("Invalid credentials (local)");
+        } else {
+          setLocalSession({ id: local.id, username: local.username });
+          setMessage("Logged in (local device only).");
+          setPassword("");
+          window.location.assign("/patient");
+        }
+        return;
+      }
       const res = await fetch("/api/login", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -22,6 +36,15 @@ export default function LoginPage() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
+        // Try local fallback if server auth fails (e.g., FS permission issues)
+        const local = await verifyLocalUser(username, password);
+        if (local) {
+          setLocalSession({ id: local.id, username: local.username });
+          setMessage("Logged in (local device only).");
+          setPassword("");
+          window.location.assign("/patient");
+          return;
+        }
         setError(data?.error || `Error ${res.status}`);
       } else {
         setMessage("Logged in successfully.");

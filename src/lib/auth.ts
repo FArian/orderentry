@@ -1,6 +1,8 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import crypto from "crypto";
+import { LOCAL_SESSION_COOKIE } from "@/lib/localAuthShared";
+import { ALLOW_LOCAL_AUTH } from "@/lib/appConfig";
 
 type SessionPayload = {
   sub: string;
@@ -56,13 +58,6 @@ export function verifySession(token: string): SessionPayload | null {
   }
 }
 
-export async function getSessionFromCookies(): Promise<SessionPayload | null> {
-  const c = await cookies();
-  const token = c.get(COOKIE_NAME)?.value;
-  if (!token) return null;
-  return verifySession(token);
-}
-
 export async function requireAuth(): Promise<SessionPayload> {
   const session = await getSessionFromCookies();
   if (!session) redirect("/login");
@@ -78,4 +73,29 @@ export const ONE_DAY = ONE_DAY_SECONDS;
 export async function requireGuest(): Promise<void> {
   const s = await getSessionFromCookies();
   if (s) redirect("/patient");
+}
+
+// Extend cookie-based session retrieval to also support a local, unsigned
+// fallback session cookie set by the client when filesystem-based user store
+// is unavailable. This is intended for development or constrained environments.
+export async function getSessionFromCookies(): Promise<SessionPayload | null> {
+  const c = await cookies();
+  const token = c.get(COOKIE_NAME)?.value;
+  if (token) {
+    const verified = verifySession(token);
+    if (verified) return verified;
+  }
+  const local = c.get(LOCAL_SESSION_COOKIE)?.value;
+  if (local && ALLOW_LOCAL_AUTH) {
+    try {
+      const [id, username] = decodeURIComponent(local).split("|");
+      if (id && username) {
+        const now = Math.floor(Date.now() / 1000);
+        return { sub: id, username, iat: now, exp: now + ONE_DAY_SECONDS };
+      }
+    } catch {
+      // ignore
+    }
+  }
+  return null;
 }

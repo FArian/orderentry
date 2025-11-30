@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createUser, validateCredentials } from "@/lib/userStore";
+import { ALLOW_LOCAL_AUTH } from "@/lib/appConfig";
 
 export async function POST(req: Request) {
   try {
@@ -13,6 +14,10 @@ export async function POST(req: Request) {
     }
 
     try {
+      if (ALLOW_LOCAL_AUTH) {
+        // Avoid touching the filesystem in serverless envs; instruct client to fallback
+        return NextResponse.json({ ok: false, error: "Local auth only (server FS disabled)" }, { status: 503 });
+      }
       const user = await createUser(username, password);
       return NextResponse.json({ ok: true, user: { id: user.id, username: user.username, createdAt: user.createdAt } }, { status: 201 });
     } catch (err: unknown) {
@@ -26,4 +31,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "Invalid request" }, { status: 400 });
   }
 }
-
