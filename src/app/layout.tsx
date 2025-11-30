@@ -1,6 +1,15 @@
 import type { Metadata, Viewport } from "next";
-import Image from "next/image";
 import "./globals.css";
+import pkg from "../../package.json";
+import AppHeader from "@/components/AppHeader";
+
+export const dynamic = "force-dynamic";
+
+const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || pkg.version || "0.0.0";
+const SIMPLE_VERSION = (() => {
+  const m = String(APP_VERSION).match(/(\d+\.\d+\.\d+)/);
+  return m ? `v${m[1]}` : String(APP_VERSION);
+})();
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -13,7 +22,7 @@ export const viewport: Viewport = {
   themeColor: "#ffffff",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -21,17 +30,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        <header className="w-full border-b bg-gray-100 shadow-sm">
-          <div className="mx-auto max-w-7xl px-6 py-4 text-center">
-            <Image
-              src="/logo.svg"
-              alt="zetLab logo"
-              width={48}
-              height={48}
-              className="mx-auto h-12 w-auto select-none"
-            />
-          </div>
-        </header>
+        <AppHeader version={SIMPLE_VERSION} />
         {children}
       </body>
     </html>

@@ -1,0 +1,29 @@
+import { NextResponse } from "next/server";
+import { createUser, validateCredentials } from "@/lib/userStore";
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.json().catch(() => ({}));
+    const username = String(body.username || "");
+    const password = String(body.password || "");
+
+    const validationError = validateCredentials(username, password);
+    if (validationError) {
+      return NextResponse.json({ ok: false, error: validationError }, { status: 400 });
+    }
+
+    try {
+      const user = await createUser(username, password);
+      return NextResponse.json({ ok: true, user: { id: user.id, username: user.username, createdAt: user.createdAt } }, { status: 201 });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (message.toLowerCase().includes("exists")) {
+        return NextResponse.json({ ok: false, error: "Username already exists" }, { status: 409 });
+      }
+      return NextResponse.json({ ok: false, error: message || "Unable to create user" }, { status: 500 });
+    }
+  } catch (e) {
+    return NextResponse.json({ ok: false, error: "Invalid request" }, { status: 400 });
+  }
+}
+

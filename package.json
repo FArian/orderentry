@@ -6,8 +6,11 @@
     "node": "20.x"
   },
   "scripts": {
+    "predev": "node scripts/write-version.mjs",
     "dev": "next dev --turbopack",
+    "prebuild": "node scripts/write-version.mjs",
     "build": "next build",
+    "prestart": "node scripts/write-version.mjs",
     "start": "next start",
     "lint": "eslint"
   },
