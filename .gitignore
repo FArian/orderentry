@@ -1,10 +1,6 @@
-# See https://help.github.com/articles/ignoring-files/
-
-############################
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-
-############################
 /node_modules
 /.pnp
 .pnp.*
@@ -14,106 +10,41 @@
 !.yarn/releases
 !.yarn/versions
 
-############################
-
 # private AI docs
-
-############################
 CLAUDE.md
 
-############################
-
-# build / production
-
-############################
-/.next/
-/out/
-/build/
-/dist/
-
-############################
-
 # testing
-
-############################
 /coverage
 
-############################
+# next.js
+/.next/
+/out/
 
-# logs
+# production
+/build
 
-############################
+# misc
+.DS_Store
+*.pem
+
+# debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
-logs
-*.log
 
-############################
-
-# env files (sensitive!)
-
-############################
+# env files (can opt-in for committing if needed)
 .env*
-!.env.example
 
-############################
-
-# system files
-
-############################
-.DS_Store
-Thumbs.db
-
-############################
-
-# certificates / keys
-
-############################
-*.pem
-*.key
-*.crt
-*.p12
-*.pfx
-*.jks
-
-############################
-
-# IDE / editor
-
-############################
-.vscode/*
-!.vscode/settings.json
-!.vscode/extensions.json
-.idea
-*.iml
-
-############################
+# vercel
+.vercel
 
 # typescript
-
-############################
 *.tsbuildinfo
 next-env.d.ts
 
-############################
-
-# vercel
-
-############################
-.vercel
-
-############################
-
-# local data / storage
-
-############################
+# local data store
 /data/
-/tmp/
-/uploads/
-
-############################
 
 # docker
 
@@ -121,30 +52,7 @@ next-env.d.ts
 docker-compose.override.yml
 *.env.local
 
-############################
-
-# java / spring (falls verwendet)
+# private AI docs
 
 ############################
-target/
-*.class
-*.jar
-*.war
-*.ear
-
-############################
-
-# database
-
-############################
-*.sqlite
-*.db
-
-############################
-
-# OS / misc
-
-############################
-*.swp
-*.swo
-*~
+CLAUDE.md
