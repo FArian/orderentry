@@ -1,0 +1,66 @@
+hapi:
+  fhir:
+    version: R4
+
+    # 🔗 Wichtig für korrekte URLs (Traefik!)
+    server_address: https://hapi.2a01-4f8-1c1a-5842--1.nip.io/fhir
+    allow_placeholder_references: true
+
+    # 🔔 Subscriptions (für Orchestra Integration)
+    subscription:
+      resthook_enabled: true
+      websocket_enabled: true
+      polling_interval_ms: 5000
+      immediately_queued: true
+      validate_endpoints_on_registration: false
+    resthook:
+      deliver_async: true
+
+    # 🧩 Partitioning (aus)
+    partitioning:
+      enabled: false
+
+    # ⚡ Performance
+    reuse_cached_search_results_millis: 60000
+
+    # 🧠 MDM (optional, aus)
+    mdm_enabled: false
+
+    # 🌐 CORS (für Browser / React UI)
+    server:
+      cors:
+        enabled: true
+        allowCredentials: true
+        allowedOriginPatterns: "*"
+        allowedMethods: "GET,POST,PUT,DELETE,OPTIONS,PATCH"
+        allowedHeaders: "Accept,Content-Type,Authorization,Origin,Cache-Control"
+
+# 🗄️ DATABASE (PostgreSQL)
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    #database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+    hibernate:
+      ddl-auto: update   # 🔥 NUR beim ersten Start! create danach → update  →  Production none
+
+    properties:
+      hibernate:
+        dialect: ca.uhn.fhir.jpa.model.dialect.HapiFhirPostgresDialect
+        jdbc:
+          lob:
+            non_contextual_creation: true
+
+# 📊 LOGGING
+logging:
+  level:
+    root: WARN
+    ca.uhn.fhir.jpa.subscription: INFO
+    ca.uhn.fhir.jpa.subscription.resthook: INFO
+    ca.uhn.fhir.jpa.subscription.match: INFO
+    ca.uhn.fhir.jpa.subscription.delivery: DEBUG
