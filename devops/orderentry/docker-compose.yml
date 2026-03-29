@@ -191,3 +191,25 @@ services:
       - "traefik.http.routers.prom.entrypoints=websecure"
       - "traefik.http.routers.prom.tls.certresolver=le"
       - "traefik.http.services.prom.loadbalancer.server.port=9090"
+
+  orderentry:
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+    image: zetlab-orderentry:latest
+    container_name: orderentry
+    restart: always
+    environment:
+      AUTH_SECRET: ${AUTH_SECRET}
+      ALLOW_LOCAL_AUTH: ${ALLOW_LOCAL_AUTH:-false}
+    volumes:
+      - ./data/orderentry/data:/app/data
+    networks:
+      - orderentry-orc-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=orderentry-orc-net"
+      - "traefik.http.routers.orderentry.rule=Host(`${ORDERENTRY_DOMAIN}`)"
+      - "traefik.http.routers.orderentry.entrypoints=websecure"
+      - "traefik.http.routers.orderentry.tls.certresolver=le"
+      - "traefik.http.services.orderentry.loadbalancer.server.port=3000"
