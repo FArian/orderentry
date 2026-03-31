@@ -13,6 +13,7 @@ import {
   DataTableRow,
   DataTableCell,
 } from "@/components/Table";
+import { useTranslation } from "@/lib/i18n";
 
 interface Patient {
   id: string;
@@ -35,6 +36,7 @@ const truncate = (text: string, max: number) =>
 function PatientPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const [items, setItems] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(false);
@@ -58,16 +60,15 @@ function PatientPageContent() {
       setTotal(data.total);
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : String(e);
-      setError(message || "Failed to load patients");
+      setError(message || t("patient.loadError"));
       setItems([]);
       setTotal(0);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
-    // initial load honoring URL query (?q=...)
     const initialQ = (searchParams?.get("q") || "").toString();
     setQuery(initialQ);
     fetchPatients(initialQ, 1);
@@ -89,7 +90,6 @@ function PatientPageContent() {
     [onSearch]
   );
 
-  // Debounced search on typing
   useEffect(() => {
     if (!initializedRef.current) {
       initializedRef.current = true;
@@ -158,7 +158,7 @@ function PatientPageContent() {
     }
 
     if (items.length === 0) {
-      const rows = [fillerRow(0, "No patients found")];
+      const rows = [fillerRow(0, t("patient.noResults"))];
       for (let i = 1; i < pageSize; i++) rows.push(fillerRow(i));
       return rows;
     }
@@ -187,24 +187,23 @@ function PatientPageContent() {
       </DataTableRow>
     ));
     return rows;
-  }, [loading, error, items]);
+  }, [loading, error, items, t]);
 
   return (
     <div className="p-4">
-      {/* Breadcrumb */}
       <nav className="mb-2 text-sm text-gray-600" aria-label="Brotkrumen">
         <ol className="flex items-center gap-2">
           <li>
-            <Link href="/" className="text-blue-600 hover:underline">
-              Startseite
+            <Link href="/" className="inline-flex items-center gap-1 text-blue-600 hover:underline">
+              🏠 {t("nav.home")}
             </Link>
           </li>
           <li className="text-gray-400">/</li>
-          <li className="text-gray-700">Patienten</li>
+          <li className="text-gray-700">{t("patient.title")}</li>
         </ol>
       </nav>
 
-      <h1 className="text-2xl font-bold mb-4">Patienten</h1>
+      <h1 className="text-2xl font-bold mb-4">{t("patient.title")}</h1>
 
       <div className="mb-4 flex items-center gap-2">
         <input
@@ -212,7 +211,7 @@ function PatientPageContent() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={onKeyDown}
-          placeholder="Nach Name oder Adresse suchen"
+          placeholder={t("patient.searchPlaceholder")}
           className="w-full max-w-md rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <button
@@ -220,42 +219,38 @@ function PatientPageContent() {
           className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
           disabled={loading}
         >
-          Suchen
+          {loading ? t("common.searching") : t("common.search")}
         </button>
       </div>
 
       <DataTable>
         <DataTableHead>
           <DataTableHeadRow>
-            <DataTableHeaderCell className="w-64">Name</DataTableHeaderCell>
-            <DataTableHeaderCell className="w-96">Adresse</DataTableHeaderCell>
-            <DataTableHeaderCell className="w-40">Letzte Aktualisierung</DataTableHeaderCell>
+            <DataTableHeaderCell className="w-64">{t("patient.name")}</DataTableHeaderCell>
+            <DataTableHeaderCell className="w-96">{t("patient.address")}</DataTableHeaderCell>
+            <DataTableHeaderCell className="w-40">{t("patient.lastUpdated")}</DataTableHeaderCell>
           </DataTableHeadRow>
         </DataTableHead>
         <DataTableBody>{content}</DataTableBody>
       </DataTable>
 
-      {/* Pagination */}
       <div className="mt-4 flex items-center justify-between">
         <div className="text-sm text-gray-600">
           {total > 0 ? (
             <span>
-              Zeige {(page - 1) * pageSize + 1}-{Math.min(page * pageSize, total)} von {total}
+              {t("patient.showing")} {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} {t("patient.of")} {total}
             </span>
           ) : (
-            <span>Zeige 0 von 0</span>
+            <span>{t("patient.showing")} 0 {t("patient.of")} 0</span>
           )}
         </div>
         <div className="flex items-center gap-2">
           <button
             className="rounded border px-2 py-1 text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-            onClick={() => {
-              setPage(1);
-              fetchPatients(query, 1);
-            }}
+            onClick={() => { setPage(1); fetchPatients(query, 1); }}
             disabled={page <= 1 || loading}
           >
-            Erste
+            {t("patient.first")}
           </button>
 
           <button
@@ -267,12 +262,11 @@ function PatientPageContent() {
             }}
             disabled={page <= 1 || loading}
           >
-            Zurück
+            {t("patient.previous")}
           </button>
 
           {total > 0 && visiblePages.length > 0 && (
             <>
-              {/* Leading ellipsis if we are skipping pages */}
               {visiblePages[0] > 1 && <span className="px-1 text-gray-500">…</span>}
               {visiblePages.map((n) => (
                 <button
@@ -280,16 +274,12 @@ function PatientPageContent() {
                   className={`rounded px-3 py-1 text-sm border cursor-pointer disabled:cursor-not-allowed ${
                     n === page ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-700"
                   }`}
-                  onClick={() => {
-                    setPage(n);
-                    fetchPatients(query, n);
-                  }}
+                  onClick={() => { setPage(n); fetchPatients(query, n); }}
                   disabled={loading}
                 >
                   {n}
                 </button>
               ))}
-              {/* Trailing ellipsis if we are skipping pages */}
               {visiblePages[visiblePages.length - 1] < totalPages && (
                 <span className="px-1 text-gray-500">…</span>
               )}
@@ -305,19 +295,15 @@ function PatientPageContent() {
             }}
             disabled={page >= totalPages || loading}
           >
-            Weiter
+            {t("patient.next")}
           </button>
 
           <button
             className="rounded border px-2 py-1 text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-            onClick={() => {
-              const newPage = totalPages;
-              setPage(newPage);
-              fetchPatients(query, newPage);
-            }}
+            onClick={() => { setPage(totalPages); fetchPatients(query, totalPages); }}
             disabled={page >= totalPages || loading}
           >
-            Letzte
+            {t("patient.last")}
           </button>
         </div>
       </div>
@@ -327,7 +313,7 @@ function PatientPageContent() {
 
 export default function PatientPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<div className="p-4 text-gray-500">…</div>}>
       <PatientPageContent />
     </Suspense>
   );

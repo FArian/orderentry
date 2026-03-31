@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { FHIR_BASE } from "@/lib/fhir";
+import { FHIR_BASE, FHIR_SYSTEMS } from "@/lib/fhir";
 
 type FhirIdentifier = { system?: string; value?: string; type?: { text?: string } };
 type FhirCodeableConcept = { text?: string; coding?: Array<{ system?: string; code?: string; display?: string }> };
@@ -23,7 +23,7 @@ type FhirBundle<T = unknown> = {
 
 function extractOrderNumber(ids?: FhirIdentifier[]): string | undefined {
   if (!ids) return undefined;
-  const preferred = ids.find((i) => i.system === "https://zetlab.ch/fhir/order-numbers");
+  const preferred = ids.find((i) => i.system === FHIR_SYSTEMS.orderNumbers);
   if (preferred?.value) return preferred.value;
   return ids.find((i) => i.value)?.value;
 }

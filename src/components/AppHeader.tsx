@@ -4,10 +4,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { useTranslation } from "@/lib/i18n";
+import { useRefresh, REFRESH_INTERVALS, type RefreshInterval } from "@/lib/refresh";
 
 export default function AppHeader({ version }: { version: string }) {
   const pathname = usePathname();
   const [authed, setAuthed] = useState<boolean | null>(null);
+  const { t, locale, setLocale, availableLocales } = useTranslation();
+  const { refresh, autoRefreshInterval, setAutoRefreshInterval } = useRefresh();
 
   async function refreshAuth() {
     try {
@@ -28,7 +32,51 @@ export default function AppHeader({ version }: { version: string }) {
   return (
     <header className="w-full border-b bg-gray-100 shadow-sm">
       <div className="mx-auto max-w-7xl px-4 py-2 grid grid-cols-3 items-center">
-        <div className="justify-self-start text-xs text-gray-500">Version {version}</div>
+        <div className="justify-self-start flex items-center gap-3 text-xs text-gray-500">
+          <span>{t("nav.version")} {version}</span>
+          <div className="flex rounded overflow-hidden border border-gray-300 text-xs">
+            {availableLocales.map((loc) => (
+              <button
+                key={loc}
+                onClick={() => setLocale(loc)}
+                className={`px-2 py-0.5 transition-colors ${
+                  locale === loc
+                    ? "bg-blue-600 text-white font-semibold"
+                    : "bg-white text-gray-600 hover:bg-gray-100"
+                }`}
+              >
+                {loc.toUpperCase()}
+              </button>
+            ))}
+          </div>
+          {/* Refresh controls */}
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={refresh}
+              title={t("nav.refresh")}
+              className="rounded border border-gray-300 bg-white px-1.5 py-0.5 text-gray-600 hover:bg-gray-100 hover:text-blue-600 transition-colors"
+              aria-label={t("nav.refresh")}
+            >
+              ↻
+            </button>
+            <select
+              value={autoRefreshInterval}
+              onChange={(e) => setAutoRefreshInterval(Number(e.target.value) as RefreshInterval)}
+              className={`rounded border px-1.5 py-0.5 text-xs transition-colors ${
+                autoRefreshInterval > 0
+                  ? "border-blue-400 bg-blue-50 text-blue-700 font-medium"
+                  : "border-gray-300 bg-white text-gray-600"
+              }`}
+              title={t("nav.autoRefresh")}
+            >
+              {REFRESH_INTERVALS.map((s) => (
+                <option key={s} value={s}>
+                  {s === 0 ? t("nav.autoRefreshOff") : `${s}s`}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
         <div className="justify-self-center">
           <Image
             src="/logo.svg"
@@ -38,17 +86,21 @@ export default function AppHeader({ version }: { version: string }) {
             className="h-8 w-auto select-none"
           />
         </div>
-        <div className="justify-self-end text-sm min-h-[1rem]">
+        <div className="justify-self-end text-sm min-h-[1rem] flex items-center gap-4">
           {authed === null ? null : authed ? (
-            <form action="/api/logout" method="post">
-              <button className="text-blue-600 hover:underline" type="submit">Logout</button>
-            </form>
+            <>
+              <Link href="/profile" className="text-gray-600 hover:text-blue-600 hover:underline">
+                {t("nav.profile")}
+              </Link>
+              <form action="/api/logout" method="post">
+                <button className="text-blue-600 hover:underline" type="submit">{t("nav.logout")}</button>
+              </form>
+            </>
           ) : (
-            <Link href="/login" className="text-blue-600 hover:underline">Login</Link>
+            <Link href="/login" className="text-blue-600 hover:underline">{t("nav.login")}</Link>
           )}
         </div>
       </div>
     </header>
   );
 }
-

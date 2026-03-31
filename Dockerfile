@@ -28,6 +28,15 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
+# Runtime environment variables — override via docker run -e or docker-compose
+# AUTH_SECRET=<strong-secret>
+# FHIR_BASE_URL=https://your-fhir-server/fhir
+# SASIS_API_BASE=https://junoprod:8419/api/v1/in/sasis
+# NEXT_PUBLIC_SASIS_ENABLED=true
+# GLN_API_BASE=http://orchestra:8019/middleware/gln/api/versionVal/refdata/partner/
+# NEXT_PUBLIC_GLN_ENABLED=true
+# ALLOW_LOCAL_AUTH=true
+
 RUN addgroup --system --gid 1001 nodejs && \
     adduser  --system --uid 1001 nextjs
 

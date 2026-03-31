@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import pkg from "../../package.json";
 import AppHeader from "@/components/AppHeader";
+import Providers from "@/components/Providers";
 
 export const dynamic = "force-dynamic";
 
@@ -28,10 +29,12 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="de">
       <body className="antialiased">
-        <AppHeader version={SIMPLE_VERSION} />
-        {children}
+        <Providers>
+          <AppHeader version={SIMPLE_VERSION} />
+          {children}
+        </Providers>
       </body>
     </html>
   );

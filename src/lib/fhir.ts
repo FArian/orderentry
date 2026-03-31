@@ -62,6 +62,25 @@ import { fhirBase } from "@/config";
 
 export const FHIR_BASE: string = fhirBase;
 
+/** Business-identifier NamingSystem URIs derived from the configured FHIR base URL.
+ *  Changing FHIR_BASE_URL propagates to all stored identifiers automatically.
+ *  NOTE: StructureDefinition extension URLs are NOT here — they are canonical
+ *  organisation URIs (zetlab.ch) baked into the ActivityDefinition resources
+ *  in FHIR and must not change with the server URL. */
+export const FHIR_SYSTEMS = {
+  orderNumbers: `${FHIR_BASE}/order-numbers`,
+  specimen:     `${FHIR_BASE}/specimen`,
+  ik:           `${FHIR_BASE}/ik`,
+  vnr:          `${FHIR_BASE}/vnr`,
+} as const;
+
+/** Canonical extension URLs as stored in ActivityDefinition resources.
+ *  These are organisation-level URIs (zetlab.ch), independent of FHIR server. */
+export const FHIR_EXT = {
+  minimalVolume:     "https://www.zetlab.ch/fhir/StructureDefinition/minimal-volume-microliter",
+  specimenDefinition:"https://www.zetlab.ch/StructureDefinition/specimen-definition",
+} as const;
+
 export async function handleResponse(res: Response): Promise<unknown | string> {
   if (!res.ok) {
     let text = "Request failed";

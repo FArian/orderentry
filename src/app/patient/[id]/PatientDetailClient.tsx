@@ -1,6 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import Link from "next/link";
+import { useTranslation } from "@/lib/i18n";
+import { useRefresh } from "@/lib/refresh";
+import { sasísEnabled } from "@/config";
 import {
   DataTable,
   DataTableHead,
@@ -57,6 +61,51 @@ type Patient = {
   meta?: { lastUpdated?: string; versionId?: string };
 };
 
+// ── Status badge helpers (shared with /orders page) ──────────────────────────
+
+type StatusMeta = { icon: string; badge: string; tooltipKey: string; editable: boolean };
+
+function getStatusMeta(status: string): StatusMeta {
+  switch (status) {
+    case "draft":      return { icon: "✏️", badge: "bg-gray-100 text-gray-700 border-gray-300",   tooltipKey: "orders.tooltipDraft",     editable: true  };
+    case "active":     return { icon: "📤", badge: "bg-blue-100 text-blue-700 border-blue-300",    tooltipKey: "orders.tooltipActive",    editable: true  };
+    case "on-hold":    return { icon: "⏸️", badge: "bg-yellow-100 text-yellow-700 border-yellow-300", tooltipKey: "orders.tooltipOnHold",  editable: true  };
+    case "completed":  return { icon: "✅", badge: "bg-green-100 text-green-700 border-green-300", tooltipKey: "orders.tooltipCompleted", editable: false };
+    case "revoked":    return { icon: "🚫", badge: "bg-red-100 text-red-700 border-red-300",       tooltipKey: "orders.tooltipRevoked",   editable: false };
+    case "entered-in-error": return { icon: "⚠️", badge: "bg-red-100 text-red-700 border-red-300", tooltipKey: "orders.tooltipError",   editable: false };
+    default:           return { icon: "❓", badge: "bg-gray-100 text-gray-500 border-gray-200",    tooltipKey: "orders.statusUnknown",    editable: false };
+  }
+}
+
+function statusLabel(status: string, t: (k: string) => string): string {
+  const map: Record<string, string> = {
+    draft: t("orders.statusDraft"), active: t("orders.statusActive"),
+    "on-hold": t("orders.statusOnHold"), completed: t("orders.statusCompleted"),
+    revoked: t("orders.statusRevoked"), "entered-in-error": t("orders.statusError"),
+  };
+  return map[status] || t("orders.statusUnknown");
+}
+
+function StatusBadge({ status, t }: { status: string; t: (k: string) => string }) {
+  const meta = getStatusMeta(status);
+  return (
+    <div className="relative group inline-block">
+      <span className={`inline-flex items-center gap-1.5 rounded border px-2 py-0.5 text-xs font-medium cursor-default select-none ${meta.badge}`}>
+        <span>{meta.icon}</span>
+        <span>{statusLabel(status, t)}</span>
+      </span>
+      <div className="pointer-events-none absolute left-0 top-full mt-1 z-50 w-72 rounded border border-gray-200 bg-white shadow-lg px-3 py-2 text-xs text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+        <div className="font-semibold mb-1 flex items-center gap-1">
+          <span>{meta.icon}</span><span>{statusLabel(status, t)}</span>
+        </div>
+        <p className="leading-relaxed text-gray-600">{t(meta.tooltipKey)}</p>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 function formatDate(date?: string): string {
   if (!date) return "";
   const d = new Date(date);
@@ -94,18 +143,13 @@ function addressToString(addrs?: Address[]): string {
   return parts.join(", ");
 }
 
-function genderLabel(g?: string): string {
+function genderKey(g?: string): string {
   switch (g) {
-    case "male":
-      return "Männlich";
-    case "female":
-      return "Weiblich";
-    case "other":
-      return "Divers";
-    case "unknown":
-      return "Unbekannt";
-    default:
-      return g || "";
+    case "male": return "patient.gender_male";
+    case "female": return "patient.gender_female";
+    case "other": return "patient.gender_other";
+    case "unknown": return "patient.gender_unknown";
+    default: return g || "";
   }
 }
 
@@ -142,9 +186,22 @@ function labelForUse(use?: string): string | undefined {
 }
 
 export default function PatientDetailClient({ id }: { id: string }) {
+  const { t: tr } = useTranslation();
+  const { refreshCount, refresh } = useRefresh();
   const [data, setData] = useState<Patient | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editMode, setEditMode] = useState(false);
+  const [saveMsg, setSaveMsg] = useState<string | null>(null);
+  const [saveErr, setSaveErr] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [editFields, setEditFields] = useState({
+    ahv: "", ik: "", vnr: "", veka: "", insurerName: "",
+  });
+  const [lookupCard, setLookupCard] = useState("");
+  const [lookupMsg, setLookupMsg] = useState<string | null>(null);
+  const [lookupErr, setLookupErr] = useState<string | null>(null);
+  const [lookupLoading, setLookupLoading] = useState(false);
   const [orders, setOrders] = useState<
     Array<{
       id: string;
@@ -158,6 +215,8 @@ export default function PatientDetailClient({ id }: { id: string }) {
   >([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [ordersError, setOrdersError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [flashMsg, setFlashMsg] = useState<{ text: string; ok: boolean } | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -181,7 +240,7 @@ export default function PatientDetailClient({ id }: { id: string }) {
     return () => {
       active = false;
     };
-  }, [id]);
+  }, [id, refreshCount]);
 
   // Load ServiceRequests (orders) for the patient
   useEffect(() => {
@@ -217,23 +276,42 @@ export default function PatientDetailClient({ id }: { id: string }) {
     return () => {
       active = false;
     };
-  }, [id]);
+  }, [id, refreshCount]);
+
+  const handleDeleteOrder = useCallback(
+    async (orderId: string) => {
+      if (!window.confirm(tr("orders.deleteConfirm"))) return;
+      setDeletingId(orderId);
+      try {
+        const res = await fetch(`/api/service-requests/${orderId}`, { method: "DELETE" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        setFlashMsg({ text: tr("orders.deleteOk"), ok: true });
+        refresh();
+      } catch (e: unknown) {
+        setFlashMsg({ text: `${tr("orders.deleteError")}: ${e instanceof Error ? e.message : String(e)}`, ok: false });
+      } finally {
+        setDeletingId(null);
+        window.setTimeout(() => setFlashMsg(null), 3000);
+      }
+    },
+    [tr, refresh]
+  );
 
   const rows = useMemo(() => {
     const p = data;
     if (!p) return [] as Array<{ label: string; value: string }>;
     const list: Array<{ label: string; value: string }> = [];
-    list.push({ label: "Patienten-ID", value: p.id || "-" });
+    list.push({ label: tr("patient.id"), value: p.id || "-" });
     if (typeof p.active === "boolean")
-      list.push({ label: "Aktiv", value: p.active ? "Ja" : "Nein" });
+      list.push({ label: tr("patient.active"), value: p.active ? tr("common.yes") : tr("common.no") });
     if (p.name && p.name.length)
-      list.push({ label: "Name", value: nameToString(p.name) });
+      list.push({ label: tr("patient.name"), value: nameToString(p.name) });
     if (p.gender)
-      list.push({ label: "Geschlecht", value: genderLabel(p.gender) });
+      list.push({ label: tr("patient.gender"), value: tr(genderKey(p.gender)) });
     if (p.birthDate)
-      list.push({ label: "Geburtsdatum", value: formatDate(p.birthDate) });
+      list.push({ label: tr("patient.birthdate"), value: formatDate(p.birthDate) });
     if (p.address && p.address.length)
-      list.push({ label: "Adresse", value: addressToString(p.address) });
+      list.push({ label: tr("patient.address"), value: addressToString(p.address) });
     if (p.telecom && p.telecom.length) {
       p.telecom.forEach((t) => {
         const labelBase = systemLabel(t.system);
@@ -242,94 +320,143 @@ export default function PatientDetailClient({ id }: { id: string }) {
         if (t.value) list.push({ label, value: t.value });
       });
     }
-    if (p.identifier && p.identifier.length) {
-      const idf = p.identifier
-        .map((i) => [i.system, i.value].filter(Boolean).join(": "))
-        .join("; ");
-      if (idf) list.push({ label: "Kennungen", value: idf });
-    }
     if (p.maritalStatus) {
       const ms = p.maritalStatus.text || p.maritalStatus.coding?.[0]?.display;
-      if (ms) list.push({ label: "Familienstand", value: ms });
+      if (ms) list.push({ label: tr("patient.maritalStatus"), value: ms });
     }
     if (typeof p.deceasedBoolean === "boolean")
       list.push({
-        label: "Verstorben",
-        value: p.deceasedBoolean ? "Ja" : "Nein",
+        label: tr("patient.deceased"),
+        value: p.deceasedBoolean ? tr("common.yes") : tr("common.no"),
       });
     if (p.deceasedDateTime)
       list.push({
-        label: "Verstorben am",
+        label: tr("patient.deceasedAt"),
         value: formatDate(p.deceasedDateTime),
       });
     if (p.managingOrganization?.display)
       list.push({
-        label: "Einrichtung",
+        label: tr("patient.facility"),
         value: p.managingOrganization.display,
       });
     if (p.meta?.lastUpdated)
       list.push({
-        label: "Letzte Aktualisierung",
+        label: tr("patient.lastUpdated"),
         value: formatDate(p.meta.lastUpdated),
       });
     return list;
-  }, [data]);
+  }, [data, tr]);
 
-  if (loading) return <div className="text-gray-600">Laden…</div>;
+  if (loading) return <div className="text-gray-600">{tr("common.loading")}</div>;
   if (error)
-    return <div className="text-red-600">Fehler beim Laden: {error}</div>;
+    return <div className="text-red-600">{tr("patient.loadError")}: {error}</div>;
   if (!data) return null;
 
   // Extract fields for the two-column summary
   const p = data as Patient;
-  const ahvNumber = (p.identifier && p.identifier.length > 0 && p.identifier[0]?.value) || "";
-  const leftCol = [
-    { label: "Geschlecht", value: genderLabel(p.gender) },
-    { label: "Name", value: nameToString(p.name) },
-    { label: "Geburtsdatum", value: formatDate(p.birthDate) },
-    { label: "AHV Nummer", value: ahvNumber },
-    { label: "Adresse", value: addressToString(p.address) },
-  ];
+  const ids = p.identifier || [];
 
-  function pickIdentifier(includes: string[]): Identifier | undefined {
-    const lowerIncludes = includes.map((s) => s.toLowerCase());
-    return (p.identifier || []).find((i) =>
-      lowerIncludes.some(
-        (s) =>
-          (i.system || "").toLowerCase().includes(s) ||
-          (i.type?.text || "").toLowerCase().includes(s)
+  function findById(systemFragments: string[]): Identifier | undefined {
+    return ids.find((i) =>
+      systemFragments.some((f) =>
+        (i.system || "").toLowerCase().includes(f.toLowerCase())
       )
     );
   }
 
-  // Prefer identifier[1] for insurance details per spec: identifier[1].assigner.display is Krankenkasse
-  const explicitInsurance = (p.identifier || [])[1];
-  const insuranceId =
-    explicitInsurance ||
-    pickIdentifier([
-      "insurance",
-      "versich",
-      "krankenkasse",
-      "payor",
-      "kvg",
-      "kk",
-    ]);
-  const cardId = pickIdentifier([
-    "card",
-    "karte",
-    "versicherungskarte",
-    "versichertencard",
-  ]);
+  // AHV — OID 2.16.756.5.32
+  const ahvId = findById(["2.16.756.5.32", "ahv", "nss"]);
+  const ahvNumber = ahvId?.value || "";
 
-  const insurerName =
-    insuranceId?.assigner?.display || data.managingOrganization?.display || "";
-  const insuredNumber = insuranceId?.value || "";
-  const cardNumber = cardId?.value || "";
+  // VeKa — OID 2.16.756.5.30.1.123.100.1.1
+  const vekaId = findById(["2.16.756.5.30.1.123.100.1.1", "veka", "card", "karte"]);
+  const vekaNumber = vekaId?.value || "";
 
-  const rightCol = [
-    { label: "Krankenkasse", value: insurerName },
-    { label: "Versicherungskarten-Nr.", value: insuredNumber },
+  // IK (Institutionskennzeichen) — insurance company number
+  const ikId = findById(["ik", "institutionskennzeichen", "ikk"]);
+  const ikNumber = ikId?.value || "";
+
+  // VNR (Vertragsnummer / Versicherungsnummer) — IN1-36
+  const vnrId = findById(["vnr", "vertragsnr", "versicherungsnr", "policynr", "membernr"]);
+  const vnrNumber = vnrId?.value || "";
+
+  // Krankenkasse name — from assigner.display of any insurance identifier
+  const insuranceId = ikId || vnrId || vekaId;
+  const insurerName = insuranceId?.assigner?.display || p.managingOrganization?.display || "";
+
+  const leftCol = [
+    { label: tr("patient.name"), value: nameToString(p.name) },
+    { label: tr("patient.birthdate"), value: formatDate(p.birthDate) },
+    { label: tr("patient.gender"), value: tr(genderKey(p.gender)) },
+    { label: tr("patient.address"), value: addressToString(p.address) },
+    { label: tr("patient.ahv"), value: ahvNumber },
   ];
+
+  // Populate editFields when entering edit mode (only once per open)
+  const insuranceDisplay = {
+    insurerName, ikNumber, vnrNumber, vekaNumber, ahvNumber,
+  };
+
+  function startEdit() {
+    setEditFields({
+      ahv: ahvNumber,
+      ik: ikNumber,
+      vnr: vnrNumber,
+      veka: vekaNumber,
+      insurerName,
+    });
+    setSaveMsg(null);
+    setSaveErr(null);
+    setEditMode(true);
+  }
+
+  async function lookupByCard() {
+    setLookupLoading(true);
+    setLookupMsg(null);
+    setLookupErr(null);
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const res = await fetch(
+        `/api/insurance-lookup?cardNumber=${encodeURIComponent(lookupCard)}&date=${today}`
+      );
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || `Fehler: ${res.status}`);
+      setEditFields((prev) => ({
+        ...prev,
+        insurerName: json.insurerName || prev.insurerName,
+        ik: json.ik || prev.ik,
+        veka: json.veka || prev.veka,
+        ahv: json.ahv || prev.ahv,
+      }));
+      setLookupMsg(`${tr("insurance.lookupFound")}: ${json.insurerName || ""} — ${json.familyname || ""} ${json.givenname || ""}`);
+    } catch (e: unknown) {
+      setLookupErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLookupLoading(false);
+    }
+  }
+
+  async function saveInsurance() {
+    setSaving(true);
+    setSaveMsg(null);
+    setSaveErr(null);
+    try {
+      const res = await fetch(`/api/patients/${encodeURIComponent(id)}`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(editFields),
+      });
+      if (!res.ok) throw new Error(`Fehler: ${res.status}`);
+      const updated = await res.json();
+      setData(updated);
+      setEditMode(false);
+      setSaveMsg(tr("insurance.saved"));
+    } catch (e: unknown) {
+      setSaveErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <div>
@@ -345,67 +472,207 @@ export default function PatientDetailClient({ id }: { id: string }) {
             </div>
           ))}
         </dl>
-        <dl className="divide-y divide-gray-200">
-          {rightCol.map((r) => (
-            <div key={r.label} className="py-2 grid grid-cols-3 gap-4">
-              <dt className="text-sm text-gray-500">{r.label}</dt>
-              <dd className="text-sm text-gray-900 col-span-2">
-                {r.value || "-"}
-              </dd>
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-gray-700">{tr("insurance.title")}</span>
+            {!editMode && (
+              <button
+                onClick={startEdit}
+                className="text-xs text-blue-600 hover:underline"
+              >
+                {tr("insurance.edit")}
+              </button>
+            )}
+          </div>
+          {saveMsg && (
+            <div className="mb-2 text-xs text-green-700 bg-green-50 border border-green-200 px-2 py-1 rounded">
+              {saveMsg}
             </div>
-          ))}
-        </dl>
+          )}
+          {saveErr && (
+            <div className="mb-2 text-xs text-red-700 bg-red-50 border border-red-200 px-2 py-1 rounded">
+              {saveErr}
+            </div>
+          )}
+          {editMode ? (
+            <div className="flex flex-col gap-2">
+              {/* VeKa Lookup */}
+              {sasísEnabled ? (
+                <div className="rounded bg-blue-50 border border-blue-200 p-2">
+                  <div className="text-xs font-medium text-blue-800 mb-1">{tr("insurance.lookup")}</div>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={lookupCard}
+                      onChange={(e) => setLookupCard(e.target.value.replace(/\D/g, ""))}
+                      placeholder={tr("insurance.lookupPlaceholder")}
+                      maxLength={20}
+                      className="flex-1 rounded border px-2 py-1 text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={lookupByCard}
+                      disabled={lookupLoading || lookupCard.length !== 20}
+                      className="px-3 py-1 rounded bg-blue-600 text-white text-sm hover:bg-blue-700 disabled:bg-blue-300"
+                    >
+                      {lookupLoading ? tr("common.searching") : tr("common.search")}
+                    </button>
+                  </div>
+                  {lookupMsg && (
+                    <div className="mt-1 text-xs text-green-700">{lookupMsg}</div>
+                  )}
+                  {lookupErr && (
+                    <div className="mt-1 text-xs text-red-600">{lookupErr}</div>
+                  )}
+                </div>
+              ) : (
+                <div className="rounded bg-gray-50 border border-gray-200 px-3 py-2 text-xs text-gray-400">
+                  {tr("insurance.noSasis")}
+                </div>
+              )}
+              {(["insurerName", "ik", "vnr", "veka", "ahv"] as const).map((field) => (
+                <div key={field}>
+                  <label className="text-xs text-gray-500">
+                    {field === "insurerName" ? tr("insurance.name")
+                      : field === "ik" ? tr("insurance.ik")
+                      : field === "vnr" ? tr("insurance.vnr")
+                      : field === "veka" ? tr("insurance.veka")
+                      : tr("insurance.ahv")}
+                  </label>
+                  <input
+                    type="text"
+                    value={editFields[field]}
+                    onChange={(e) => setEditFields((prev) => ({ ...prev, [field]: e.target.value }))}
+                    className="mt-0.5 w-full rounded border px-2 py-1 text-sm text-gray-700"
+                  />
+                </div>
+              ))}
+              <div className="flex gap-2 mt-1">
+                <button
+                  onClick={saveInsurance}
+                  disabled={saving}
+                  className="px-3 py-1.5 rounded bg-blue-600 text-white text-sm hover:bg-blue-700 disabled:bg-blue-300"
+                >
+                  {saving ? tr("common.saving") : tr("common.save")}
+                </button>
+                <button
+                  onClick={() => setEditMode(false)}
+                  className="px-3 py-1.5 rounded border text-sm text-gray-600 hover:bg-gray-50"
+                >
+                  {tr("common.cancel")}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <dl className="divide-y divide-gray-200 mt-2">
+              {[
+                { label: tr("insurance.name"), value: insuranceDisplay.insurerName },
+                { label: tr("insurance.ik"), value: insuranceDisplay.ikNumber },
+                { label: tr("insurance.vnr"), value: insuranceDisplay.vnrNumber },
+                { label: tr("insurance.veka"), value: insuranceDisplay.vekaNumber },
+              ].map((r) => (
+                <div key={r.label} className="py-2 grid grid-cols-3 gap-4">
+                  <dt className="text-sm text-gray-500">{r.label}</dt>
+                  <dd className="text-sm text-gray-900 col-span-2">{r.value || "-"}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+        </div>
       </div>
 
-      {/* Orders table (match patient list styling) */}
-      <h2 className="text-xl font-semibold mb-2">Aufträge</h2>
+      {/* Orders table */}
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="text-xl font-semibold">{tr("orders.title")}</h2>
+        {flashMsg && (
+          <div className={`rounded border px-3 py-1 text-sm ${flashMsg.ok ? "border-green-300 bg-green-50 text-green-700" : "border-red-300 bg-red-50 text-red-700"}`}>
+            {flashMsg.text}
+          </div>
+        )}
+      </div>
       <DataTable>
         <DataTableHead>
           <DataTableHeadRow>
-            <DataTableHeaderCell className="w-56">Auftrag</DataTableHeaderCell>
-            <DataTableHeaderCell>Bezeichnung</DataTableHeaderCell>
-            <DataTableHeaderCell className="w-32">Status</DataTableHeaderCell>
-            <DataTableHeaderCell className="w-40">Datum</DataTableHeaderCell>
-            <DataTableHeaderCell className="w-24">Proben</DataTableHeaderCell>
+            <DataTableHeaderCell className="w-52">{tr("orders.id")}</DataTableHeaderCell>
+            <DataTableHeaderCell>{tr("orders.description")}</DataTableHeaderCell>
+            <DataTableHeaderCell className="w-44">{tr("orders.status")}</DataTableHeaderCell>
+            <DataTableHeaderCell className="w-36">{tr("orders.date")}</DataTableHeaderCell>
+            <DataTableHeaderCell className="w-20 text-center">{tr("orders.specimens")}</DataTableHeaderCell>
+            <DataTableHeaderCell className="w-40">{tr("orders.actions")}</DataTableHeaderCell>
           </DataTableHeadRow>
         </DataTableHead>
         <DataTableBody>
           {ordersLoading &&
-            Array.from({ length: 5 }, (_, i) => (
+            Array.from({ length: 4 }, (_, i) => (
               <DataTableRow key={`ord-skel-${i}`}>
-                <DataTableCell className="text-gray-400">&nbsp;</DataTableCell>
-                <DataTableCell className="text-gray-400">&nbsp;</DataTableCell>
-                <DataTableCell className="text-gray-400">&nbsp;</DataTableCell>
-                <DataTableCell className="text-gray-400">&nbsp;</DataTableCell>
-                <DataTableCell className="text-gray-400">&nbsp;</DataTableCell>
+                {Array.from({ length: 6 }, (__, j) => (
+                  <DataTableCell key={j}>
+                    <div className="h-4 rounded bg-gray-100 animate-pulse" />
+                  </DataTableCell>
+                ))}
               </DataTableRow>
             ))}
           {!ordersLoading && ordersError && (
             <DataTableRow>
-              <DataTableCell className="text-red-600" colSpan={5}>
-                Fehler beim Laden: {ordersError}
+              <DataTableCell className="text-red-600" colSpan={6}>
+                {tr("orders.loadError")}: {ordersError}
               </DataTableCell>
             </DataTableRow>
           )}
           {!ordersLoading && !ordersError && orders.length === 0 && (
             <DataTableRow>
-              <DataTableCell className="text-gray-500" colSpan={5}>
-                Keine Aufträge gefunden
+              <DataTableCell className="text-gray-500" colSpan={6}>
+                {tr("orders.noResults")}
               </DataTableCell>
             </DataTableRow>
           )}
           {!ordersLoading && !ordersError &&
-            orders.map((o) => (
-              <DataTableRow key={o.id}>
-                <DataTableCell title={o.orderNumber || o.id}>
-                  {o.orderNumber || o.id}
-                </DataTableCell>
-                <DataTableCell title={o.codeText}>{o.codeText || "-"}</DataTableCell>
-                <DataTableCell>{o.status || "-"}</DataTableCell>
-                <DataTableCell>{formatDate(o.authoredOn)}</DataTableCell>
-                <DataTableCell>{o.specimenCount || 0}</DataTableCell>
-              </DataTableRow>
-            ))}
+            orders.map((o) => {
+              const meta = getStatusMeta(o.status);
+              const canEdit = meta.editable;
+              const isDeleting = deletingId === o.id;
+              return (
+                <DataTableRow key={o.id} className={isDeleting ? "opacity-40" : ""}>
+                  <DataTableCell title={o.orderNumber || o.id} className="font-mono text-xs">
+                    {o.orderNumber || o.id}
+                  </DataTableCell>
+                  <DataTableCell title={o.codeText}>{o.codeText || "-"}</DataTableCell>
+                  <DataTableCell>
+                    <StatusBadge status={o.status} t={tr} />
+                  </DataTableCell>
+                  <DataTableCell>{formatDate(o.authoredOn)}</DataTableCell>
+                  <DataTableCell className="text-center">{o.specimenCount || 0}</DataTableCell>
+                  <DataTableCell>
+                    <div className="flex items-center gap-1.5">
+                      {canEdit ? (
+                        <Link
+                          href={`/order/${id}?sr=${o.id}`}
+                          className="inline-flex items-center gap-1 rounded border border-blue-300 bg-blue-50 px-2 py-0.5 text-xs text-blue-700 hover:bg-blue-100"
+                          title={tr("orders.edit")}
+                        >
+                          ✏️ {tr("orders.edit")}
+                        </Link>
+                      ) : (
+                        <span
+                          className="inline-flex items-center gap-1 rounded border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs text-gray-400 cursor-default"
+                          title={tr("orders.locked")}
+                        >
+                          🔒 {tr("orders.locked")}
+                        </span>
+                      )}
+                      <button
+                        onClick={() => handleDeleteOrder(o.id)}
+                        disabled={isDeleting}
+                        title={tr("orders.delete")}
+                        className="inline-flex items-center rounded border border-red-200 bg-red-50 px-2 py-0.5 text-xs text-red-600 hover:bg-red-100 disabled:opacity-40"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  </DataTableCell>
+                </DataTableRow>
+              );
+            })}
         </DataTableBody>
       </DataTable>
 

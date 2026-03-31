@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { FHIR_BASE } from "@/lib/fhir";
+import { FHIR_BASE, FHIR_SYSTEMS } from "@/lib/fhir";
 
 type FhirIdentifier = { system?: string; value?: string; type?: { text?: string } };
 type FhirCodeableConcept = { text?: string; coding?: Array<{ system?: string; code?: string; display?: string }> };
@@ -12,6 +12,7 @@ type FhirServiceRequest = {
   authoredOn?: string;
   identifier?: FhirIdentifier[];
   specimen?: Array<{ reference?: string; identifier?: { system?: string; value?: string } }>;
+  subject?: { reference?: string };
   meta?: { lastUpdated?: string };
 };
 
@@ -23,17 +24,20 @@ type FhirBundle<T = unknown> = {
 
 function extractOrderNumber(ids?: FhirIdentifier[]): string | undefined {
   if (!ids) return undefined;
-  const preferred = ids.find((i) => i.system === "https://zetlab.ch/fhir/order-numbers");
+  const preferred = ids.find((i) => i.system === FHIR_SYSTEMS.orderNumbers);
   if (preferred?.value) return preferred.value;
   return ids.find((i) => i.value)?.value;
+}
+
+function extractPatientId(subject?: { reference?: string }): string {
+  const ref = subject?.reference || "";
+  return ref.startsWith("Patient/") ? ref.slice("Patient/".length) : "";
 }
 
 export async function GET() {
   try {
     const url = new URL(`${FHIR_BASE}/ServiceRequest`);
-    // Sort newest first when supported
     url.searchParams.set("_sort", "-_lastUpdated");
-    // Reasonable page size
     url.searchParams.set("_count", "50");
 
     const res = await fetch(url.toString(), {
@@ -60,6 +64,7 @@ export async function GET() {
         authoredOn: sr.authoredOn || sr.meta?.lastUpdated || "",
         orderNumber: extractOrderNumber(sr.identifier) || "",
         specimenCount: Array.isArray(sr.specimen) ? sr.specimen.length : 0,
+        patientId: extractPatientId(sr.subject),
       }));
 
     return NextResponse.json({ data, total: bundle.total ?? data.length });
@@ -71,4 +76,3 @@ export async function GET() {
     );
   }
 }
-

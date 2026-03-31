@@ -2,12 +2,28 @@ import { promises as fs } from "fs";
 import path from "path";
 import crypto from "crypto";
 
+export type UserProfile = {
+  gln?: string;
+  firstName?: string;
+  lastName?: string;
+  organization?: string;
+  street?: string;
+  streetNo?: string;
+  zip?: string;
+  city?: string;
+  canton?: string;
+  country?: string;
+  email?: string;
+  phone?: string;
+};
+
 export type User = {
   id: string;
   username: string;
   passwordHash: string;
   salt: string;
   createdAt: string;
+  profile?: UserProfile;
 };
 
 const dataDir = path.join(process.cwd(), "data");
@@ -77,6 +93,20 @@ export function validateCredentials(username: string, password: string): string 
   if (!/^[a-zA-Z0-9_.-]{3,32}$/.test(u)) return "Username must be 3-32 chars (letters, numbers, _.-)";
   if (password.length < 8) return "Password must be at least 8 characters";
   return null;
+}
+
+export async function getUserById(id: string): Promise<User | undefined> {
+  const users = await getUsers();
+  return users.find((u) => u.id === id);
+}
+
+export async function updateUserProfile(userId: string, profile: UserProfile): Promise<User> {
+  const users = await getUsers();
+  const idx = users.findIndex((u) => u.id === userId);
+  if (idx === -1) throw new Error("User not found");
+  users[idx] = { ...users[idx], profile: { ...users[idx].profile, ...profile } };
+  await fs.writeFile(usersFile, JSON.stringify({ users }, null, 2), "utf8");
+  return users[idx];
 }
 
 export async function verifyUser(username: string, password: string): Promise<User | null> {

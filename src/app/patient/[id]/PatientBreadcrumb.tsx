@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useTranslation } from "@/lib/i18n";
 
 type HumanName = { text?: string; given?: string[]; family?: string };
 type Patient = { resourceType: "Patient"; id?: string; name?: HumanName[] };
@@ -15,6 +16,7 @@ function nameToString(names?: HumanName[]): string {
 }
 
 export default function PatientBreadcrumb({ id }: { id: string }) {
+  const { t } = useTranslation();
   const [label, setLabel] = useState<string>("…");
 
   useEffect(() => {
@@ -37,30 +39,46 @@ export default function PatientBreadcrumb({ id }: { id: string }) {
   }, [id]);
 
   return (
-    <nav className="mb-2 text-sm text-gray-600" aria-label="Brotkrumen">
-      <ol className="flex items-center gap-2">
-        <li>
-          <Link href="/" className="text-blue-600 hover:underline">
-            Startseite
-          </Link>
-        </li>
-        <li className="text-gray-400">/</li>
-        <li>
-          <Link href="/patient" className="text-blue-600 hover:underline">
-            Patienten
-          </Link>
-        </li>
-        <li className="text-gray-400">/</li>
-        <li>
-          <Link
-            href={`/patient/${encodeURIComponent(id)}`}
-            className="text-blue-600 hover:underline"
-            aria-label={`Patientendetails öffnen: ${label}`}
-          >
-            {label}
-          </Link>
-        </li>
-      </ol>
-    </nav>
+    <div className="mb-2 flex items-center justify-between">
+      <nav className="text-sm text-gray-600" aria-label="Brotkrumen">
+        <ol className="flex items-center gap-2">
+          <li>
+            <Link href="/" className="inline-flex items-center gap-1 text-blue-600 hover:underline" title={t("nav.home")}>
+              🏠 {t("nav.home")}
+            </Link>
+          </li>
+          <li className="text-gray-400">/</li>
+          <li>
+            <Link href="/patient" className="text-blue-600 hover:underline">
+              {t("patient.title")}
+            </Link>
+          </li>
+          <li className="text-gray-400">/</li>
+          <li>
+            <Link
+              href={`/patient/${encodeURIComponent(id)}`}
+              className="text-blue-600 hover:underline"
+              aria-label={`Patientendetails öffnen: ${label}`}
+            >
+              {label}
+            </Link>
+          </li>
+        </ol>
+      </nav>
+      <div className="flex items-center gap-2">
+        <Link
+          href={`/patient/${encodeURIComponent(id)}/befunde`}
+          className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-emerald-700"
+        >
+          🔬 {t("befunde.title")}
+        </Link>
+        <Link
+          href="/orders"
+          className="inline-flex items-center gap-1.5 rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
+        >
+          📋 {t("orders.title")}
+        </Link>
+      </div>
+    </div>
   );
 }
