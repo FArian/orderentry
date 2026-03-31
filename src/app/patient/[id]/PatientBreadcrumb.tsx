@@ -49,7 +49,7 @@ export default function PatientBreadcrumb({ id }: { id: string }) {
           </li>
           <li className="text-gray-400">/</li>
           <li>
-            <Link href="/patient" className="text-blue-600 hover:underline">
+            <Link href="/patients" className="text-blue-600 hover:underline">
               {t("patient.title")}
             </Link>
           </li>
@@ -65,18 +65,24 @@ export default function PatientBreadcrumb({ id }: { id: string }) {
           </li>
         </ol>
       </nav>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-shrink-0 items-center gap-2">
+        <Link
+          href={`/order/${encodeURIComponent(id)}`}
+          className="inline-flex items-center gap-1.5 rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
+        >
+          📋 {t("home.order")}
+        </Link>
+        <Link
+          href="/orders"
+          className="inline-flex items-center gap-1.5 rounded-md bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-900 shadow-sm hover:bg-gray-200"
+        >
+          📤 {t("orders.title")}
+        </Link>
         <Link
           href={`/patient/${encodeURIComponent(id)}/befunde`}
           className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-emerald-700"
         >
           🔬 {t("befunde.title")}
-        </Link>
-        <Link
-          href="/orders"
-          className="inline-flex items-center gap-1.5 rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
-        >
-          📋 {t("orders.title")}
         </Link>
       </div>
     </div>

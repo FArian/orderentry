@@ -15,7 +15,8 @@ import {
   DataTableCell,
 } from "@/components/Table";
 
-// Minimal FHIR Patient typing for fields we display
+// ── FHIR Patient types ────────────────────────────────────────────────────────
+
 type HumanName = {
   use?: string;
   text?: string;
@@ -61,50 +62,39 @@ type Patient = {
   meta?: { lastUpdated?: string; versionId?: string };
 };
 
-// ── Status badge helpers (shared with /orders page) ──────────────────────────
+type OrderRow = {
+  id: string;
+  status: string;
+  intent: string;
+  codeText: string;
+  authoredOn: string;
+  orderNumber: string;
+  specimenCount: number;
+};
 
-type StatusMeta = { icon: string; badge: string; tooltipKey: string; editable: boolean };
+type BefundRow = {
+  id: string;
+  status: string;
+  codeText: string;
+  category: string;
+  effectiveDate: string;
+  resultCount: number;
+  conclusion: string;
+  basedOn: string[];
+  pdfData: string | null;
+  pdfTitle: string | null;
+  hl7Data: string | null;
+  hl7Title: string | null;
+};
 
-function getStatusMeta(status: string): StatusMeta {
-  switch (status) {
-    case "draft":      return { icon: "✏️", badge: "bg-gray-100 text-gray-700 border-gray-300",   tooltipKey: "orders.tooltipDraft",     editable: true  };
-    case "active":     return { icon: "📤", badge: "bg-blue-100 text-blue-700 border-blue-300",    tooltipKey: "orders.tooltipActive",    editable: true  };
-    case "on-hold":    return { icon: "⏸️", badge: "bg-yellow-100 text-yellow-700 border-yellow-300", tooltipKey: "orders.tooltipOnHold",  editable: true  };
-    case "completed":  return { icon: "✅", badge: "bg-green-100 text-green-700 border-green-300", tooltipKey: "orders.tooltipCompleted", editable: false };
-    case "revoked":    return { icon: "🚫", badge: "bg-red-100 text-red-700 border-red-300",       tooltipKey: "orders.tooltipRevoked",   editable: false };
-    case "entered-in-error": return { icon: "⚠️", badge: "bg-red-100 text-red-700 border-red-300", tooltipKey: "orders.tooltipError",   editable: false };
-    default:           return { icon: "❓", badge: "bg-gray-100 text-gray-500 border-gray-200",    tooltipKey: "orders.statusUnknown",    editable: false };
-  }
-}
+type ModalState =
+  | { type: "pdf"; data: string; title: string }
+  | { type: "hl7"; content: string; title: string }
+  | null;
 
-function statusLabel(status: string, t: (k: string) => string): string {
-  const map: Record<string, string> = {
-    draft: t("orders.statusDraft"), active: t("orders.statusActive"),
-    "on-hold": t("orders.statusOnHold"), completed: t("orders.statusCompleted"),
-    revoked: t("orders.statusRevoked"), "entered-in-error": t("orders.statusError"),
-  };
-  return map[status] || t("orders.statusUnknown");
-}
+type Tab = "orders" | "befunde";
 
-function StatusBadge({ status, t }: { status: string; t: (k: string) => string }) {
-  const meta = getStatusMeta(status);
-  return (
-    <div className="relative group inline-block">
-      <span className={`inline-flex items-center gap-1.5 rounded border px-2 py-0.5 text-xs font-medium cursor-default select-none ${meta.badge}`}>
-        <span>{meta.icon}</span>
-        <span>{statusLabel(status, t)}</span>
-      </span>
-      <div className="pointer-events-none absolute left-0 top-full mt-1 z-50 w-72 rounded border border-gray-200 bg-white shadow-lg px-3 py-2 text-xs text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-        <div className="font-semibold mb-1 flex items-center gap-1">
-          <span>{meta.icon}</span><span>{statusLabel(status, t)}</span>
-        </div>
-        <p className="leading-relaxed text-gray-600">{t(meta.tooltipKey)}</p>
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatDate(date?: string): string {
   if (!date) return "";
@@ -155,42 +145,226 @@ function genderKey(g?: string): string {
 
 function systemLabel(system?: string): string {
   switch (system) {
-    case "phone":
-      return "Telefon";
-    case "email":
-      return "E‑Mail";
-    case "fax":
-      return "Fax";
-    case "url":
-      return "Web";
-    default:
-      return "Kontakt";
+    case "phone": return "Telefon";
+    case "email": return "E‑Mail";
+    case "fax": return "Fax";
+    case "url": return "Web";
+    default: return "Kontakt";
   }
 }
 
 function labelForUse(use?: string): string | undefined {
   switch (use) {
-    case "home":
-      return "privat";
-    case "work":
-      return "geschäftlich";
-    case "mobile":
-      return "mobil";
-    case "temp":
-      return "temporär";
-    case "old":
-      return "alt";
-    default:
-      return use || undefined;
+    case "home": return "privat";
+    case "work": return "geschäftlich";
+    case "mobile": return "mobil";
+    case "temp": return "temporär";
+    case "old": return "alt";
+    default: return use || undefined;
   }
 }
+
+function b64toDataUrl(b64: string, mime: string): string {
+  return `data:${mime};base64,${b64}`;
+}
+
+function decodeB64Utf8(b64: string): string {
+  try {
+    return decodeURIComponent(
+      atob(b64)
+        .split("")
+        .map((c) => "%" + c.charCodeAt(0).toString(16).padStart(2, "0"))
+        .join("")
+    );
+  } catch {
+    return atob(b64);
+  }
+}
+
+// ── Order status badges ───────────────────────────────────────────────────────
+
+type OrderStatusMeta = { icon: string; badge: string; tooltipKey: string; editable: boolean };
+
+function getOrderStatusMeta(status: string): OrderStatusMeta {
+  switch (status) {
+    case "draft":           return { icon: "✏️", badge: "bg-gray-100 text-gray-700 border-gray-300",      tooltipKey: "orders.tooltipDraft",     editable: true  };
+    case "active":          return { icon: "📤", badge: "bg-blue-100 text-blue-700 border-blue-300",       tooltipKey: "orders.tooltipActive",    editable: true  };
+    case "on-hold":         return { icon: "⏸️", badge: "bg-yellow-100 text-yellow-700 border-yellow-300", tooltipKey: "orders.tooltipOnHold",    editable: true  };
+    case "completed":       return { icon: "✅", badge: "bg-green-100 text-green-700 border-green-300",    tooltipKey: "orders.tooltipCompleted", editable: false };
+    case "revoked":         return { icon: "🚫", badge: "bg-red-100 text-red-700 border-red-300",          tooltipKey: "orders.tooltipRevoked",   editable: false };
+    case "entered-in-error":return { icon: "⚠️", badge: "bg-red-100 text-red-700 border-red-300",          tooltipKey: "orders.tooltipError",     editable: false };
+    default:                return { icon: "❓", badge: "bg-gray-100 text-gray-500 border-gray-200",       tooltipKey: "orders.statusUnknown",    editable: false };
+  }
+}
+
+function orderStatusLabel(status: string, t: (k: string) => string): string {
+  const map: Record<string, string> = {
+    draft: t("orders.statusDraft"), active: t("orders.statusActive"),
+    "on-hold": t("orders.statusOnHold"), completed: t("orders.statusCompleted"),
+    revoked: t("orders.statusRevoked"), "entered-in-error": t("orders.statusError"),
+  };
+  return map[status] || t("orders.statusUnknown");
+}
+
+function OrderStatusBadge({ status, t }: { status: string; t: (k: string) => string }) {
+  const meta = getOrderStatusMeta(status);
+  return (
+    <div className="relative group inline-block">
+      <span className={`inline-flex items-center gap-1.5 rounded border px-2 py-0.5 text-xs font-medium cursor-default select-none ${meta.badge}`}>
+        <span>{meta.icon}</span>
+        <span>{orderStatusLabel(status, t)}</span>
+      </span>
+      <div className="pointer-events-none absolute left-0 top-full mt-1 z-50 w-72 rounded border border-gray-200 bg-white shadow-lg px-3 py-2 text-xs text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+        <div className="font-semibold mb-1 flex items-center gap-1">
+          <span>{meta.icon}</span><span>{orderStatusLabel(status, t)}</span>
+        </div>
+        <p className="leading-relaxed text-gray-600">{t(meta.tooltipKey)}</p>
+      </div>
+    </div>
+  );
+}
+
+// ── Befund (DiagnosticReport) status badges ───────────────────────────────────
+
+type BefundStatusMeta = { icon: string; badge: string; label: string; tooltip: string };
+
+function getBefundStatusMeta(status: string, t: (k: string) => string): BefundStatusMeta {
+  switch (status) {
+    case "registered":  return { icon: "📝", badge: "bg-gray-100 text-gray-700 border-gray-300",      label: t("befunde.statusRegistered"),  tooltip: t("befunde.tooltipRegistered") };
+    case "partial":     return { icon: "⏳", badge: "bg-yellow-100 text-yellow-700 border-yellow-300", label: t("befunde.statusPartial"),     tooltip: t("befunde.tooltipPartial") };
+    case "preliminary": return { icon: "🔬", badge: "bg-blue-100 text-blue-700 border-blue-300",      label: t("befunde.statusPreliminary"), tooltip: t("befunde.tooltipPreliminary") };
+    case "final":       return { icon: "✅", badge: "bg-green-100 text-green-700 border-green-300",   label: t("befunde.statusFinal"),       tooltip: t("befunde.tooltipFinal") };
+    case "amended":     return { icon: "✏️", badge: "bg-purple-100 text-purple-700 border-purple-300", label: t("befunde.statusAmended"),    tooltip: t("befunde.tooltipAmended") };
+    case "corrected":   return { icon: "🔄", badge: "bg-purple-100 text-purple-700 border-purple-300", label: t("befunde.statusCorrected"),  tooltip: t("befunde.tooltipCorrected") };
+    case "cancelled":   return { icon: "🚫", badge: "bg-red-100 text-red-700 border-red-300",         label: t("befunde.statusCancelled"),   tooltip: t("befunde.tooltipCancelled") };
+    default:            return { icon: "❓", badge: "bg-gray-100 text-gray-500 border-gray-200",      label: status || "?",                  tooltip: "" };
+  }
+}
+
+function BefundStatusBadge({ status, t }: { status: string; t: (k: string) => string }) {
+  const meta = getBefundStatusMeta(status, t);
+  return (
+    <div className="relative group inline-block">
+      <span className={`inline-flex items-center gap-1.5 rounded border px-2 py-0.5 text-xs font-medium cursor-default select-none ${meta.badge}`}>
+        <span>{meta.icon}</span><span>{meta.label}</span>
+      </span>
+      {meta.tooltip && (
+        <div className="pointer-events-none absolute left-0 top-full mt-1 z-50 w-64 rounded border border-gray-200 bg-white shadow-lg px-3 py-2 text-xs text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+          <div className="font-semibold mb-1">{meta.icon} {meta.label}</div>
+          <p className="leading-relaxed text-gray-600">{meta.tooltip}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Preview helpers ───────────────────────────────────────────────────────────
+
+function PreviewButtons({
+  pdfData, pdfTitle, hl7Data, hl7Title, onOpen,
+}: {
+  pdfData: string | null; pdfTitle: string | null;
+  hl7Data: string | null; hl7Title: string | null;
+  onOpen: (modal: ModalState) => void;
+}) {
+  return (
+    <div className="flex items-center gap-1.5 flex-wrap">
+      {pdfData && (
+        <button
+          onClick={() => onOpen({ type: "pdf", data: b64toDataUrl(pdfData, "application/pdf"), title: pdfTitle || "PDF" })}
+          className="inline-flex items-center gap-1 rounded border border-rose-300 bg-rose-50 px-2 py-0.5 text-xs text-rose-700 hover:bg-rose-100"
+        >
+          📄 PDF
+        </button>
+      )}
+      {hl7Data && (
+        <button
+          onClick={() => onOpen({ type: "hl7", content: decodeB64Utf8(hl7Data), title: hl7Title || "HL7" })}
+          className="inline-flex items-center gap-1 rounded border border-indigo-300 bg-indigo-50 px-2 py-0.5 text-xs text-indigo-700 hover:bg-indigo-100"
+        >
+          🔬 HL7
+        </button>
+      )}
+    </div>
+  );
+}
+
+function PreviewModal({ modal, onClose }: { modal: ModalState; onClose: () => void }) {
+  const [copied, setCopied] = useState(false);
+  if (!modal) return null;
+
+  function copy() {
+    const text = modal!.type === "hl7" ? (modal as { type: "hl7"; content: string }).content : "";
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+      <div
+        className="bg-white rounded-lg shadow-2xl flex flex-col"
+        style={{ width: "900px", maxWidth: "96vw", height: "88vh" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b px-4 py-3 shrink-0">
+          <span className="font-semibold text-gray-800 flex items-center gap-2">
+            {modal.type === "pdf" ? "📄" : "🔬"}
+            {modal.title}
+          </span>
+          <div className="flex items-center gap-2">
+            {modal.type === "pdf" && (
+              <a
+                href={(modal as { type: "pdf"; data: string }).data}
+                download={`${modal.title}.pdf`}
+                className="rounded border border-gray-300 bg-white px-3 py-1 text-sm text-gray-600 hover:bg-gray-50"
+              >
+                ⬇️ Download
+              </a>
+            )}
+            {modal.type === "hl7" && (
+              <button
+                onClick={copy}
+                className={`px-3 py-1 rounded text-sm border ${copied ? "bg-green-100 border-green-400 text-green-700" : "bg-white border-gray-300 text-gray-600 hover:bg-gray-50"}`}
+              >
+                {copied ? "✓ Kopiert" : "📋 Kopieren"}
+              </button>
+            )}
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-700 text-xl px-1">×</button>
+          </div>
+        </div>
+        <div className="flex-1 overflow-hidden">
+          {modal.type === "pdf" && (
+            <iframe
+              src={(modal as { type: "pdf"; data: string }).data}
+              className="w-full h-full border-0"
+              title={modal.title}
+            />
+          )}
+          {modal.type === "hl7" && (
+            <pre className="h-full text-xs font-mono bg-gray-950 text-green-300 p-4 whitespace-pre overflow-auto">
+              {(modal as { type: "hl7"; content: string }).content}
+            </pre>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
 
 export default function PatientDetailClient({ id }: { id: string }) {
   const { t: tr } = useTranslation();
   const { refreshCount, refresh } = useRefresh();
+
+  // Patient demographics
   const [data, setData] = useState<Patient | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Insurance edit
   const [editMode, setEditMode] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
   const [saveErr, setSaveErr] = useState<string | null>(null);
@@ -202,21 +376,26 @@ export default function PatientDetailClient({ id }: { id: string }) {
   const [lookupMsg, setLookupMsg] = useState<string | null>(null);
   const [lookupErr, setLookupErr] = useState<string | null>(null);
   const [lookupLoading, setLookupLoading] = useState(false);
-  const [orders, setOrders] = useState<
-    Array<{
-      id: string;
-      status: string;
-      intent: string;
-      codeText: string;
-      authoredOn: string;
-      orderNumber: string;
-      specimenCount: number;
-    }>
-  >([]);
+
+  // Orders
+  const [orders, setOrders] = useState<OrderRow[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [ordersError, setOrdersError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [flashMsg, setFlashMsg] = useState<{ text: string; ok: boolean } | null>(null);
+
+  // Befunde (DiagnosticReports)
+  const [befunde, setBefunde] = useState<BefundRow[]>([]);
+  const [befundeLoading, setBefundeLoading] = useState(true);
+  const [befundeError, setBefundeError] = useState<string | null>(null);
+
+  // PDF/HL7 preview modal
+  const [modal, setModal] = useState<ModalState>(null);
+
+  // Active tab
+  const [activeTab, setActiveTab] = useState<Tab>("orders");
+
+  // ── Fetches ───────────────────────────────────────────────────────────────
 
   useEffect(() => {
     let active = true;
@@ -226,23 +405,15 @@ export default function PatientDetailClient({ id }: { id: string }) {
       .then(async (res) => {
         if (!active) return;
         if (!res.ok) throw new Error(`Request failed: ${res.status}`);
-        const json = (await res.json()) as Patient;
-        setData(json);
+        setData((await res.json()) as Patient);
       })
       .catch((e: unknown) => {
-        const message = e instanceof Error ? e.message : String(e);
-        setError(message);
-        setData(null);
+        if (active) { setError(e instanceof Error ? e.message : String(e)); setData(null); }
       })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, [id, refreshCount]);
 
-  // Load ServiceRequests (orders) for the patient
   useEffect(() => {
     let active = true;
     setOrdersLoading(true);
@@ -252,31 +423,36 @@ export default function PatientDetailClient({ id }: { id: string }) {
       .then(async (res) => {
         if (!active) return;
         if (!res.ok) throw new Error(`Request failed: ${res.status}`);
-        const json = (await res.json()) as {
-          data: Array<{
-            id: string;
-            status: string;
-            intent: string;
-            codeText: string;
-            authoredOn: string;
-            orderNumber: string;
-            specimenCount: number;
-          }>;
-        };
+        const json = (await res.json()) as { data: OrderRow[] };
         setOrders(json.data || []);
       })
       .catch((e: unknown) => {
-        const message = e instanceof Error ? e.message : String(e);
-        setOrdersError(message);
-        setOrders([]);
+        if (active) { setOrdersError(e instanceof Error ? e.message : String(e)); setOrders([]); }
       })
-      .finally(() => {
-        if (active) setOrdersLoading(false);
-      });
-    return () => {
-      active = false;
-    };
+      .finally(() => { if (active) setOrdersLoading(false); });
+    return () => { active = false; };
   }, [id, refreshCount]);
+
+  useEffect(() => {
+    let active = true;
+    setBefundeLoading(true);
+    setBefundeError(null);
+    setBefunde([]);
+    fetch(`/api/patients/${encodeURIComponent(id)}/diagnostic-reports`)
+      .then(async (res) => {
+        if (!active) return;
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = (await res.json()) as { data: BefundRow[] };
+        setBefunde(Array.isArray(json.data) ? json.data : []);
+      })
+      .catch((e: unknown) => {
+        if (active) { setBefundeError(e instanceof Error ? e.message : String(e)); setBefunde([]); }
+      })
+      .finally(() => { if (active) setBefundeLoading(false); });
+    return () => { active = false; };
+  }, [id, refreshCount]);
+
+  // ── Handlers ─────────────────────────────────────────────────────────────
 
   const handleDeleteOrder = useCallback(
     async (orderId: string) => {
@@ -296,6 +472,8 @@ export default function PatientDetailClient({ id }: { id: string }) {
     },
     [tr, refresh]
   );
+
+  // ── Computed ──────────────────────────────────────────────────────────────
 
   const rows = useMemo(() => {
     const p = data;
@@ -325,62 +503,54 @@ export default function PatientDetailClient({ id }: { id: string }) {
       if (ms) list.push({ label: tr("patient.maritalStatus"), value: ms });
     }
     if (typeof p.deceasedBoolean === "boolean")
-      list.push({
-        label: tr("patient.deceased"),
-        value: p.deceasedBoolean ? tr("common.yes") : tr("common.no"),
-      });
+      list.push({ label: tr("patient.deceased"), value: p.deceasedBoolean ? tr("common.yes") : tr("common.no") });
     if (p.deceasedDateTime)
-      list.push({
-        label: tr("patient.deceasedAt"),
-        value: formatDate(p.deceasedDateTime),
-      });
+      list.push({ label: tr("patient.deceasedAt"), value: formatDate(p.deceasedDateTime) });
     if (p.managingOrganization?.display)
-      list.push({
-        label: tr("patient.facility"),
-        value: p.managingOrganization.display,
-      });
+      list.push({ label: tr("patient.facility"), value: p.managingOrganization.display });
     if (p.meta?.lastUpdated)
-      list.push({
-        label: tr("patient.lastUpdated"),
-        value: formatDate(p.meta.lastUpdated),
-      });
+      list.push({ label: tr("patient.lastUpdated"), value: formatDate(p.meta.lastUpdated) });
     return list;
   }, [data, tr]);
 
+  // Befunde filtered to only those linked to this patient's orders
+  const filteredBefunde = useMemo(() => {
+    if (!befunde.length) return befunde;
+    const orderIdSet = new Set(orders.map((o) => o.id));
+    return befunde.filter((b) => {
+      if (b.basedOn.length === 0) return true; // no basedOn → show (already patient-scoped by API)
+      return b.basedOn.some((ref) => {
+        const srId = ref.startsWith("ServiceRequest/") ? ref.slice("ServiceRequest/".length) : ref;
+        return orderIdSet.has(srId);
+      });
+    });
+  }, [befunde, orders]);
+
+  // ── Early returns ─────────────────────────────────────────────────────────
+
   if (loading) return <div className="text-gray-600">{tr("common.loading")}</div>;
-  if (error)
-    return <div className="text-red-600">{tr("patient.loadError")}: {error}</div>;
+  if (error) return <div className="text-red-600">{tr("patient.loadError")}: {error}</div>;
   if (!data) return null;
 
-  // Extract fields for the two-column summary
+  // ── Insurance field extraction ────────────────────────────────────────────
+
   const p = data as Patient;
   const ids = p.identifier || [];
 
   function findById(systemFragments: string[]): Identifier | undefined {
     return ids.find((i) =>
-      systemFragments.some((f) =>
-        (i.system || "").toLowerCase().includes(f.toLowerCase())
-      )
+      systemFragments.some((f) => (i.system || "").toLowerCase().includes(f.toLowerCase()))
     );
   }
 
-  // AHV — OID 2.16.756.5.32
   const ahvId = findById(["2.16.756.5.32", "ahv", "nss"]);
   const ahvNumber = ahvId?.value || "";
-
-  // VeKa — OID 2.16.756.5.30.1.123.100.1.1
   const vekaId = findById(["2.16.756.5.30.1.123.100.1.1", "veka", "card", "karte"]);
   const vekaNumber = vekaId?.value || "";
-
-  // IK (Institutionskennzeichen) — insurance company number
   const ikId = findById(["ik", "institutionskennzeichen", "ikk"]);
   const ikNumber = ikId?.value || "";
-
-  // VNR (Vertragsnummer / Versicherungsnummer) — IN1-36
   const vnrId = findById(["vnr", "vertragsnr", "versicherungsnr", "policynr", "membernr"]);
   const vnrNumber = vnrId?.value || "";
-
-  // Krankenkasse name — from assigner.display of any insurance identifier
   const insuranceId = ikId || vnrId || vekaId;
   const insurerName = insuranceId?.assigner?.display || p.managingOrganization?.display || "";
 
@@ -392,19 +562,10 @@ export default function PatientDetailClient({ id }: { id: string }) {
     { label: tr("patient.ahv"), value: ahvNumber },
   ];
 
-  // Populate editFields when entering edit mode (only once per open)
-  const insuranceDisplay = {
-    insurerName, ikNumber, vnrNumber, vekaNumber, ahvNumber,
-  };
+  const insuranceDisplay = { insurerName, ikNumber, vnrNumber, vekaNumber, ahvNumber };
 
   function startEdit() {
-    setEditFields({
-      ahv: ahvNumber,
-      ik: ikNumber,
-      vnr: vnrNumber,
-      veka: vekaNumber,
-      insurerName,
-    });
+    setEditFields({ ahv: ahvNumber, ik: ikNumber, vnr: vnrNumber, veka: vekaNumber, insurerName });
     setSaveMsg(null);
     setSaveErr(null);
     setEditMode(true);
@@ -416,9 +577,7 @@ export default function PatientDetailClient({ id }: { id: string }) {
     setLookupErr(null);
     try {
       const today = new Date().toISOString().slice(0, 10);
-      const res = await fetch(
-        `/api/insurance-lookup?cardNumber=${encodeURIComponent(lookupCard)}&date=${today}`
-      );
+      const res = await fetch(`/api/insurance-lookup?cardNumber=${encodeURIComponent(lookupCard)}&date=${today}`);
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || `Fehler: ${res.status}`);
       setEditFields((prev) => ({
@@ -458,45 +617,37 @@ export default function PatientDetailClient({ id }: { id: string }) {
     }
   }
 
+  // ── Render ────────────────────────────────────────────────────────────────
+
   return (
     <div>
-      {/* Top: two-column patient summary */}
+      <PreviewModal modal={modal} onClose={() => setModal(null)} />
+
+      {/* Two-column patient summary */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <dl className="divide-y divide-gray-200">
           {leftCol.map((r) => (
             <div key={r.label} className="py-2 grid grid-cols-3 gap-4">
               <dt className="text-sm text-gray-500">{r.label}</dt>
-              <dd className="text-sm text-gray-900 col-span-2">
-                {r.value || "-"}
-              </dd>
+              <dd className="text-sm text-gray-900 col-span-2">{r.value || "-"}</dd>
             </div>
           ))}
         </dl>
+
+        {/* Insurance */}
         <div>
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-gray-700">{tr("insurance.title")}</span>
             {!editMode && (
-              <button
-                onClick={startEdit}
-                className="text-xs text-blue-600 hover:underline"
-              >
+              <button onClick={startEdit} className="text-xs text-blue-600 hover:underline">
                 {tr("insurance.edit")}
               </button>
             )}
           </div>
-          {saveMsg && (
-            <div className="mb-2 text-xs text-green-700 bg-green-50 border border-green-200 px-2 py-1 rounded">
-              {saveMsg}
-            </div>
-          )}
-          {saveErr && (
-            <div className="mb-2 text-xs text-red-700 bg-red-50 border border-red-200 px-2 py-1 rounded">
-              {saveErr}
-            </div>
-          )}
+          {saveMsg && <div className="mb-2 text-xs text-green-700 bg-green-50 border border-green-200 px-2 py-1 rounded">{saveMsg}</div>}
+          {saveErr && <div className="mb-2 text-xs text-red-700 bg-red-50 border border-red-200 px-2 py-1 rounded">{saveErr}</div>}
           {editMode ? (
             <div className="flex flex-col gap-2">
-              {/* VeKa Lookup */}
               {sasísEnabled ? (
                 <div className="rounded bg-blue-50 border border-blue-200 p-2">
                   <div className="text-xs font-medium text-blue-800 mb-1">{tr("insurance.lookup")}</div>
@@ -518,12 +669,8 @@ export default function PatientDetailClient({ id }: { id: string }) {
                       {lookupLoading ? tr("common.searching") : tr("common.search")}
                     </button>
                   </div>
-                  {lookupMsg && (
-                    <div className="mt-1 text-xs text-green-700">{lookupMsg}</div>
-                  )}
-                  {lookupErr && (
-                    <div className="mt-1 text-xs text-red-600">{lookupErr}</div>
-                  )}
+                  {lookupMsg && <div className="mt-1 text-xs text-green-700">{lookupMsg}</div>}
+                  {lookupErr && <div className="mt-1 text-xs text-red-600">{lookupErr}</div>}
                 </div>
               ) : (
                 <div className="rounded bg-gray-50 border border-gray-200 px-3 py-2 text-xs text-gray-400">
@@ -548,17 +695,10 @@ export default function PatientDetailClient({ id }: { id: string }) {
                 </div>
               ))}
               <div className="flex gap-2 mt-1">
-                <button
-                  onClick={saveInsurance}
-                  disabled={saving}
-                  className="px-3 py-1.5 rounded bg-blue-600 text-white text-sm hover:bg-blue-700 disabled:bg-blue-300"
-                >
+                <button onClick={saveInsurance} disabled={saving} className="px-3 py-1.5 rounded bg-blue-600 text-white text-sm hover:bg-blue-700 disabled:bg-blue-300">
                   {saving ? tr("common.saving") : tr("common.save")}
                 </button>
-                <button
-                  onClick={() => setEditMode(false)}
-                  className="px-3 py-1.5 rounded border text-sm text-gray-600 hover:bg-gray-50"
-                >
+                <button onClick={() => setEditMode(false)} className="px-3 py-1.5 rounded border text-sm text-gray-600 hover:bg-gray-50">
                   {tr("common.cancel")}
                 </button>
               </div>
@@ -581,100 +721,224 @@ export default function PatientDetailClient({ id }: { id: string }) {
         </div>
       </div>
 
-      {/* Orders table */}
-      <div className="flex items-center justify-between mb-2">
-        <h2 className="text-xl font-semibold">{tr("orders.title")}</h2>
-        {flashMsg && (
-          <div className={`rounded border px-3 py-1 text-sm ${flashMsg.ok ? "border-green-300 bg-green-50 text-green-700" : "border-red-300 bg-red-50 text-red-700"}`}>
-            {flashMsg.text}
-          </div>
-        )}
+      {/* Tab bar */}
+      <div className="border-b mb-4">
+        <div className="flex gap-6">
+          <button
+            onClick={() => setActiveTab("orders")}
+            className={`py-2.5 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === "orders"
+                ? "border-blue-600 text-blue-700"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            📋 {tr("orders.title")}
+            {orders.length > 0 && (
+              <span className="ml-1.5 rounded-full bg-blue-100 text-blue-700 px-1.5 py-0.5 text-xs">
+                {orders.length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab("befunde")}
+            className={`py-2.5 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === "befunde"
+                ? "border-emerald-600 text-emerald-700"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            🔬 {tr("befunde.title")}
+            {filteredBefunde.length > 0 && (
+              <span className="ml-1.5 rounded-full bg-emerald-100 text-emerald-700 px-1.5 py-0.5 text-xs">
+                {filteredBefunde.length}
+              </span>
+            )}
+          </button>
+        </div>
       </div>
-      <DataTable>
-        <DataTableHead>
-          <DataTableHeadRow>
-            <DataTableHeaderCell className="w-52">{tr("orders.id")}</DataTableHeaderCell>
-            <DataTableHeaderCell>{tr("orders.description")}</DataTableHeaderCell>
-            <DataTableHeaderCell className="w-44">{tr("orders.status")}</DataTableHeaderCell>
-            <DataTableHeaderCell className="w-36">{tr("orders.date")}</DataTableHeaderCell>
-            <DataTableHeaderCell className="w-20 text-center">{tr("orders.specimens")}</DataTableHeaderCell>
-            <DataTableHeaderCell className="w-40">{tr("orders.actions")}</DataTableHeaderCell>
-          </DataTableHeadRow>
-        </DataTableHead>
-        <DataTableBody>
-          {ordersLoading &&
-            Array.from({ length: 4 }, (_, i) => (
-              <DataTableRow key={`ord-skel-${i}`}>
-                {Array.from({ length: 6 }, (__, j) => (
-                  <DataTableCell key={j}>
-                    <div className="h-4 rounded bg-gray-100 animate-pulse" />
-                  </DataTableCell>
+
+      {/* ── Orders tab ─────────────────────────────────────────────────────── */}
+      {activeTab === "orders" && (
+        <>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-lg font-semibold">{tr("orders.title")}</h2>
+            {flashMsg && (
+              <div className={`rounded border px-3 py-1 text-sm ${flashMsg.ok ? "border-green-300 bg-green-50 text-green-700" : "border-red-300 bg-red-50 text-red-700"}`}>
+                {flashMsg.text}
+              </div>
+            )}
+          </div>
+          <DataTable>
+            <DataTableHead>
+              <DataTableHeadRow>
+                <DataTableHeaderCell className="w-52">{tr("orders.id")}</DataTableHeaderCell>
+                <DataTableHeaderCell>{tr("orders.description")}</DataTableHeaderCell>
+                <DataTableHeaderCell className="w-44">{tr("orders.status")}</DataTableHeaderCell>
+                <DataTableHeaderCell className="w-36">{tr("orders.date")}</DataTableHeaderCell>
+                <DataTableHeaderCell className="w-20 text-center">{tr("orders.specimens")}</DataTableHeaderCell>
+                <DataTableHeaderCell className="w-40">{tr("orders.actions")}</DataTableHeaderCell>
+              </DataTableHeadRow>
+            </DataTableHead>
+            <DataTableBody>
+              {ordersLoading &&
+                Array.from({ length: 4 }, (_, i) => (
+                  <DataTableRow key={`ord-skel-${i}`}>
+                    {Array.from({ length: 6 }, (__, j) => (
+                      <DataTableCell key={j}><div className="h-4 rounded bg-gray-100 animate-pulse" /></DataTableCell>
+                    ))}
+                  </DataTableRow>
                 ))}
-              </DataTableRow>
-            ))}
-          {!ordersLoading && ordersError && (
-            <DataTableRow>
-              <DataTableCell className="text-red-600" colSpan={6}>
-                {tr("orders.loadError")}: {ordersError}
-              </DataTableCell>
-            </DataTableRow>
-          )}
-          {!ordersLoading && !ordersError && orders.length === 0 && (
-            <DataTableRow>
-              <DataTableCell className="text-gray-500" colSpan={6}>
-                {tr("orders.noResults")}
-              </DataTableCell>
-            </DataTableRow>
-          )}
-          {!ordersLoading && !ordersError &&
-            orders.map((o) => {
-              const meta = getStatusMeta(o.status);
-              const canEdit = meta.editable;
-              const isDeleting = deletingId === o.id;
-              return (
-                <DataTableRow key={o.id} className={isDeleting ? "opacity-40" : ""}>
-                  <DataTableCell title={o.orderNumber || o.id} className="font-mono text-xs">
-                    {o.orderNumber || o.id}
-                  </DataTableCell>
-                  <DataTableCell title={o.codeText}>{o.codeText || "-"}</DataTableCell>
-                  <DataTableCell>
-                    <StatusBadge status={o.status} t={tr} />
-                  </DataTableCell>
-                  <DataTableCell>{formatDate(o.authoredOn)}</DataTableCell>
-                  <DataTableCell className="text-center">{o.specimenCount || 0}</DataTableCell>
-                  <DataTableCell>
-                    <div className="flex items-center gap-1.5">
-                      {canEdit ? (
-                        <Link
-                          href={`/order/${id}?sr=${o.id}`}
-                          className="inline-flex items-center gap-1 rounded border border-blue-300 bg-blue-50 px-2 py-0.5 text-xs text-blue-700 hover:bg-blue-100"
-                          title={tr("orders.edit")}
-                        >
-                          ✏️ {tr("orders.edit")}
-                        </Link>
-                      ) : (
-                        <span
-                          className="inline-flex items-center gap-1 rounded border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs text-gray-400 cursor-default"
-                          title={tr("orders.locked")}
-                        >
-                          🔒 {tr("orders.locked")}
-                        </span>
-                      )}
-                      <button
-                        onClick={() => handleDeleteOrder(o.id)}
-                        disabled={isDeleting}
-                        title={tr("orders.delete")}
-                        className="inline-flex items-center rounded border border-red-200 bg-red-50 px-2 py-0.5 text-xs text-red-600 hover:bg-red-100 disabled:opacity-40"
-                      >
-                        🗑️
-                      </button>
-                    </div>
+              {!ordersLoading && ordersError && (
+                <DataTableRow>
+                  <DataTableCell className="text-red-600" colSpan={6}>
+                    {tr("orders.loadError")}: {ordersError}
                   </DataTableCell>
                 </DataTableRow>
-              );
-            })}
-        </DataTableBody>
-      </DataTable>
+              )}
+              {!ordersLoading && !ordersError && orders.length === 0 && (
+                <DataTableRow>
+                  <DataTableCell className="text-gray-500" colSpan={6}>
+                    {tr("orders.noResults")}
+                  </DataTableCell>
+                </DataTableRow>
+              )}
+              {!ordersLoading && !ordersError &&
+                orders.map((o) => {
+                  const meta = getOrderStatusMeta(o.status);
+                  const canEdit = meta.editable;
+                  const isDeleting = deletingId === o.id;
+                  return (
+                    <DataTableRow key={o.id} className={isDeleting ? "opacity-40" : ""}>
+                      <DataTableCell title={o.orderNumber || o.id} className="font-mono text-xs">
+                        {o.orderNumber || o.id}
+                      </DataTableCell>
+                      <DataTableCell title={o.codeText}>{o.codeText || "-"}</DataTableCell>
+                      <DataTableCell><OrderStatusBadge status={o.status} t={tr} /></DataTableCell>
+                      <DataTableCell>{formatDate(o.authoredOn)}</DataTableCell>
+                      <DataTableCell className="text-center">{o.specimenCount || 0}</DataTableCell>
+                      <DataTableCell>
+                        <div className="flex items-center gap-1.5">
+                          {canEdit ? (
+                            <Link
+                              href={`/order/${id}?sr=${o.id}`}
+                              className="inline-flex items-center gap-1 rounded border border-blue-300 bg-blue-50 px-2 py-0.5 text-xs text-blue-700 hover:bg-blue-100"
+                              title={tr("orders.edit")}
+                            >
+                              ✏️ {tr("orders.edit")}
+                            </Link>
+                          ) : (
+                            <span
+                              className="inline-flex items-center gap-1 rounded border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs text-gray-400 cursor-default"
+                              title={tr("orders.locked")}
+                            >
+                              🔒 {tr("orders.locked")}
+                            </span>
+                          )}
+                          <button
+                            onClick={() => handleDeleteOrder(o.id)}
+                            disabled={isDeleting}
+                            title={tr("orders.delete")}
+                            className="inline-flex items-center rounded border border-red-200 bg-red-50 px-2 py-0.5 text-xs text-red-600 hover:bg-red-100 disabled:opacity-40"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </DataTableCell>
+                    </DataTableRow>
+                  );
+                })}
+            </DataTableBody>
+          </DataTable>
+        </>
+      )}
+
+      {/* ── Befunde tab ─────────────────────────────────────────────────────── */}
+      {activeTab === "befunde" && (
+        <>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-lg font-semibold">{tr("befunde.title")}</h2>
+            <Link
+              href={`/patient/${encodeURIComponent(id)}/befunde`}
+              className="text-xs text-blue-600 hover:underline"
+            >
+              {tr("befunde.title")} → vollständige Ansicht
+            </Link>
+          </div>
+          <DataTable>
+            <DataTableHead>
+              <DataTableHeadRow>
+                <DataTableHeaderCell>{tr("befunde.code")}</DataTableHeaderCell>
+                <DataTableHeaderCell className="w-36">{tr("befunde.category")}</DataTableHeaderCell>
+                <DataTableHeaderCell className="w-40">{tr("befunde.status")}</DataTableHeaderCell>
+                <DataTableHeaderCell className="w-32">{tr("befunde.date")}</DataTableHeaderCell>
+                <DataTableHeaderCell>{tr("befunde.result")}</DataTableHeaderCell>
+                <DataTableHeaderCell className="w-36">{tr("befunde.documents")}</DataTableHeaderCell>
+              </DataTableHeadRow>
+            </DataTableHead>
+            <DataTableBody>
+              {befundeLoading &&
+                Array.from({ length: 4 }, (_, i) => (
+                  <DataTableRow key={`bef-skel-${i}`}>
+                    {Array.from({ length: 6 }, (__, j) => (
+                      <DataTableCell key={j}><div className="h-4 rounded bg-gray-100 animate-pulse" /></DataTableCell>
+                    ))}
+                  </DataTableRow>
+                ))}
+              {!befundeLoading && befundeError && (
+                <DataTableRow>
+                  <DataTableCell className="text-red-600" colSpan={6}>
+                    {tr("befunde.loadError")}: {befundeError}
+                  </DataTableCell>
+                </DataTableRow>
+              )}
+              {!befundeLoading && !befundeError && filteredBefunde.length === 0 && (
+                <DataTableRow>
+                  <DataTableCell className="text-gray-500" colSpan={6}>
+                    {tr("befunde.noResults")}
+                  </DataTableCell>
+                </DataTableRow>
+              )}
+              {!befundeLoading && !befundeError &&
+                filteredBefunde.map((b) => (
+                  <DataTableRow key={b.id}>
+                    <DataTableCell title={b.codeText}>{b.codeText || "-"}</DataTableCell>
+                    <DataTableCell>{b.category || "-"}</DataTableCell>
+                    <DataTableCell><BefundStatusBadge status={b.status} t={tr} /></DataTableCell>
+                    <DataTableCell>{formatDate(b.effectiveDate)}</DataTableCell>
+                    <DataTableCell>
+                      <div className="text-xs text-gray-700">
+                        {b.conclusion ? (
+                          <span title={b.conclusion} className="block max-w-xs truncate">{b.conclusion}</span>
+                        ) : (
+                          <span className="text-gray-400">{b.resultCount} {tr("befunde.observations")}</span>
+                        )}
+                        {b.basedOn.length > 0 && (
+                          <div className="mt-0.5 flex flex-wrap gap-1">
+                            {b.basedOn.map((ref) => {
+                              const srId = ref.startsWith("ServiceRequest/") ? ref.slice("ServiceRequest/".length) : ref;
+                              return (
+                                <Link key={ref} href={`/order/${id}?sr=${srId}`} className="text-blue-600 hover:underline text-xs">
+                                  📋 {srId}
+                                </Link>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </DataTableCell>
+                    <DataTableCell>
+                      <PreviewButtons
+                        pdfData={b.pdfData} pdfTitle={b.pdfTitle || b.codeText}
+                        hl7Data={b.hl7Data} hl7Title={b.hl7Title || "HL7 ORU^R01"}
+                        onOpen={setModal}
+                      />
+                    </DataTableCell>
+                  </DataTableRow>
+                ))}
+            </DataTableBody>
+          </DataTable>
+        </>
+      )}
 
       <details className="mt-6">
         <summary className="cursor-pointer text-sm text-gray-600 hover:text-gray-800">

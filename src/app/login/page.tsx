@@ -25,7 +25,7 @@ export default function LoginPage() {
           setLocalSession({ id: local.id, username: local.username });
           setMessage("Logged in (local device only).");
           setPassword("");
-          window.location.assign("/patient");
+          window.location.assign("/patients");
         }
         return;
       }
@@ -42,7 +42,7 @@ export default function LoginPage() {
           setLocalSession({ id: local.id, username: local.username });
           setMessage("Logged in (local device only).");
           setPassword("");
-          window.location.assign("/patient");
+          window.location.assign("/patients");
           return;
         }
         setError(data?.error || `Error ${res.status}`);
@@ -50,7 +50,7 @@ export default function LoginPage() {
         setMessage("Logged in successfully.");
         setPassword("");
         // Force a full navigation so cookies apply before render
-        window.location.assign("/patient");
+        window.location.assign("/patients");
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err));

@@ -4,6 +4,9 @@ import crypto from "crypto";
 
 export type UserProfile = {
   gln?: string;
+  localId?: string;
+  ptype?: string;    // GLN PTYPE: "NAT" (person) | "JUR" (organisation)
+  roleType?: string; // GLN ROLE.TYPE e.g. "GrpPra"
   firstName?: string;
   lastName?: string;
   organization?: string;
@@ -15,6 +18,10 @@ export type UserProfile = {
   country?: string;
   email?: string;
   phone?: string;
+  // Second GLN: the linked organisation (NAT→PractitionerRole.organization) or parent org (JUR→Organization.partOf)
+  orgGln?: string;
+  orgName?: string;   // display only, set from lookup
+  orgFhirId?: string; // FHIR id of the found/created org resource
 };
 
 export type User = {

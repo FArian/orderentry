@@ -72,22 +72,25 @@ export async function GET(request: Request) {
   const q = (searchParams.get("q") || "").trim();
   const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
   const pageSize = Math.max(1, parseInt(searchParams.get("pageSize") || "10", 10));
+  const showInactive = searchParams.get("showInactive") === "true";
 
   const offset = (page - 1) * pageSize;
 
-  // Page query
+  // Page query — filter by active state
   const url = new URL(`${FHIR_BASE}/Patient`);
   if (q) url.searchParams.set("name", q);
+  if (!showInactive) url.searchParams.set("active", "true");
+  else url.searchParams.set("active", "false");
   url.searchParams.set("_count", String(pageSize));
   url.searchParams.set("_getpagesoffset", String(offset));
   url.searchParams.set("_sort", "-_lastUpdated");
 
-  // Separate count query to ensure we always have an accurate total
+  // Separate count query
   const countUrl = new URL(`${FHIR_BASE}/Patient`);
   if (q) countUrl.searchParams.set("name", q);
-  // Only ask for the count; servers usually return only metadata
+  if (!showInactive) countUrl.searchParams.set("active", "true");
+  else countUrl.searchParams.set("active", "false");
   countUrl.searchParams.set("_summary", "count");
-  // Request accurate totals if supported (HAPI supports _total param)
   countUrl.searchParams.set("_total", "accurate");
 
   let data: PatientOut[] = [];
