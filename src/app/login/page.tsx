@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { setLocalSession, verifyLocalUser } from "@/lib/localAuth";
 import { FORCE_LOCAL_AUTH } from "@/lib/appConfig";
@@ -20,10 +21,10 @@ export default function LoginPage() {
       if (FORCE_LOCAL_AUTH) {
         const local = await verifyLocalUser(username, password);
         if (!local) {
-          setError("Invalid credentials (local)");
+          setError("Ungültige Anmeldedaten (lokal)");
         } else {
           setLocalSession({ id: local.id, username: local.username });
-          setMessage("Logged in (local device only).");
+          setMessage("Angemeldet (nur lokales Gerät).");
           setPassword("");
           window.location.assign("/patients");
         }
@@ -36,20 +37,18 @@ export default function LoginPage() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        // Try local fallback if server auth fails (e.g., FS permission issues)
         const local = await verifyLocalUser(username, password);
         if (local) {
           setLocalSession({ id: local.id, username: local.username });
-          setMessage("Logged in (local device only).");
+          setMessage("Angemeldet (nur lokales Gerät).");
           setPassword("");
           window.location.assign("/patients");
           return;
         }
-        setError(data?.error || `Error ${res.status}`);
+        setError(data?.error || `Fehler ${res.status}`);
       } else {
-        setMessage("Logged in successfully.");
+        setMessage("Erfolgreich angemeldet.");
         setPassword("");
-        // Force a full navigation so cookies apply before render
         window.location.assign("/patients");
       }
     } catch (err: unknown) {
@@ -60,62 +59,82 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={{ maxWidth: 420, margin: "2rem auto", padding: "1rem" }}>
-      <h1 style={{ fontSize: "1.5rem", fontWeight: 600, marginBottom: "1rem" }}>Log in</h1>
-      <form onSubmit={onSubmit} style={{ display: "grid", gap: ".75rem" }}>
-        <label style={{ display: "grid", gap: ".25rem" }}>
-          <span>Username</span>
-          <input
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            autoComplete="username"
-            minLength={3}
-            maxLength={32}
-            pattern="[a-zA-Z0-9_.-]+"
-            required
-            style={{ padding: ".5rem", border: "1px solid #ccc", borderRadius: 6 }}
-          />
-        </label>
+    <div className="flex min-h-[calc(100vh-57px)] items-center justify-center bg-gray-50 px-4 py-10">
+      <div className="w-full max-w-sm">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 px-8 pt-8 pb-6">
+          <div className="mb-6 text-center">
+            <h1 className="text-xl font-bold text-gray-900">Anmelden</h1>
+            <p className="text-sm text-gray-500 mt-1">ZetLab OrderEntry</p>
+          </div>
 
-        <label style={{ display: "grid", gap: ".25rem" }}>
-          <span>Password</span>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
-            minLength={8}
-            required
-            style={{ padding: ".5rem", border: "1px solid #ccc", borderRadius: 6 }}
-          />
-        </label>
+          <form onSubmit={onSubmit} className="space-y-4">
+            <div>
+              <label
+                htmlFor="login-username"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Benutzername
+              </label>
+              <input
+                id="login-username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                autoComplete="username"
+                minLength={3}
+                maxLength={32}
+                pattern="[a-zA-Z0-9_.-]+"
+                required
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            padding: ".6rem .9rem",
-            borderRadius: 8,
-            border: "1px solid #222",
-            background: "#111",
-            color: "#fff",
-            cursor: loading ? "not-allowed" : "pointer",
-          }}
-        >
-          {loading ? "Checking..." : "Log in"}
-        </button>
-      </form>
+            <div>
+              <label
+                htmlFor="login-password"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Passwort
+              </label>
+              <input
+                id="login-password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                minLength={8}
+                required
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
 
-      {message && (
-        <p style={{ color: "#05611a", marginTop: ".75rem" }}>{message}</p>
-      )}
-      {error && (
-        <p style={{ color: "#a00", marginTop: ".75rem" }}>{error}</p>
-      )}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 transition-colors"
+            >
+              {loading ? "Wird geprüft…" : "Anmelden"}
+            </button>
+          </form>
 
-      <p style={{ marginTop: "1rem" }}>
-        Need an account? <a href="/signup" style={{ color: "#0366d6" }}>Sign up</a>
-      </p>
+          {message && (
+            <div className="mt-4 rounded-lg bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-700">
+              {message}
+            </div>
+          )}
+          {error && (
+            <div className="mt-4 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+        </div>
+
+        <p className="mt-4 text-center text-sm text-gray-600">
+          Noch kein Konto?{" "}
+          <Link href="/signup" className="font-medium text-blue-600 hover:underline">
+            Registrieren
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }

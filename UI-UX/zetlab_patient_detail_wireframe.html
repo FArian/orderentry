@@ -1,0 +1,324 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; }
+  .app { display: flex; flex-direction: column; min-height: 700px; background: #f4f5f7; }
+  .topbar { background: #fff; border-bottom: 0.5px solid #e0e0e0; padding: 0 24px; height: 52px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .topbar-left { display: flex; align-items: center; gap: 16px; }
+  .logo { font-size: 18px; font-weight: 500; color: #1a1a1a; display: flex; align-items: center; gap: 6px; }
+  .logo-icon { width: 28px; height: 28px; background: #185FA5; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+  .lang-switcher { display: flex; gap: 2px; }
+  .lang-btn { font-size: 12px; padding: 3px 7px; border-radius: 4px; border: 0.5px solid #e0e0e0; background: transparent; color: #666; cursor: pointer; }
+  .lang-btn.active { background: #185FA5; color: white; border-color: #185FA5; }
+  .version-badge { font-size: 11px; color: #999; background: #f4f5f7; padding: 2px 8px; border-radius: 10px; border: 0.5px solid #e0e0e0; }
+  .topbar-right { display: flex; align-items: center; gap: 8px; }
+  .topbar-right a { font-size: 13px; color: #666; text-decoration: none; }
+  .top-btn { font-size: 12px; padding: 5px 12px; border-radius: 7px; cursor: pointer; border: 0.5px solid #e0e0e0; background: #fff; color: #1a1a1a; }
+  .top-btn-blue { background: #185FA5; color: white; border-color: #185FA5; }
+  .top-btn-green { background: #3B6D11; color: white; border-color: #3B6D11; }
+  .main { display: flex; flex: 1; }
+  .sidebar { width: 220px; background: #fff; border-right: 0.5px solid #e0e0e0; padding: 20px 0; flex-shrink: 0; }
+  .sidebar-label { font-size: 11px; color: #999; padding: 0 16px 6px; letter-spacing: 0.05em; text-transform: uppercase; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 16px; font-size: 13px; color: #666; cursor: pointer; border-left: 2px solid transparent; }
+  .nav-item:hover { background: #f4f5f7; color: #1a1a1a; }
+  .nav-item.active { color: #185FA5; background: #E6F1FB; border-left-color: #185FA5; font-weight: 500; }
+  .nav-icon { width: 16px; height: 16px; opacity: 0.6; flex-shrink: 0; }
+  .nav-item.active .nav-icon { opacity: 1; }
+  .nav-badge { margin-left: auto; background: #185FA5; color: white; font-size: 10px; padding: 1px 6px; border-radius: 10px; font-weight: 500; }
+  .content { flex: 1; padding: 28px 32px; overflow: auto; }
+  .breadcrumb { font-size: 12px; color: #999; margin-bottom: 16px; display: flex; align-items: center; gap: 6px; }
+  .breadcrumb a { color: #185FA5; text-decoration: none; }
+  .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .page-header h1 { font-size: 20px; font-weight: 500; color: #1a1a1a; }
+  .header-actions { display: flex; align-items: center; gap: 8px; }
+  .btn { font-size: 12px; padding: 6px 14px; border-radius: 8px; cursor: pointer; border: 0.5px solid #e0e0e0; background: #fff; color: #1a1a1a; display: flex; align-items: center; gap: 5px; }
+  .btn-blue { background: #185FA5; color: white; border-color: #185FA5; }
+  .btn-green { background: #3B6D11; color: white; border-color: #3B6D11; }
+
+  /* Patient hero card */
+  .patient-hero { background: #fff; border: 0.5px solid #e0e0e0; border-radius: 12px; padding: 20px 24px; margin-bottom: 20px; display: flex; gap: 24px; position: relative; }
+  .patient-avatar-lg { width: 56px; height: 56px; border-radius: 50%; background: #E6F1FB; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 500; color: #185FA5; flex-shrink: 0; }
+  .patient-hero-info { flex: 1; }
+  .patient-hero-name { font-size: 18px; font-weight: 500; color: #1a1a1a; margin-bottom: 4px; }
+  .patient-hero-meta { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; }
+  .meta-item { display: flex; flex-direction: column; gap: 1px; }
+  .meta-label { font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 0.04em; }
+  .meta-value { font-size: 13px; color: #1a1a1a; }
+  .patient-hero-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+  .hero-badge { font-size: 11px; padding: 3px 9px; border-radius: 20px; }
+  .badge-active { background: #EAF3DE; color: #3B6D11; border: 0.5px solid #C0DD97; }
+  .badge-insurance { background: #E6F1FB; color: #185FA5; border: 0.5px solid #B5D4F4; }
+  .hero-edit { position: absolute; top: 16px; right: 20px; font-size: 12px; color: #185FA5; cursor: pointer; display: flex; align-items: center; gap: 4px; }
+
+  /* Two-col info grid */
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .info-card { background: #fff; border: 0.5px solid #e0e0e0; border-radius: 12px; padding: 16px 20px; }
+  .info-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .info-card-title { font-size: 12px; font-weight: 500; color: #999; text-transform: uppercase; letter-spacing: 0.05em; }
+  .info-card-edit { font-size: 11px; color: #185FA5; cursor: pointer; }
+  .info-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 0.5px solid #f0f0f0; font-size: 13px; }
+  .info-row:last-child { border-bottom: none; }
+  .info-key { color: #666; }
+  .info-val { color: #1a1a1a; font-weight: 500; text-align: right; }
+  .info-val.empty { color: #ccc; font-weight: 400; }
+
+  /* Tabs */
+  .tabs-bar { display: flex; gap: 0; border-bottom: 0.5px solid #e0e0e0; margin-bottom: 16px; background: #fff; border-radius: 12px 12px 0 0; overflow: hidden; }
+  .tab-item { padding: 12px 20px; font-size: 13px; color: #666; cursor: pointer; border-bottom: 2px solid transparent; display: flex; align-items: center; gap: 6px; }
+  .tab-item:hover { color: #1a1a1a; background: #f9f9f9; }
+  .tab-item.active { color: #185FA5; border-bottom-color: #185FA5; font-weight: 500; background: #fff; }
+  .tab-badge { font-size: 10px; background: #185FA5; color: white; padding: 1px 6px; border-radius: 10px; }
+  .tab-badge-green { background: #3B6D11; }
+
+  /* Orders table inside tab */
+  .tab-content { background: #fff; border: 0.5px solid #e0e0e0; border-radius: 0 0 12px 12px; overflow: hidden; }
+  .tab-toolbar { padding: 12px 16px; border-bottom: 0.5px solid #e0e0e0; display: flex; align-items: center; gap: 8px; }
+  .tab-search { padding: 6px 10px 6px 28px; font-size: 12px; border: 0.5px solid #e0e0e0; border-radius: 7px; background: #f4f5f7; color: #1a1a1a; outline: none; width: 220px; }
+  .tab-search-wrap { position: relative; }
+  .tab-search-ico { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); color: #999; pointer-events: none; }
+  .filter-chip { font-size: 11px; padding: 4px 9px; border-radius: 20px; border: 0.5px solid #e0e0e0; background: #fff; color: #666; cursor: pointer; }
+  .filter-chip.on { background: #E6F1FB; color: #185FA5; border-color: #B5D4F4; }
+  table { width: 100%; border-collapse: collapse; }
+  thead tr { background: #f4f5f7; }
+  thead th { font-size: 11px; font-weight: 500; color: #666; text-transform: uppercase; letter-spacing: 0.04em; padding: 9px 16px; text-align: left; border-bottom: 0.5px solid #e0e0e0; white-space: nowrap; }
+  tbody tr { border-bottom: 0.5px solid #f0f0f0; cursor: pointer; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: #f9f9f9; }
+  td { padding: 11px 16px; font-size: 13px; color: #1a1a1a; vertical-align: middle; }
+  .order-id { font-size: 11px; color: #999; font-family: monospace; }
+  .order-desc { font-size: 13px; color: #1a1a1a; }
+  .order-desc-sub { font-size: 11px; color: #999; margin-top: 1px; }
+  .status-pill { font-size: 11px; padding: 3px 9px; border-radius: 20px; font-weight: 500; display: inline-flex; align-items: center; gap: 4px; }
+  .pill-draft { background: #FAEEDA; color: #854F0B; }
+  .pill-sent { background: #E6F1FB; color: #185FA5; }
+  .pill-done { background: #EAF3DE; color: #3B6D11; }
+  .specimens-cell { font-size: 12px; color: #666; }
+  .actions-cell { display: flex; gap: 5px; align-items: center; }
+  .act-btn { font-size: 11px; padding: 3px 9px; border-radius: 6px; border: 0.5px solid #e0e0e0; background: #fff; cursor: pointer; color: #1a1a1a; }
+  .act-btn:hover { background: #f4f5f7; }
+  .act-btn-del { color: #E24B4A; border-color: #F7C1C1; }
+  .tab-footer { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-top: 0.5px solid #e0e0e0; background: #f4f5f7; font-size: 12px; color: #999; }
+  .add-order-row { padding: 12px 16px; border-top: 0.5px solid #e0e0e0; display: flex; align-items: center; gap: 8px; background: #f9f9f9; }
+  .json-toggle { font-size: 11px; color: #185FA5; cursor: pointer; padding: 8px 16px; display: inline-flex; align-items: center; gap: 5px; }
+</style>
+
+<div class="app">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="logo">
+        <div class="logo-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="white"><path d="M3 2h10l-2 5H5L3 2zm1 6l1.5 6h5L12 8H4z"/></svg></div>
+        ZetLab
+      </div>
+      <span class="version-badge">v0.1.0</span>
+      <div class="lang-switcher">
+        <button class="lang-btn">DE</button><button class="lang-btn">FR</button><button class="lang-btn">IT</button><button class="lang-btn active">EN</button>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <button class="top-btn top-btn-blue">New order</button>
+      <button class="top-btn">Orders</button>
+      <button class="top-btn top-btn-green">Results</button>
+      <a href="#" style="margin-left:8px;">Profile</a>
+      <a href="#" style="color:#E24B4A;">Logout</a>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="sidebar">
+      <div style="margin-bottom:8px;">
+        <div class="sidebar-label">Navigation</div>
+        <div class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
+          Dashboard
+        </div>
+        <div class="nav-item active">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="5" r="3"/><path d="M2 13c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>
+          Patients
+          <span class="nav-badge">3</span>
+        </div>
+        <div class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="2" width="12" height="14" rx="1"/><line x1="5" y1="6" x2="11" y2="6" stroke="currentColor" stroke-width="1.5"/><line x1="5" y1="9" x2="11" y2="9" stroke="currentColor" stroke-width="1.5"/></svg>
+          Orders
+          <span class="nav-badge">12</span>
+        </div>
+        <div class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M3 3h10v2H3zM3 7h10v2H3zM3 11h6v2H3z"/></svg>
+          Results
+        </div>
+      </div>
+      <div style="margin-top:16px;">
+        <div class="sidebar-label">Account</div>
+        <div class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="5" r="3"/><path d="M2 13c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>
+          My Profile
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="breadcrumb">
+        <a href="#">Home</a><span>/</span>
+        <a href="#">Patients</a><span>/</span>
+        <span style="color:#1a1a1a;">Hans Peter Muster</span>
+      </div>
+
+      <div class="page-header">
+        <h1>Patient detail</h1>
+        <div class="header-actions">
+          <button class="btn btn-blue">
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="white"><path d="M5.5 1v9M1 5.5h9" stroke="white" stroke-width="1.5"/></svg>
+            New order
+          </button>
+          <button class="btn">Orders</button>
+          <button class="btn btn-green">Results</button>
+        </div>
+      </div>
+
+      <!-- Patient hero -->
+      <div class="patient-hero">
+        <div class="patient-avatar-lg">HM</div>
+        <div class="patient-hero-info">
+          <div class="patient-hero-name">Hans Peter Muster</div>
+          <div class="patient-hero-meta">
+            <div class="meta-item">
+              <span class="meta-label">Date of birth</span>
+              <span class="meta-value">12.04.1975</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Gender</span>
+              <span class="meta-value">Male</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">AHV No.</span>
+              <span class="meta-value">7561234567890</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Last updated</span>
+              <span class="meta-value">31.03.2026</span>
+            </div>
+          </div>
+          <div class="patient-hero-badges">
+            <span class="hero-badge badge-active">Active</span>
+            <span class="hero-badge badge-insurance">No insurance data</span>
+          </div>
+        </div>
+        <div class="hero-edit">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="#185FA5"><path d="M8.5 1.5l2 2L4 10H2V8L8.5 1.5z"/></svg>
+          Edit
+        </div>
+      </div>
+
+      <!-- Info grid -->
+      <div class="info-grid">
+        <div class="info-card">
+          <div class="info-card-header">
+            <span class="info-card-title">Personal data</span>
+            <span class="info-card-edit">Edit</span>
+          </div>
+          <div class="info-row"><span class="info-key">Name</span><span class="info-val">Hans Peter Muster</span></div>
+          <div class="info-row"><span class="info-key">Date of birth</span><span class="info-val">12.04.1975</span></div>
+          <div class="info-row"><span class="info-key">Gender</span><span class="info-val">Male</span></div>
+          <div class="info-row"><span class="info-key">Address</span><span class="info-val">Bahnhofstrasse 14, 8001 Zürich</span></div>
+          <div class="info-row"><span class="info-key">AHV No.</span><span class="info-val">7561234567890</span></div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-header">
+            <span class="info-card-title">Insurance data</span>
+            <span class="info-card-edit">Edit</span>
+          </div>
+          <div class="info-row"><span class="info-key">Insurance company</span><span class="info-val empty">—</span></div>
+          <div class="info-row"><span class="info-key">IK (Institution ID)</span><span class="info-val empty">—</span></div>
+          <div class="info-row"><span class="info-key">VNR (Contract No.)</span><span class="info-val empty">—</span></div>
+          <div class="info-row"><span class="info-key">VeKa No.</span><span class="info-val">8075612345678901</span></div>
+        </div>
+      </div>
+
+      <!-- Tabs: Orders / Results -->
+      <div class="tabs-bar">
+        <div class="tab-item active">
+          Orders <span class="tab-badge">2</span>
+        </div>
+        <div class="tab-item">
+          Results <span class="tab-badge tab-badge-green">1</span>
+        </div>
+      </div>
+
+      <div class="tab-content">
+        <div class="tab-toolbar">
+          <div class="tab-search-wrap">
+            <svg class="tab-search-ico" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#999" stroke-width="1.5"><circle cx="5" cy="5" r="3.5"/><path d="M8 8l2.5 2.5"/></svg>
+            <input class="tab-search" type="text" placeholder="Search orders…" />
+          </div>
+          <button class="filter-chip on">All</button>
+          <button class="filter-chip">Draft</button>
+          <button class="filter-chip">Sent</button>
+          <button class="filter-chip">Done</button>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Order ID</th>
+              <th>Description</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th>Specimens</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="order-id">test-sr-draft-001</span></td>
+              <td>
+                <div class="order-desc">Kleines Blutbild, Eisen, Ferritin</div>
+                <div class="order-desc-sub">3 analyses · Routine</div>
+              </td>
+              <td><span class="status-pill pill-draft">Draft</span></td>
+              <td style="font-size:12px;color:#666;">31.03.2026</td>
+              <td class="specimens-cell">0</td>
+              <td>
+                <div class="actions-cell">
+                  <button class="act-btn">Edit</button>
+                  <button class="act-btn act-btn-del">Delete</button>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td><span class="order-id">test-sr-active-001</span></td>
+              <td>
+                <div class="order-desc">Blutkultur, CRP, PCT</div>
+                <div class="order-desc-sub">3 analyses · Urgent</div>
+              </td>
+              <td><span class="status-pill pill-sent">Sent</span></td>
+              <td style="font-size:12px;color:#666;">31.03.2026</td>
+              <td class="specimens-cell">0</td>
+              <td>
+                <div class="actions-cell">
+                  <button class="act-btn">Edit</button>
+                  <button class="act-btn act-btn-del">Delete</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="add-order-row">
+          <button class="btn btn-blue" style="font-size:12px;padding:5px 12px;">
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="white"><path d="M5.5 1v9M1 5.5h9" stroke="white" stroke-width="1.5"/></svg>
+            Add new order
+          </button>
+          <span style="font-size:12px;color:#999;">or select existing analyses</span>
+        </div>
+
+        <div class="tab-footer">
+          <span>Showing 1–2 of 2 orders</span>
+          <span class="json-toggle">
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="#185FA5"><path d="M2 5.5h7M6 3l2.5 2.5L6 8"/></svg>
+            Show all data (JSON)
+          </span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

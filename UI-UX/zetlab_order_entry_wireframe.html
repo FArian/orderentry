@@ -1,0 +1,320 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; }
+  .app { display: flex; flex-direction: column; height: 100vh; min-height: 700px; background: #f4f5f7; }
+  .topbar { background: #fff; border-bottom: 0.5px solid #e0e0e0; padding: 0 24px; height: 52px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .topbar-left { display: flex; align-items: center; gap: 16px; }
+  .logo { font-size: 18px; font-weight: 500; color: #1a1a1a; display: flex; align-items: center; gap: 6px; }
+  .logo-icon { width: 28px; height: 28px; background: #185FA5; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+  .lang-switcher { display: flex; gap: 2px; }
+  .lang-btn { font-size: 12px; padding: 3px 7px; border-radius: 4px; border: 0.5px solid #e0e0e0; background: transparent; color: #666; cursor: pointer; }
+  .lang-btn.active { background: #185FA5; color: white; border-color: #185FA5; }
+  .version-badge { font-size: 11px; color: #999; background: #f4f5f7; padding: 2px 8px; border-radius: 10px; border: 0.5px solid #e0e0e0; }
+  .topbar-right { display: flex; align-items: center; gap: 8px; }
+  .topbar-right a { font-size: 13px; color: #666; text-decoration: none; }
+  .top-btn { font-size: 12px; padding: 5px 12px; border-radius: 7px; cursor: pointer; border: 0.5px solid #e0e0e0; background: #fff; color: #1a1a1a; display: flex; align-items: center; gap: 5px; }
+  .top-btn-blue { background: #185FA5; color: white; border-color: #185FA5; }
+  .top-btn-green { background: #3B6D11; color: white; border-color: #3B6D11; }
+
+  .subbar { background: #fff; border-bottom: 0.5px solid #e0e0e0; padding: 0 24px; height: 44px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .breadcrumb { font-size: 12px; color: #999; display: flex; align-items: center; gap: 6px; }
+  .breadcrumb a { color: #185FA5; text-decoration: none; }
+  .fhir-badge { font-size: 11px; color: #3B6D11; background: #EAF3DE; padding: 3px 9px; border-radius: 10px; border: 0.5px solid #C0DD97; }
+
+  .workspace { display: flex; flex: 1; overflow: hidden; }
+
+  /* LEFT: categories */
+  .col-categories { width: 200px; background: #fff; border-right: 0.5px solid #e0e0e0; display: flex; flex-direction: column; flex-shrink: 0; }
+  .col-header { padding: 12px 14px 8px; border-bottom: 0.5px solid #e0e0e0; }
+  .col-header-title { font-size: 11px; font-weight: 500; color: #999; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+  .col-search { width: 100%; padding: 6px 10px; font-size: 12px; border: 0.5px solid #e0e0e0; border-radius: 7px; background: #f4f5f7; color: #1a1a1a; outline: none; }
+  .tab-row { display: flex; border-bottom: 0.5px solid #e0e0e0; background: #fff; flex-shrink: 0; }
+  .tab { font-size: 12px; padding: 9px 14px; color: #666; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; }
+  .tab.active { color: #185FA5; border-bottom-color: #185FA5; font-weight: 500; }
+  .cat-list { flex: 1; overflow-y: auto; padding: 6px 0; }
+  .cat-item { padding: 8px 14px; font-size: 13px; color: #444; cursor: pointer; border-left: 2px solid transparent; display: flex; align-items: center; justify-content: space-between; }
+  .cat-item:hover { background: #f4f5f7; color: #1a1a1a; }
+  .cat-item.active { background: #E6F1FB; color: #185FA5; border-left-color: #185FA5; font-weight: 500; }
+  .cat-count { font-size: 10px; color: #999; background: #f4f5f7; padding: 1px 5px; border-radius: 8px; }
+  .cat-item.active .cat-count { background: #B5D4F4; color: #185FA5; }
+
+  /* MIDDLE: analyses */
+  .col-analyses { flex: 1; background: #f4f5f7; display: flex; flex-direction: column; overflow: hidden; }
+  .analyses-header { background: #fff; border-bottom: 0.5px solid #e0e0e0; padding: 10px 16px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .analyses-search { flex: 1; padding: 7px 12px 7px 32px; font-size: 13px; border: 0.5px solid #e0e0e0; border-radius: 7px; background: #f4f5f7; color: #1a1a1a; outline: none; }
+  .search-wrap-inner { position: relative; flex: 1; }
+  .search-ico { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #999; pointer-events: none; }
+  .test-count-badge { font-size: 11px; color: #185FA5; background: #E6F1FB; padding: 3px 8px; border-radius: 10px; white-space: nowrap; }
+  .analyses-body { flex: 1; overflow-y: auto; padding: 12px 16px; display: flex; flex-direction: column; gap: 6px; }
+  .analysis-item { background: #fff; border: 0.5px solid #e0e0e0; border-radius: 9px; padding: 10px 14px; display: flex; align-items: center; gap: 12px; cursor: pointer; }
+  .analysis-item:hover { border-color: #B5D4F4; background: #FAFCFF; }
+  .analysis-item.selected { border-color: #185FA5; background: #E6F1FB; }
+  .analysis-cb { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid #ccc; background: #fff; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .analysis-item.selected .analysis-cb { background: #185FA5; border-color: #185FA5; }
+  .analysis-info { flex: 1; min-width: 0; }
+  .analysis-name { font-size: 13px; font-weight: 500; color: #1a1a1a; }
+  .analysis-item.selected .analysis-name { color: #185FA5; }
+  .analysis-meta { font-size: 11px; color: #999; margin-top: 2px; }
+  .analysis-tags { display: flex; gap: 5px; align-items: center; margin-left: auto; flex-shrink: 0; }
+  .tag { font-size: 10px; padding: 2px 7px; border-radius: 8px; font-weight: 500; }
+  .tag-code { background: #f4f5f7; color: #666; border: 0.5px solid #e0e0e0; }
+  .tag-info { background: #E6F1FB; color: #185FA5; cursor: pointer; }
+  .empty-analyses { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #999; gap: 8px; padding: 40px; text-align: center; }
+  .empty-analyses svg { opacity: 0.3; }
+
+  /* RIGHT: order details panel */
+  .col-panel { width: 280px; background: #fff; border-left: 0.5px solid #e0e0e0; display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
+  .panel-section { padding: 14px 16px; border-bottom: 0.5px solid #e0e0e0; }
+  .panel-section-title { font-size: 11px; font-weight: 500; color: #999; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
+  .selected-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+  .sel-tag { font-size: 11px; padding: 3px 8px; border-radius: 20px; background: #E6F1FB; color: #185FA5; border: 0.5px solid #B5D4F4; display: flex; align-items: center; gap: 4px; }
+  .sel-tag-x { cursor: pointer; color: #185FA5; font-size: 13px; line-height: 1; }
+  .specimen-item { display: flex; align-items: center; justify-content: space-between; padding: 7px 10px; border-radius: 7px; background: #f4f5f7; margin-bottom: 5px; font-size: 12px; }
+  .specimen-name { color: #1a1a1a; font-weight: 500; }
+  .specimen-vol { font-size: 11px; color: #185FA5; background: #E6F1FB; padding: 2px 7px; border-radius: 8px; }
+  .priority-row { display: flex; gap: 6px; margin-bottom: 10px; }
+  .prio-btn { flex: 1; padding: 7px; border-radius: 7px; border: 0.5px solid #e0e0e0; background: #f4f5f7; font-size: 12px; color: #666; cursor: pointer; text-align: center; }
+  .prio-btn.active { background: #185FA5; color: white; border-color: #185FA5; font-weight: 500; }
+  .prio-btn.urgent { }
+  .prio-btn.urgent.active { background: #E24B4A; border-color: #E24B4A; }
+  .field-label { font-size: 11px; color: #666; margin-bottom: 4px; }
+  .field-input { width: 100%; padding: 7px 10px; font-size: 12px; border: 0.5px solid #e0e0e0; border-radius: 7px; background: #f4f5f7; color: #1a1a1a; margin-bottom: 10px; outline: none; }
+  .field-select { width: 100%; padding: 7px 10px; font-size: 12px; border: 0.5px solid #e0e0e0; border-radius: 7px; background: #f4f5f7; color: #1a1a1a; margin-bottom: 10px; outline: none; }
+  .physician-chip { display: flex; align-items: center; gap: 6px; background: #E6F1FB; color: #185FA5; border-radius: 20px; padding: 4px 10px; font-size: 12px; margin-bottom: 10px; }
+  .physician-chip-x { cursor: pointer; font-size: 14px; }
+  .field-textarea { width: 100%; padding: 7px 10px; font-size: 12px; border: 0.5px solid #e0e0e0; border-radius: 7px; background: #f4f5f7; color: #1a1a1a; resize: none; height: 64px; outline: none; }
+  .panel-spacer { flex: 1; }
+
+  /* bottom action bar */
+  .action-bar { background: #fff; border-top: 0.5px solid #e0e0e0; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .action-bar-left { display: flex; gap: 8px; }
+  .action-bar-right { display: flex; gap: 8px; }
+  .ab-btn { font-size: 13px; padding: 8px 16px; border-radius: 8px; cursor: pointer; border: 0.5px solid #e0e0e0; background: #fff; color: #1a1a1a; }
+  .ab-btn:hover { background: #f4f5f7; }
+  .ab-btn-primary { background: #185FA5; color: white; border-color: #185FA5; font-weight: 500; }
+  .ab-btn-primary:hover { background: #0C447C; }
+  .patient-info-bar { background: #E6F1FB; border-bottom: 0.5px solid #B5D4F4; padding: 7px 24px; display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+  .patient-info-bar .pname { font-size: 13px; font-weight: 500; color: #185FA5; }
+  .patient-info-bar .pmeta { font-size: 12px; color: #378ADD; }
+  .patient-info-bar .pdot { color: #B5D4F4; }
+</style>
+
+<div class="app">
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="logo">
+        <div class="logo-icon">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="white"><path d="M3 2h10l-2 5H5L3 2zm1 6l1.5 6h5L12 8H4z"/></svg>
+        </div>
+        ZetLab
+      </div>
+      <span class="version-badge">v0.1.0</span>
+      <div class="lang-switcher">
+        <button class="lang-btn">DE</button><button class="lang-btn">FR</button><button class="lang-btn">IT</button><button class="lang-btn active">EN</button>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <button class="top-btn top-btn-blue">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="white"><path d="M6 1v10M1 6h10" stroke="white" stroke-width="1.5"/></svg>
+        New order
+      </button>
+      <button class="top-btn">Orders</button>
+      <button class="top-btn top-btn-green">Results</button>
+      <a href="#" style="margin-left:8px;">Profile</a>
+      <a href="#" style="color:#E24B4A;">Logout</a>
+    </div>
+  </div>
+
+  <!-- Subbar: breadcrumb + FHIR -->
+  <div class="subbar">
+    <div class="breadcrumb">
+      <a href="#">Home</a><span>/</span>
+      <a href="#">Patients</a><span>/</span>
+      <a href="#">Hans Peter Muster</a><span>/</span>
+      <span style="color:#1a1a1a;">New order</span>
+    </div>
+    <span class="fhir-badge">FHIR connected</span>
+  </div>
+
+  <!-- Patient context bar -->
+  <div class="patient-info-bar">
+    <div style="width:30px;height:30px;border-radius:50%;background:#185FA5;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:white;flex-shrink:0;">HM</div>
+    <span class="pname">Hans Peter Muster</span>
+    <span class="pdot">·</span>
+    <span class="pmeta">DOB: 12.04.1975</span>
+    <span class="pdot">·</span>
+    <span class="pmeta">Male</span>
+    <span class="pdot">·</span>
+    <span class="pmeta">AHV: 7561234567890</span>
+  </div>
+
+  <!-- Main workspace -->
+  <div class="workspace">
+
+    <!-- Column 1: Categories -->
+    <div class="col-categories">
+      <div class="col-header">
+        <div class="col-header-title">Categories</div>
+        <input class="col-search" type="text" placeholder="Search…" />
+      </div>
+      <div class="tab-row">
+        <div class="tab active">Mikrobio</div>
+        <div class="tab">Routine</div>
+        <div class="tab">PoC</div>
+      </div>
+      <div class="cat-list">
+        <div class="cat-item">Auge <span class="cat-count">4</span></div>
+        <div class="cat-item active">Bordetella parapertussis <span class="cat-count">3</span></div>
+        <div class="cat-item">Bakterielle Btreiband-PCR <span class="cat-count">6</span></div>
+        <div class="cat-item">Adenoviren <span class="cat-count">2</span></div>
+        <div class="cat-item">Influenza A/B <span class="cat-count">5</span></div>
+        <div class="cat-item">SARS-CoV-2 <span class="cat-count">3</span></div>
+        <div class="cat-item">Blutkultur <span class="cat-count">4</span></div>
+        <div class="cat-item">Pilze <span class="cat-count">7</span></div>
+        <div class="cat-item">Parasiten <span class="cat-count">3</span></div>
+      </div>
+    </div>
+
+    <!-- Column 2: Analyses -->
+    <div class="col-analyses">
+      <div class="analyses-header">
+        <div class="search-wrap-inner">
+          <svg class="search-ico" width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#999" stroke-width="1.5"><circle cx="5.5" cy="5.5" r="4"/><path d="M9 9l3 3"/></svg>
+          <input class="analyses-search" type="text" placeholder="Search analyses…" />
+        </div>
+        <span class="test-count-badge">3 tests in category</span>
+      </div>
+      <div class="analyses-body">
+        <div class="analysis-item">
+          <div class="analysis-cb"></div>
+          <div class="analysis-info">
+            <div class="analysis-name">Abstrich Auge/Nase/Mund</div>
+            <div class="analysis-meta">Specimen: AA · Material: Swab</div>
+          </div>
+          <div class="analysis-tags">
+            <span class="tag tag-code">#BOPAAN</span>
+            <span class="tag tag-info">Info</span>
+          </div>
+        </div>
+        <div class="analysis-item selected">
+          <div class="analysis-cb">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="white"><path d="M2 5l2.5 2.5L8 3" stroke="white" stroke-width="1.5" fill="none"/></svg>
+          </div>
+          <div class="analysis-info">
+            <div class="analysis-name">Abstrich Bronch./Trachealsekret</div>
+            <div class="analysis-meta">Specimen: AT · Material: Tracheal secretion</div>
+          </div>
+          <div class="analysis-tags">
+            <span class="tag tag-code">#BOPABR</span>
+            <span class="tag tag-info">Info</span>
+          </div>
+        </div>
+        <div class="analysis-item">
+          <div class="analysis-cb"></div>
+          <div class="analysis-info">
+            <div class="analysis-name">Stuhl / Rektalabstrich</div>
+            <div class="analysis-meta">Specimen: ST · Material: Stool</div>
+          </div>
+          <div class="analysis-tags">
+            <span class="tag tag-code">#BOPAST</span>
+            <span class="tag tag-info">Info</span>
+          </div>
+        </div>
+
+        <div style="margin-top:8px;padding:10px 0;border-top:0.5px solid #e0e0e0;">
+          <div style="font-size:11px;color:#999;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.04em;">Frequently ordered</div>
+          <div class="analysis-item">
+            <div class="analysis-cb"></div>
+            <div class="analysis-info">
+              <div class="analysis-name">CRP</div>
+              <div class="analysis-meta">Specimen: Serum · Routine</div>
+            </div>
+            <div class="analysis-tags">
+              <span class="tag tag-code">#CRP</span>
+            </div>
+          </div>
+          <div style="margin-top:6px;"></div>
+          <div class="analysis-item">
+            <div class="analysis-cb"></div>
+            <div class="analysis-info">
+              <div class="analysis-name">Kleines Blutbild</div>
+              <div class="analysis-meta">Specimen: EDTA · Routine</div>
+            </div>
+            <div class="analysis-tags">
+              <span class="tag tag-code">#KBB</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Column 3: Order details panel -->
+    <div class="col-panel">
+
+      <div class="panel-section">
+        <div class="panel-section-title">Selected analyses (2)</div>
+        <div class="selected-tags">
+          <span class="sel-tag">Abstrich Auge/Nase/Mund <span class="sel-tag-x">×</span></span>
+          <span class="sel-tag">Abstrich Bronch./Trach. <span class="sel-tag-x">×</span></span>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-section-title">Required specimens</div>
+        <div class="specimen-item">
+          <span class="specimen-name">Specimen AA</span>
+          <span class="specimen-vol">230 µl</span>
+        </div>
+        <div class="specimen-item">
+          <span class="specimen-name">Specimen AT</span>
+          <span class="specimen-vol">230 µl</span>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-section-title">Order details</div>
+
+        <div class="field-label">Priority</div>
+        <div class="priority-row">
+          <div class="prio-btn active">Routine</div>
+          <div class="prio-btn urgent">Urgent</div>
+        </div>
+
+        <div class="field-label">Collection date</div>
+        <input class="field-input" type="text" value="31.03.2026  23:32" />
+
+        <div class="field-label">Referring physician</div>
+        <div class="physician-chip">
+          Dr. med. Anna Meier <span class="physician-chip-x">×</span>
+        </div>
+        <input class="field-input" type="text" placeholder="Search physician…" style="margin-top:-4px;" />
+
+        <div class="field-label">Encounter type</div>
+        <select class="field-select">
+          <option>Ambulatory</option>
+          <option>Inpatient</option>
+          <option>Emergency</option>
+        </select>
+
+        <div class="field-label">Clinical indication</div>
+        <textarea class="field-textarea" placeholder="Free text…"></textarea>
+      </div>
+
+      <div class="panel-spacer"></div>
+    </div>
+  </div>
+
+  <!-- Bottom action bar -->
+  <div class="action-bar">
+    <div class="action-bar-left">
+      <button class="ab-btn">FHIR preview</button>
+      <button class="ab-btn">HL7 preview</button>
+    </div>
+    <div class="action-bar-right">
+      <button class="ab-btn">Save draft</button>
+      <button class="ab-btn ab-btn-primary">Submit order</button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,320 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; }
+  .app { display: flex; flex-direction: column; min-height: 700px; background: #f4f5f7; }
+  .topbar { background: #fff; border-bottom: 0.5px solid #e0e0e0; padding: 0 24px; height: 52px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .topbar-left { display: flex; align-items: center; gap: 16px; }
+  .logo { font-size: 18px; font-weight: 500; color: #1a1a1a; display: flex; align-items: center; gap: 6px; }
+  .logo-icon { width: 28px; height: 28px; background: #185FA5; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+  .lang-switcher { display: flex; gap: 2px; }
+  .lang-btn { font-size: 12px; padding: 3px 7px; border-radius: 4px; border: 0.5px solid #e0e0e0; background: transparent; color: #666; cursor: pointer; }
+  .lang-btn.active { background: #185FA5; color: white; border-color: #185FA5; }
+  .version-badge { font-size: 11px; color: #999; background: #f4f5f7; padding: 2px 8px; border-radius: 10px; border: 0.5px solid #e0e0e0; }
+  .topbar-right { display: flex; align-items: center; gap: 16px; }
+  .topbar-right a { font-size: 13px; color: #666; text-decoration: none; }
+  .main { display: flex; flex: 1; }
+  .sidebar { width: 220px; background: #fff; border-right: 0.5px solid #e0e0e0; padding: 20px 0; flex-shrink: 0; }
+  .sidebar-label { font-size: 11px; color: #999; padding: 0 16px 6px; letter-spacing: 0.05em; text-transform: uppercase; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 16px; font-size: 13px; color: #666; cursor: pointer; border-left: 2px solid transparent; }
+  .nav-item:hover { background: #f4f5f7; }
+  .nav-item.active { color: #185FA5; background: #E6F1FB; border-left-color: #185FA5; font-weight: 500; }
+  .nav-icon { width: 16px; height: 16px; opacity: 0.6; flex-shrink: 0; }
+  .nav-item.active .nav-icon { opacity: 1; }
+  .nav-badge { margin-left: auto; background: #185FA5; color: white; font-size: 10px; padding: 1px 6px; border-radius: 10px; font-weight: 500; }
+  .content { flex: 1; padding: 28px 32px; overflow: auto; max-width: 860px; }
+  .breadcrumb { font-size: 12px; color: #999; margin-bottom: 16px; display: flex; align-items: center; gap: 6px; }
+  .breadcrumb a { color: #185FA5; text-decoration: none; }
+  .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+  .page-header h1 { font-size: 20px; font-weight: 500; color: #1a1a1a; }
+
+  /* Profile hero */
+  .profile-hero { background: #fff; border: 0.5px solid #e0e0e0; border-radius: 12px; padding: 20px 24px; margin-bottom: 20px; display: flex; align-items: center; gap: 20px; }
+  .avatar-lg { width: 64px; height: 64px; border-radius: 50%; background: #185FA5; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 500; color: white; flex-shrink: 0; position: relative; }
+  .avatar-edit-btn { position: absolute; bottom: 0; right: 0; width: 20px; height: 20px; background: #fff; border: 0.5px solid #e0e0e0; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .hero-text { flex: 1; }
+  .hero-name { font-size: 18px; font-weight: 500; color: #1a1a1a; }
+  .hero-username { font-size: 13px; color: #666; margin-top: 2px; }
+  .hero-since { font-size: 12px; color: #999; margin-top: 4px; }
+  .hero-badges { display: flex; gap: 6px; margin-top: 8px; }
+  .hbadge { font-size: 11px; padding: 3px 9px; border-radius: 20px; }
+  .hbadge-blue { background: #E6F1FB; color: #185FA5; border: 0.5px solid #B5D4F4; }
+  .hbadge-green { background: #EAF3DE; color: #3B6D11; border: 0.5px solid #C0DD97; }
+  .hbadge-warn { background: #FAEEDA; color: #854F0B; border: 0.5px solid #FAC775; }
+
+  /* Section cards */
+  .section-card { background: #fff; border: 0.5px solid #e0e0e0; border-radius: 12px; margin-bottom: 16px; overflow: hidden; }
+  .section-header { padding: 14px 20px; border-bottom: 0.5px solid #e0e0e0; display: flex; align-items: center; justify-content: space-between; }
+  .section-title { font-size: 12px; font-weight: 500; color: #999; text-transform: uppercase; letter-spacing: 0.05em; }
+  .section-body { padding: 20px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .form-row.full { grid-template-columns: 1fr; }
+  .form-row.three { grid-template-columns: 2fr 1fr 1fr; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label { font-size: 12px; color: #666; font-weight: 500; }
+  .field input { padding: 8px 12px; font-size: 13px; border: 0.5px solid #e0e0e0; border-radius: 8px; background: #f9f9f9; color: #1a1a1a; outline: none; }
+  .field input:focus { border-color: #185FA5; background: #fff; box-shadow: 0 0 0 3px #E6F1FB; }
+  .field input:disabled { background: #f4f5f7; color: #999; cursor: not-allowed; }
+  .field input.readonly { background: #f4f5f7; color: #666; }
+  .field-hint { font-size: 11px; color: #999; margin-top: 2px; }
+  .field-hint.warn { color: #854F0B; }
+  .field-hint.ok { color: #3B6D11; }
+
+  /* GLN section special */
+  .gln-row { display: flex; align-items: center; gap: 12px; }
+  .gln-input { flex: 1; padding: 8px 12px; font-size: 13px; border: 0.5px solid #e0e0e0; border-radius: 8px; background: #f9f9f9; color: #1a1a1a; outline: none; }
+  .gln-status { font-size: 12px; padding: 5px 12px; border-radius: 8px; white-space: nowrap; }
+  .gln-status.warn { background: #FAEEDA; color: #854F0B; }
+  .gln-status.ok { background: #EAF3DE; color: #3B6D11; }
+
+  /* Account section read-only */
+  .account-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+  .account-item { padding: 10px 0; border-bottom: 0.5px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+  .account-item:last-child { border-bottom: none; }
+  .account-key { font-size: 13px; color: #666; }
+  .account-val { font-size: 13px; color: #1a1a1a; font-weight: 500; }
+  .account-val.muted { color: #999; font-weight: 400; }
+
+  /* Password section */
+  .pwd-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+
+  /* Save bar */
+  .save-bar { background: #fff; border: 0.5px solid #e0e0e0; border-radius: 12px; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; margin-top: 4px; }
+  .save-bar-hint { font-size: 12px; color: #999; display: flex; align-items: center; gap: 6px; }
+  .save-bar-actions { display: flex; gap: 8px; }
+  .btn { font-size: 13px; padding: 8px 18px; border-radius: 8px; cursor: pointer; border: 0.5px solid #e0e0e0; background: #fff; color: #1a1a1a; }
+  .btn:hover { background: #f4f5f7; }
+  .btn-primary { background: #185FA5; color: white; border-color: #185FA5; font-weight: 500; }
+  .btn-primary:hover { background: #0C447C; }
+  .btn-danger { color: #E24B4A; border-color: #F7C1C1; }
+
+  .divider { height: 0.5px; background: #f0f0f0; margin: 4px 0 14px; }
+</style>
+
+<div class="app">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="logo">
+        <div class="logo-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="white"><path d="M3 2h10l-2 5H5L3 2zm1 6l1.5 6h5L12 8H4z"/></svg></div>
+        ZetLab
+      </div>
+      <span class="version-badge">v0.1.0</span>
+      <div class="lang-switcher">
+        <button class="lang-btn">DE</button><button class="lang-btn">FR</button><button class="lang-btn">IT</button><button class="lang-btn active">EN</button>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <a href="#">Profile</a>
+      <a href="#" style="color:#E24B4A;">Logout</a>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="sidebar">
+      <div style="margin-bottom:8px;">
+        <div class="sidebar-label">Navigation</div>
+        <div class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
+          Dashboard
+        </div>
+        <div class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="5" r="3"/><path d="M2 13c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>
+          Patients
+          <span class="nav-badge">3</span>
+        </div>
+        <div class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="2" width="12" height="14" rx="1"/><line x1="5" y1="6" x2="11" y2="6" stroke="currentColor" stroke-width="1.5"/><line x1="5" y1="9" x2="11" y2="9" stroke="currentColor" stroke-width="1.5"/></svg>
+          Orders
+          <span class="nav-badge">12</span>
+        </div>
+        <div class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M3 3h10v2H3zM3 7h10v2H3zM3 11h6v2H3z"/></svg>
+          Results
+        </div>
+      </div>
+      <div style="margin-top:16px;">
+        <div class="sidebar-label">Account</div>
+        <div class="nav-item active">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="5" r="3"/><path d="M2 13c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>
+          My Profile
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="breadcrumb">
+        <a href="#">Home</a><span>/</span>
+        <span style="color:#1a1a1a;">My Profile</span>
+      </div>
+
+      <div class="page-header">
+        <h1>My Profile</h1>
+      </div>
+
+      <!-- Hero -->
+      <div class="profile-hero">
+        <div class="avatar-lg">
+          FA
+          <div class="avatar-edit-btn">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="#666"><path d="M6.5 1.5l2 2L3 9H1V7L6.5 1.5z"/></svg>
+          </div>
+        </div>
+        <div class="hero-text">
+          <div class="hero-name">Farhad Arian</div>
+          <div class="hero-username">@farian</div>
+          <div class="hero-since">Member since 29.03.2026</div>
+          <div class="hero-badges">
+            <span class="hbadge hbadge-blue">Physician</span>
+            <span class="hbadge hbadge-warn">GLN not configured</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Account info (read-only) -->
+      <div class="section-card">
+        <div class="section-header">
+          <span class="section-title">Account</span>
+        </div>
+        <div class="section-body">
+          <div class="account-grid">
+            <div>
+              <div class="account-item"><span class="account-key">Username</span><span class="account-val">farian</span></div>
+              <div class="account-item"><span class="account-key">Member since</span><span class="account-val">29.03.2026</span></div>
+            </div>
+            <div>
+              <div class="account-item"><span class="account-key">Role</span><span class="account-val">Physician</span></div>
+              <div class="account-item"><span class="account-key">Last login</span><span class="account-val muted">Today, 23:32</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GLN -->
+      <div class="section-card">
+        <div class="section-header">
+          <span class="section-title">GLN Number</span>
+        </div>
+        <div class="section-body">
+          <div class="field" style="max-width:420px;">
+            <label>GLN Number (13 digits)</label>
+            <div class="gln-row">
+              <input class="gln-input" type="text" placeholder="7601002145985" maxlength="13" />
+              <span class="gln-status warn">No GLN interface configured</span>
+            </div>
+            <span class="field-hint warn">Enter your 13-digit GLN to link with the FHIR interface.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Profile details -->
+      <div class="section-card">
+        <div class="section-header">
+          <span class="section-title">Profile details</span>
+        </div>
+        <div class="section-body">
+          <div class="form-row">
+            <div class="field">
+              <label>First name</label>
+              <input type="text" value="Farhad" />
+            </div>
+            <div class="field">
+              <label>Last name</label>
+              <input type="text" value="Arian" />
+            </div>
+          </div>
+          <div class="form-row full">
+            <div class="field">
+              <label>Organisation / Practice</label>
+              <input type="text" placeholder="e.g. Praxis Musterarzt AG" />
+            </div>
+          </div>
+          <div class="form-row full">
+            <div class="field">
+              <label>Additional ID (e.g. ZSR, internal identifier)</label>
+              <input type="text" placeholder="e.g. X000000" />
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div class="form-row three">
+            <div class="field">
+              <label>Street</label>
+              <input type="text" placeholder="Musterstrasse" />
+            </div>
+            <div class="field">
+              <label>No.</label>
+              <input type="text" placeholder="1" />
+            </div>
+            <div class="field">
+              <label>Postal code</label>
+              <input type="text" placeholder="8001" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label>City</label>
+              <input type="text" placeholder="Zürich" />
+            </div>
+            <div class="field">
+              <label>Canton</label>
+              <input type="text" placeholder="ZH" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label>Country</label>
+              <input type="text" value="Switzerland" />
+            </div>
+            <div class="field"></div>
+          </div>
+          <div class="divider"></div>
+          <div class="form-row">
+            <div class="field">
+              <label>E-mail</label>
+              <input type="email" placeholder="name@praxis.ch" />
+            </div>
+            <div class="field">
+              <label>Phone</label>
+              <input type="tel" placeholder="+41 44 000 00 00" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Password -->
+      <div class="section-card">
+        <div class="section-header">
+          <span class="section-title">Change password</span>
+        </div>
+        <div class="section-body">
+          <div class="pwd-row">
+            <div class="field">
+              <label>Current password</label>
+              <input type="password" placeholder="••••••••" />
+            </div>
+            <div class="field">
+              <label>New password</label>
+              <input type="password" placeholder="••••••••" />
+            </div>
+            <div class="field">
+              <label>Confirm new password</label>
+              <input type="password" placeholder="••••••••" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Save bar -->
+      <div class="save-bar">
+        <span class="save-bar-hint">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="#999"><circle cx="6.5" cy="6.5" r="5.5" stroke="#999" stroke-width="1" fill="none"/><text x="6" y="10" font-size="8" fill="#999">i</text></svg>
+          Unsaved changes will be lost
+        </span>
+        <div class="save-bar-actions">
+          <button class="btn btn-danger">Discard changes</button>
+          <button class="btn btn-primary">Save profile</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

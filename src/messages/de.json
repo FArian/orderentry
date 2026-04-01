@@ -113,7 +113,9 @@
     "tooltipOnHold": "Pausiert – Labor hat den Auftrag vorübergehend zurückgestellt.",
     "tooltipCompleted": "Abgeschlossen – Labor hat den Auftrag abgearbeitet. Keine Änderungen mehr möglich.",
     "tooltipRevoked": "Storniert – Auftrag wurde widerrufen. Keine Änderungen mehr möglich.",
-    "tooltipError": "Fehlerhafter Eintrag – Auftrag wurde als Fehler markiert."
+    "tooltipError": "Fehlerhafter Eintrag – Auftrag wurde als Fehler markiert.",
+    "openPatient": "Patient öffnen",
+    "lockedHint": "Gesperrt – keine Bearbeitung möglich."
   },
   "profile": {
     "title": "Mein Profil",
@@ -149,7 +151,7 @@
   },
   "order": {
     "title": "Auftragserfassung",
-    "submit": "Auftrag senden",
+    "submit": "Senden + Drucken",
     "saveDraft": "Order Speichern",
     "draftSaved": "Entwurf gespeichert (lokal)",
     "sent": "Auftrag gesendet",
@@ -187,6 +189,8 @@
     "noObservation": "Keine ObservationDefinition gefunden.",
     "fhirPreview": "FHIR Vorschau",
     "hl7Preview": "HL7 Vorschau",
+    "begleitschein": "Begleitschein anzeigen",
+    "printLabel": "Etikett drucken",
     "editTitle": "Auftrag bearbeiten",
     "readOnly": "Dieser Auftrag ist gesperrt und kann nicht mehr bearbeitet werden."
   },
@@ -220,5 +224,22 @@
     "docDescription": "Bezeichnung",
     "docAuthor": "Autor",
     "noDocuments": "Keine Dokumente vorhanden"
+  },
+  "bs": {
+    "title": "Begleitschein",
+    "subtitle": "ZLZ Zentrallabor AG · Auftragserfassung",
+    "orderNumber": "Auftragsnummer",
+    "sectionPatient": "Patient",
+    "sectionOrderDetails": "Auftragsdetails",
+    "sectionAnalyses": "Ausgewählte Analysen",
+    "sectionMaterial": "Material",
+    "name": "Name",
+    "colNum": "#",
+    "colCode": "Code",
+    "colDescription": "Bezeichnung",
+    "colCategory": "Kategorie",
+    "colSpecimen": "Probe / Material",
+    "colQuantity": "Menge",
+    "printedAt": "Gedruckt am"
   }
 }

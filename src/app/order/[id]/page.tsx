@@ -14,7 +14,7 @@ function OrderPageInner({ id }: { id: string }) {
   return (
     <div className="min-h-screen flex flex-col">
       <div className="p-4">
-        <PatientBreadcrumb id={id} />
+        <PatientBreadcrumb id={id} hideNewOrder />
         <h1 className="text-2xl font-bold">
           {srId ? t("order.editTitle") : t("order.title")}
         </h1>

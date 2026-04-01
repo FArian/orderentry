@@ -113,7 +113,9 @@
     "tooltipOnHold": "En attente – le laboratoire a temporairement mis la demande en pause.",
     "tooltipCompleted": "Terminée – le laboratoire a terminé le traitement. Aucune modification possible.",
     "tooltipRevoked": "Annulée – la demande a été révoquée. Aucune modification possible.",
-    "tooltipError": "Saisie erronée – la demande a été marquée comme erronée."
+    "tooltipError": "Saisie erronée – la demande a été marquée comme erronée.",
+    "openPatient": "Ouvrir le patient",
+    "lockedHint": "Verrouillé – aucune modification possible."
   },
   "profile": {
     "title": "Mon profil",
@@ -149,7 +151,7 @@
   },
   "order": {
     "title": "Saisie de demande",
-    "submit": "Envoyer la demande",
+    "submit": "Envoyer + Imprimer",
     "saveDraft": "Enregistrer le brouillon",
     "draftSaved": "Brouillon enregistré (local)",
     "sent": "Demande envoyée",
@@ -187,6 +189,8 @@
     "noObservation": "Aucune ObservationDefinition trouvée.",
     "fhirPreview": "Aperçu FHIR",
     "hl7Preview": "Aperçu HL7",
+    "begleitschein": "Afficher le bordereau",
+    "printLabel": "Imprimer l'étiquette",
     "editTitle": "Modifier la demande",
     "readOnly": "Cette demande est verrouillée et ne peut plus être modifiée."
   },
@@ -220,5 +224,22 @@
     "docDescription": "Description",
     "docAuthor": "Auteur",
     "noDocuments": "Aucun document disponible"
+  },
+  "bs": {
+    "title": "Bordereau",
+    "subtitle": "ZLZ Zentrallabor AG · Saisie de demande",
+    "orderNumber": "Numéro de demande",
+    "sectionPatient": "Patient",
+    "sectionOrderDetails": "Détails de la demande",
+    "sectionAnalyses": "Analyses sélectionnées",
+    "sectionMaterial": "Matériel",
+    "name": "Nom",
+    "colNum": "#",
+    "colCode": "Code",
+    "colDescription": "Description",
+    "colCategory": "Catégorie",
+    "colSpecimen": "Échantillon / Matériel",
+    "colQuantity": "Quantité",
+    "printedAt": "Imprimé le"
   }
 }

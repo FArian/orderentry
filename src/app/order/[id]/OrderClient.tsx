@@ -57,7 +57,7 @@ const EXT_ENCOUNTER_CLASS = "https://www.zetlab.ch/fhir/StructureDefinition/enco
 
 export default function OrderClient({ id, srId }: { id: string; srId?: string }) {
   // tr = translation function; local map callbacks use 't' as variable name
-  const { t: tr } = useTranslation();
+  const { t: tr, locale } = useTranslation();
   const [topTabs, setTopTabs] = useState<string[]>([]);
   const [selectedTopTab, setSelectedTopTab] = useState<string | null>(null);
   const [allAds, setAllAds] = useState<ActivityDefinition[]>([]);
@@ -893,11 +893,242 @@ export default function OrderClient({ id, srId }: { id: string; srId?: string })
     }
   }, [isReadOnly, currentSrId, generateOrderNumber, getPatientIdentifiers, priority, id, collectionDate, requester, requesterId, clinicalNote, encounterClass, selectedTests, tr]);
 
+  // Build printable Begleitschein HTML from current order state
+  const buildBegleitscheinHtml = useCallback((orderNum: string): string => {
+    const p = patientData as Record<string, unknown> | null;
+    const nameArr = Array.isArray(p?.name) ? (p!.name as Array<Record<string, unknown>>) : [];
+    const official = nameArr.find((n) => n.use === "official") || nameArr[0] || {};
+    const family = String(official.family || "");
+    const given = Array.isArray(official.given) ? (official.given as string[]).join(" ") : "";
+    const patientName = [family, given].filter(Boolean).join(", ") || id;
+    const birthDate = String(p?.birthDate || "");
+    const formatDate = (iso: string) => {
+      if (!iso) return "—";
+      const parts = iso.split("-");
+      return parts.length === 3 ? `${parts[2]}.${parts[1]}.${parts[0]}` : iso;
+    };
+    const genderRaw = String(p?.gender || "");
+    const genderMap: Record<string, string> = {
+      male: tr("patient.gender_male"),
+      female: tr("patient.gender_female"),
+      other: tr("patient.gender_other"),
+      unknown: tr("patient.gender_unknown"),
+    };
+    const gender = genderMap[genderRaw] || "—";
+    const { ahv } = getPatientIdentifiers();
+
+    const priorityLabel = priority === "urgent" ? tr("order.priority_urgent").toUpperCase() : tr("order.priority_routine");
+    const encounterMap: Record<string, string> = {
+      AMB: tr("order.encounter_AMB"),
+      IMP: tr("order.encounter_IMP"),
+      EMER: tr("order.encounter_EMER"),
+      SS: tr("order.encounter_SS"),
+      HH: tr("order.encounter_HH"),
+      VR: tr("order.encounter_VR"),
+    };
+    const encounterLabel = encounterMap[encounterClass] || encounterClass;
+    const collectionFormatted = collectionDate
+      ? (() => {
+          const d = new Date(collectionDate);
+          const pad = (n: number) => String(n).padStart(2, "0");
+          return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        })()
+      : "—";
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const printedAt = `${pad(now.getDate())}.${pad(now.getMonth() + 1)}.${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+    const analysesRows = selectedTests
+      .map((t, i) =>
+        `<tr>
+          <td style="padding:4px 8px;border-bottom:1px solid #e5e7eb;">${i + 1}</td>
+          <td style="padding:4px 8px;border-bottom:1px solid #e5e7eb;font-family:monospace;font-size:12px;">${t.code}</td>
+          <td style="padding:4px 8px;border-bottom:1px solid #e5e7eb;">${t.display || t.code}</td>
+          <td style="padding:4px 8px;border-bottom:1px solid #e5e7eb;color:#6b7280;">${t.category || t.topic || "—"}</td>
+        </tr>`
+      )
+      .join("");
+
+    const barcodeInits: string[] = [];
+    barcodeInits.push(`JsBarcode("#bc-hdr","${orderNum}",{format:"CODE128",displayValue:true,fontSize:10,height:40,margin:2,lineColor:"#111"});`);
+
+    const materialRows = Object.entries(materialsFromAnalyses)
+      .map(([specRef, m]) => {
+        const matCode = (specRef.startsWith("kind:") ? specRef.slice(5) : specRef) || "MAT";
+        const barcodeValue = `${orderNum}-${matCode}`;
+        const bcId = `bc-m-${matCode.replace(/[^a-zA-Z0-9]/g, "").slice(0, 10)}`;
+        barcodeInits.push(`JsBarcode("#${bcId}","${barcodeValue}",{format:"CODE128",displayValue:true,fontSize:10,height:36,margin:2,lineColor:"#111"});`);
+        return `<tr>
+          <td style="padding:4px 8px;border-bottom:1px solid #e5e7eb;">${m.label}</td>
+          <td style="padding:4px 8px;border-bottom:1px solid #e5e7eb;">${m.value || "—"}</td>
+          <td style="padding:4px 8px;border-bottom:1px solid #e5e7eb;"><svg id="${bcId}"></svg></td>
+        </tr>`;
+      })
+      .join("");
+
+    return `<!DOCTYPE html>
+<html lang="${locale}">
+<head>
+<meta charset="UTF-8"/>
+<title>${tr("bs.title")} ${orderNum}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 13px; color: #111; background: #fff; padding: 24px; }
+  h1 { font-size: 20px; font-weight: bold; margin-bottom: 2px; }
+  .subtitle { font-size: 12px; color: #6b7280; margin-bottom: 16px; }
+  .section { margin-bottom: 20px; }
+  .section-title { font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; border-bottom: 2px solid #111; padding-bottom: 4px; margin-bottom: 10px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px; }
+  .field label { font-size: 11px; color: #6b7280; display: block; }
+  .field span { font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { text-align: left; padding: 4px 8px; background: #f3f4f6; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #6b7280; }
+  .badge-urgent { background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
+  .badge-routine { background: #f0fdf4; color: #16a34a; border: 1px solid #86efac; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+  .order-num { font-family: monospace; font-size: 18px; font-weight: bold; letter-spacing: 0.05em; }
+  .footer { margin-top: 32px; font-size: 10px; color: #9ca3af; border-top: 1px solid #e5e7eb; padding-top: 8px; }
+  @media print { body { padding: 12px; } }
+</style>
+</head>
+<body>
+<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;">
+  <div>
+    <h1>${tr("bs.title")}</h1>
+    <div class="subtitle">${tr("bs.subtitle")}</div>
+  </div>
+  <div style="text-align:right;">
+    <div class="order-num">${orderNum}</div>
+    <div style="font-size:11px;color:#6b7280;margin-top:2px;">${tr("bs.orderNumber")}</div>
+    <svg id="bc-hdr" style="max-width:200px;display:block;margin:4px 0;"></svg>
+    <div style="margin-top:4px;"><span class="${priority === "urgent" ? "badge-urgent" : "badge-routine"}">${priorityLabel}</span></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">${tr("bs.sectionPatient")}</div>
+  <div class="grid2">
+    <div class="field"><label>${tr("bs.name")}</label><span>${patientName}</span></div>
+    <div class="field"><label>${tr("patient.birthdate")}</label><span>${formatDate(birthDate)}</span></div>
+    <div class="field"><label>${tr("patient.gender")}</label><span>${gender}</span></div>
+    <div class="field"><label>${tr("patient.ahv")}</label><span>${ahv ? ahv.replace(/(\d{3})(\d{4})(\d{4})(\d{2})/, "$1.$2.$3.$4") : "—"}</span></div>
+    <div class="field"><label>${tr("patient.id")}</label><span>${id}</span></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">${tr("bs.sectionOrderDetails")}</div>
+  <div class="grid2">
+    <div class="field"><label>${tr("order.collectionDate")}</label><span>${collectionFormatted}</span></div>
+    <div class="field"><label>${tr("order.encounterClass")}</label><span>${encounterLabel}</span></div>
+    <div class="field"><label>${tr("order.requester")}</label><span>${requester || "—"}</span></div>
+    ${clinicalNote ? `<div class="field" style="grid-column:1/-1;"><label>${tr("order.clinicalNote")}</label><span>${clinicalNote}</span></div>` : ""}
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">${tr("bs.sectionAnalyses")} (${selectedTests.length})</div>
+  <table>
+    <thead><tr><th>${tr("bs.colNum")}</th><th>${tr("bs.colCode")}</th><th>${tr("bs.colDescription")}</th><th>${tr("bs.colCategory")}</th></tr></thead>
+    <tbody>${analysesRows}</tbody>
+  </table>
+</div>
+
+${materialRows ? `
+<div class="section">
+  <div class="section-title">${tr("bs.sectionMaterial")}</div>
+  <table>
+    <thead><tr><th>${tr("bs.colSpecimen")}</th><th>${tr("bs.colQuantity")}</th><th>Barcode</th></tr></thead>
+    <tbody>${materialRows}</tbody>
+  </table>
+</div>` : ""}
+
+<div class="footer">${tr("bs.printedAt")} ${printedAt} · ZetLab OrderEntry · ${FHIR_BASE.replace(/^https?:\/\//, "")}</div>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+<script>window.addEventListener('load',function(){try{${barcodeInits.join("")}}catch(e){console.warn('Barcode error:',e);}});</script>
+</body>
+</html>`;
+  }, [patientData, id, getPatientIdentifiers, priority, encounterClass, collectionDate, requester, clinicalNote, selectedTests, materialsFromAnalyses, tr, locale]);
+
+  // Encode Begleitschein HTML as Base64 (UTF-8 safe)
+  const buildBegleitscheinBase64 = useCallback((orderNum: string): string => {
+    const html = buildBegleitscheinHtml(orderNum);
+    try {
+      // encodeURIComponent → unescape converts UTF-8 chars to Latin-1 safe for btoa
+      return btoa(unescape(encodeURIComponent(html)));
+    } catch {
+      // Fallback: replace non-ASCII with '?' to avoid btoa InvalidCharacterError
+      return btoa(html.replace(/[^\x00-\x7F]/g, "?"));
+    }
+  }, [buildBegleitscheinHtml]);
+
+  // Build HL7 ORM^O01 message
+  const buildHl7Preview = useCallback((): string => {
+    const pad = (n: number, len = 2) => String(n).padStart(len, "0");
+    const now = new Date();
+    const ts =
+      `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}` +
+      `${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+    const msgId = `${ts}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+
+    // Patient fields
+    const p = patientData as Record<string, unknown> | null;
+    const nameArr = Array.isArray((p as Record<string, unknown> | null)?.name)
+      ? ((p as Record<string, unknown>).name as Array<Record<string, unknown>>)
+      : [];
+    const officialName = nameArr.find((n) => n.use === "official") || nameArr[0] || {};
+    const family = String(officialName.family || "");
+    const givenArr = Array.isArray(officialName.given) ? (officialName.given as string[]) : [];
+    const given = givenArr.join(" ");
+    const birthDate = String((p as Record<string, unknown> | null)?.birthDate || "").replace(/-/g, "");
+    const genderRaw = String((p as Record<string, unknown> | null)?.gender || "");
+    const hl7Gender = genderRaw === "male" ? "M" : genderRaw === "female" ? "F" : "U";
+    const { ahv } = getPatientIdentifiers();
+    const pidId = String(id);
+
+    // PV1 class mapping
+    const classMap: Record<string, string> = { AMB: "O", IMP: "I", EMER: "E", SS: "S", HH: "H", VR: "T" };
+    const pv1Class = classMap[encounterClass] || "O";
+
+    const lines: string[] = [];
+    lines.push(`MSH|^~\\&|ORDERENTRY|ZLZ|LIS|LAB|${ts}||ORM^O01|${msgId}|P|2.5`);
+    lines.push(`PID|1||${pidId}^^^ZLZ^PI${ahv ? `~${ahv}^^^AVS^SS` : ""}||${family}^${given}||${birthDate}|${hl7Gender}`);
+    lines.push(`PV1|1|${pv1Class}|||||${requester ? requester.replace(/\|/g, " ") : ""}^^^^^NPI`);
+
+    const materialList = Object.entries(materialsFromAnalyses);
+    const collDt = collectionDate
+      ? collectionDate.replace(/[-T:]/g, "").slice(0, 12)
+      : ts.slice(0, 12);
+
+    selectedTests.forEach((t, i) => {
+      const seqStr = pad(i + 1);
+      const dept = t.topic ? t.topic.replace(/\|/g, " ") : "";
+      lines.push(`ORC|NW|||||||||||${requester ? requester.replace(/\|/g, " ") : ""}^^^^^NPI`);
+      lines.push(`OBR|${seqStr}||${t.code}^${(t.display || t.code).replace(/\|/g, " ")}^${t.system || "LOCAL"}||||||||||||${dept}`);
+      // SPM — Specimen segment (one per OBR, cycling through materials)
+      if (materialList.length > 0) {
+        const [specRef, m] = materialList[i % materialList.length];
+        const matCode = (specRef.startsWith("kind:") ? specRef.slice(5) : specRef) || "UNK";
+        const specimenId = `${msgId}-${seqStr}`;
+        lines.push(`SPM|${seqStr}|^${specimenId}||${matCode}^${m.label.replace(/\|/g, " ")}^LOCAL||||||||||||${collDt}`);
+      }
+    });
+
+    // OBX — Begleitschein (ED: Encapsulated Data) linked to the preceding OBR group
+    const base64Pdf = buildBegleitscheinBase64(msgId);
+    lines.push(`OBX|1|ED|PDF^Begleitschein^LN||^application/pdf^Base64^${base64Pdf}||||||F`);
+
+    return lines.join("\r\n");
+  }, [buildBegleitscheinBase64, collectionDate, encounterClass, getPatientIdentifiers, id, materialsFromAnalyses, patientData, requester, selectedTests]);
+
   // Build FHIR Bundle preview (same logic as submit, but returns JSON string)
   const buildFhirPreview = useCallback((): string => {
     const orderNumber = generateOrderNumber();
     const srId = `sr-${orderNumber}`;
     const encId = `enc-${orderNumber}`;
+    const docId = `docref-${orderNumber}`;
+    const base64Pdf = buildBegleitscheinBase64(orderNumber);
+    const hl7Message = buildHl7Preview();
+    const base64Hl7 = btoa(unescape(encodeURIComponent(hl7Message)));
     const { ahv, insuranceCard } = getPatientIdentifiers();
     const specimensSource: SpecimenChoice[] =
       selectedSpecimens && selectedSpecimens.length > 0
@@ -954,6 +1185,7 @@ export default function OrderClient({ id, srId }: { id: string; srId?: string })
           reference: `Specimen/spec-${orderNumber}-${s.id}`,
           identifier: { system: FHIR_SYSTEMS.specimen, value: s.id },
         })),
+        supportingInfo: [{ reference: `DocumentReference/${docId}` }],
       },
       request: { method: "PUT", url: `ServiceRequest/${srId}` },
     };
@@ -967,52 +1199,39 @@ export default function OrderClient({ id, srId }: { id: string; srId?: string })
       },
       request: { method: "PUT", url: `Encounter/${encId}` },
     };
-    const bundle = { resourceType: "Bundle", type: "transaction", entry: [encounterEntry, serviceRequestEntry, ...specimenEntries] };
+    const documentReferenceEntry = {
+      resource: {
+        resourceType: "DocumentReference",
+        id: docId,
+        status: "current",
+        subject: { reference: `Patient/${id}` },
+        context: {
+          related: [{ reference: `ServiceRequest/${srId}` }],
+        },
+        content: [
+          {
+            attachment: {
+              contentType: "application/pdf",
+              data: base64Pdf,
+              title: "Begleitschein",
+              creation: new Date().toISOString(),
+            },
+          },
+          {
+            attachment: {
+              contentType: "x-application/hl7-v2+er7",
+              data: base64Hl7,
+              title: "ORM^O01",
+              creation: new Date().toISOString(),
+            },
+          },
+        ],
+      },
+      request: { method: "PUT", url: `DocumentReference/${docId}` },
+    };
+    const bundle = { resourceType: "Bundle", type: "transaction", entry: [encounterEntry, serviceRequestEntry, ...specimenEntries, documentReferenceEntry] };
     return JSON.stringify(bundle, null, 2);
-  }, [clinicalNote, collectionDate, encounterClass, generateOrderNumber, getPatientIdentifiers, id, materialsFromAnalyses, priority, requesterId, requester, selectedSpecimens, selectedTests]);
-
-  // Build HL7 ORM^O01 preview
-  const buildHl7Preview = useCallback((): string => {
-    const pad = (n: number, len = 2) => String(n).padStart(len, "0");
-    const now = new Date();
-    const ts =
-      `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}` +
-      `${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-    const msgId = `${ts}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
-
-    // Patient fields
-    const p = patientData as Record<string, unknown> | null;
-    const nameArr = Array.isArray((p as Record<string, unknown> | null)?.name)
-      ? ((p as Record<string, unknown>).name as Array<Record<string, unknown>>)
-      : [];
-    const officialName = nameArr.find((n) => n.use === "official") || nameArr[0] || {};
-    const family = String(officialName.family || "");
-    const givenArr = Array.isArray(officialName.given) ? (officialName.given as string[]) : [];
-    const given = givenArr.join(" ");
-    const birthDate = String((p as Record<string, unknown> | null)?.birthDate || "").replace(/-/g, "");
-    const genderRaw = String((p as Record<string, unknown> | null)?.gender || "");
-    const hl7Gender = genderRaw === "male" ? "M" : genderRaw === "female" ? "F" : "U";
-    const { ahv } = getPatientIdentifiers();
-    const pidId = String(id);
-
-    // PV1 class mapping
-    const classMap: Record<string, string> = { AMB: "O", IMP: "I", EMER: "E", SS: "S", HH: "H", VR: "T" };
-    const pv1Class = classMap[encounterClass] || "O";
-
-    const lines: string[] = [];
-    lines.push(`MSH|^~\\&|ORDERENTRY|ZLZ|LIS|LAB|${ts}||ORM^O01|${msgId}|P|2.5`);
-    lines.push(`PID|1||${pidId}^^^ZLZ^PI${ahv ? `~${ahv}^^^AVS^SS` : ""}||${family}^${given}||${birthDate}|${hl7Gender}`);
-    lines.push(`PV1|1|${pv1Class}|||||${requester ? requester.replace(/\|/g, " ") : ""}^^^^^NPI`);
-
-    selectedTests.forEach((t, i) => {
-      const seqStr = pad(i + 1);
-      const dept = t.topic ? t.topic.replace(/\|/g, " ") : "";
-      lines.push(`ORC|NW|||||||||||${requester ? requester.replace(/\|/g, " ") : ""}^^^^^NPI`);
-      lines.push(`OBR|${seqStr}||${t.code}^${(t.display || t.code).replace(/\|/g, " ")}^${t.system || "LOCAL"}||||||||||||${dept}`);
-    });
-
-    return lines.join("\r\n");
-  }, [encounterClass, getPatientIdentifiers, id, patientData, requester, selectedTests]);
+  }, [buildBegleitscheinBase64, buildHl7Preview, clinicalNote, collectionDate, encounterClass, generateOrderNumber, getPatientIdentifiers, id, materialsFromAnalyses, priority, requesterId, requester, selectedSpecimens, selectedTests]);
 
   const openPreview = useCallback((type: "fhir" | "hl7") => {
     const content = type === "fhir" ? buildFhirPreview() : buildHl7Preview();
@@ -1028,6 +1247,86 @@ export default function OrderClient({ id, srId }: { id: string; srId?: string })
     });
   }, [previewContent]);
 
+  const printBegleitschein = useCallback((orderNum: string) => {
+    const html = buildBegleitscheinHtml(orderNum);
+    const win = window.open("", "_blank", "width=860,height=700");
+    if (!win) return;
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    setTimeout(() => win.print(), 400);
+  }, [buildBegleitscheinHtml]);
+
+  const printLabel = useCallback(() => {
+    const p = patientData as Record<string, unknown> | null;
+    const nameArr = Array.isArray(p?.name) ? (p!.name as Array<Record<string, unknown>>) : [];
+    const official = nameArr.find((n) => n.use === "official") || nameArr[0] || {};
+    const family = String(official.family || "");
+    const given = Array.isArray(official.given) ? (official.given as string[]).join(" ") : "";
+    const patientName = [family, given].filter(Boolean).join(", ") || id;
+    const birthDate = String(p?.birthDate || "");
+    const formatDate = (iso: string) => {
+      if (!iso) return "—";
+      const parts = iso.split("-");
+      return parts.length === 3 ? `${parts[2]}.${parts[1]}.${parts[0]}` : iso;
+    };
+    const { ahv } = getPatientIdentifiers();
+    const labelOrderNum = generateOrderNumber();
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const ts = `${pad(now.getDate())}.${pad(now.getMonth() + 1)}.${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+    // One label per material; fall back to single order-number label if no materials yet
+    const matEntries = Object.entries(materialsFromAnalyses);
+    const labelsSource: [string, { label: string; value?: string }][] =
+      matEntries.length > 0 ? matEntries : [["", { label: "" }]];
+
+    const barcodeInits: string[] = [];
+    const labelDivs = labelsSource.map(([specRef, m]) => {
+      const matCode = specRef.startsWith("kind:") ? specRef.slice(5) : specRef;
+      const barcodeValue = matCode ? `${labelOrderNum}-${matCode}` : labelOrderNum;
+      const bcId = `bc-${(matCode || "ord").replace(/[^a-zA-Z0-9]/g, "").slice(0, 10) || "ord"}`;
+      barcodeInits.push(`JsBarcode("#${bcId}","${barcodeValue}",{format:"CODE128",displayValue:true,fontSize:11,height:48,margin:2,lineColor:"#000"});`);
+      return `<div class="label">
+  <div class="patient-name">${patientName}</div>
+  <div class="dob">*${formatDate(birthDate)}${ahv ? ` · AHV: ${ahv.replace(/(\d{3})(\d{4})(\d{4})(\d{2})/, "$1.$2.$3.$4")}` : ""}</div>
+  <svg id="${bcId}" style="width:100%;display:block;margin:4px 0;"></svg>
+  ${m.label ? `<div class="mat-label">${m.label}${m.value ? ` · ${m.value}` : ""}</div>` : ""}
+  <div class="meta">ID: ${id} · ${ts} · ZLZ</div>
+</div>`;
+    }).join("\n");
+
+    const html = `<!DOCTYPE html>
+<html lang="${locale}">
+<head>
+<meta charset="UTF-8"/>
+<title>Etikett ${labelOrderNum}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, Helvetica, sans-serif; background: #fff; }
+  .label { width: 62mm; border: 1px solid #111; padding: 8px 10px; page-break-after: always; }
+  .patient-name { font-size: 14px; font-weight: bold; margin-bottom: 2px; }
+  .dob { font-size: 11px; color: #374151; margin-bottom: 4px; }
+  .mat-label { font-size: 11px; font-weight: 600; color: #1f2937; margin-top: 4px; }
+  .meta { font-size: 10px; color: #6b7280; margin-top: 4px; }
+  @media print { body { margin: 0; } .label { border: 1px solid #000; } }
+</style>
+</head>
+<body>
+${labelDivs}
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+<script>window.addEventListener('load',function(){try{${barcodeInits.join("")}}catch(e){console.warn('Barcode error:',e);}});</script>
+</body>
+</html>`;
+
+    const win = window.open("", "_blank", "width=420,height=500");
+    if (!win) return;
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    setTimeout(() => win.print(), 500);
+  }, [patientData, id, getPatientIdentifiers, generateOrderNumber, materialsFromAnalyses, locale]);
+
   // Build and submit transaction Bundle
   const submitOrder = useCallback(async () => {
     if (!canSubmit) return;
@@ -1039,6 +1338,10 @@ export default function OrderClient({ id, srId }: { id: string; srId?: string })
       // Reuse existing SR id when editing a draft, otherwise generate new
       const srId = currentSrId || `sr-${orderNumber}`;
       const encId = `enc-${orderNumber}`;
+      const docId = `docref-${orderNumber}`;
+      const base64Pdf = buildBegleitscheinBase64(orderNumber);
+      const hl7Message = buildHl7Preview();
+      const base64Hl7 = btoa(unescape(encodeURIComponent(hl7Message)));
       const { ahv, insuranceCard } = getPatientIdentifiers();
 
       // If user did not select specimens explicitly, derive from materials
@@ -1129,6 +1432,7 @@ export default function OrderClient({ id, srId }: { id: string; srId?: string })
               value: s.id,
             },
           })),
+          supportingInfo: [{ reference: `DocumentReference/${docId}` }],
         },
         request: { method: "PUT", url: `ServiceRequest/${srId}` },
       } as const;
@@ -1147,11 +1451,42 @@ export default function OrderClient({ id, srId }: { id: string; srId?: string })
         request: { method: "PUT", url: `Encounter/${encId}` },
       };
 
+      const documentReferenceEntry = {
+        resource: {
+          resourceType: "DocumentReference",
+          id: docId,
+          status: "current",
+          subject: { reference: `Patient/${id}` },
+          context: {
+            related: [{ reference: `ServiceRequest/${srId}` }],
+          },
+          content: [
+            {
+              attachment: {
+                contentType: "application/pdf",
+                data: base64Pdf,
+                title: "Begleitschein",
+                creation: new Date().toISOString(),
+              },
+            },
+            {
+              attachment: {
+                contentType: "x-application/hl7-v2+er7",
+                data: base64Hl7,
+                title: "ORM^O01",
+                creation: new Date().toISOString(),
+              },
+            },
+          ],
+        },
+        request: { method: "PUT", url: `DocumentReference/${docId}` },
+      };
+
       const bundle = {
         resourceType: "Bundle",
         type: "transaction",
-        entry: [encounterEntry, serviceRequestEntry, ...specimenEntries],
-      } as const;
+        entry: [encounterEntry, serviceRequestEntry, ...specimenEntries, documentReferenceEntry],
+      };
 
       const resp = await fhirPost(
         "/",
@@ -1168,6 +1503,8 @@ export default function OrderClient({ id, srId }: { id: string; srId?: string })
       }
       setSubmitMsg(`${tr("order.sent")}. IDs: ${ids.join(", ") || "ok"}`);
       setSubmitErr(null);
+      // Print Begleitschein before clearing state so patient/order data is still available
+      printBegleitschein(orderNumber);
       setSelectedTests([]);
       setSelectedSpecimens([]);
       setMaterialsFromAnalyses({});
@@ -1180,7 +1517,7 @@ export default function OrderClient({ id, srId }: { id: string; srId?: string })
     } finally {
       setSubmitting(false);
     }
-  }, [canSubmit, currentSrId, id, selectedSpecimens, selectedTests]);
+  }, [buildBegleitscheinBase64, buildHl7Preview, canSubmit, currentSrId, id, printBegleitschein, selectedSpecimens, selectedTests]);
 
   return (
     <div className="flex-1 flex flex-col relative">
@@ -1695,6 +2032,7 @@ export default function OrderClient({ id, srId }: { id: string; srId?: string })
             </div>
           )}
           <div className="ml-auto flex items-center gap-3">
+            {/* Technical previews — secondary / developer tools */}
             <button
               onClick={() => openPreview("fhir")}
               disabled={selectedTests.length === 0}
@@ -1719,6 +2057,36 @@ export default function OrderClient({ id, srId }: { id: string; srId?: string })
             >
               {tr("order.hl7Preview")}
             </button>
+
+            {/* Visual separator */}
+            <div className="h-6 w-px bg-gray-200" />
+
+            {/* Begleitschein preview */}
+            <button
+              onClick={() => printBegleitschein(generateOrderNumber())}
+              disabled={selectedTests.length === 0}
+              title="Begleitschein als Druckvorschau anzeigen"
+              className={`px-3 py-2 rounded border text-sm ${
+                selectedTests.length > 0
+                  ? "border-indigo-300 text-indigo-700 hover:bg-indigo-50"
+                  : "border-gray-200 text-gray-300 cursor-not-allowed"
+              }`}
+            >
+              🖨 {tr("order.begleitschein")}
+            </button>
+
+            {/* Print label */}
+            <button
+              onClick={printLabel}
+              title="Probenetikett drucken"
+              className="px-3 py-2 rounded border text-sm border-gray-300 text-gray-700 hover:bg-gray-50"
+            >
+              🏷 {tr("order.printLabel")}
+            </button>
+
+            {/* Visual separator */}
+            <div className="h-6 w-px bg-gray-200" />
+
             {!isReadOnly && (
               <>
                 <button
@@ -1731,7 +2099,7 @@ export default function OrderClient({ id, srId }: { id: string; srId?: string })
                 <button
                   onClick={submitOrder}
                   disabled={!canSubmit}
-                  className={`px-4 py-2 rounded text-white ${
+                  className={`px-4 py-2 rounded text-white font-medium ${
                     canSubmit
                       ? "bg-blue-600 hover:bg-blue-700"
                       : "bg-blue-300 cursor-not-allowed"

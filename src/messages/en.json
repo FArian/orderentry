@@ -113,7 +113,9 @@
     "tooltipOnHold": "On hold – lab has temporarily paused the order.",
     "tooltipCompleted": "Completed – lab has finished processing. No further changes possible.",
     "tooltipRevoked": "Revoked – order has been cancelled. No further changes possible.",
-    "tooltipError": "Entered in error – order was marked as erroneous."
+    "tooltipError": "Entered in error – order was marked as erroneous.",
+    "openPatient": "Open patient",
+    "lockedHint": "Locked – no further editing possible."
   },
   "profile": {
     "title": "My Profile",
@@ -149,7 +151,7 @@
   },
   "order": {
     "title": "Order entry",
-    "submit": "Submit order",
+    "submit": "Send + Print",
     "saveDraft": "Save draft",
     "draftSaved": "Draft saved (local)",
     "sent": "Order submitted",
@@ -187,6 +189,8 @@
     "noObservation": "No ObservationDefinition found.",
     "fhirPreview": "FHIR Preview",
     "hl7Preview": "HL7 Preview",
+    "begleitschein": "Show cover sheet",
+    "printLabel": "Print label",
     "editTitle": "Edit order",
     "readOnly": "This order is locked and can no longer be edited."
   },
@@ -220,5 +224,22 @@
     "docDescription": "Description",
     "docAuthor": "Author",
     "noDocuments": "No documents available"
+  },
+  "bs": {
+    "title": "Cover Sheet",
+    "subtitle": "ZLZ Zentrallabor AG · Order Entry",
+    "orderNumber": "Order Number",
+    "sectionPatient": "Patient",
+    "sectionOrderDetails": "Order Details",
+    "sectionAnalyses": "Selected Analyses",
+    "sectionMaterial": "Material",
+    "name": "Name",
+    "colNum": "#",
+    "colCode": "Code",
+    "colDescription": "Description",
+    "colCategory": "Category",
+    "colSpecimen": "Specimen / Material",
+    "colQuantity": "Quantity",
+    "printedAt": "Printed on"
   }
 }

@@ -1,0 +1,321 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; }
+  .app { display: flex; flex-direction: column; min-height: 700px; background: #f4f5f7; }
+  .topbar { background: #fff; border-bottom: 0.5px solid #e0e0e0; padding: 0 24px; height: 52px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .topbar-left { display: flex; align-items: center; gap: 16px; }
+  .logo { font-size: 18px; font-weight: 500; color: #1a1a1a; display: flex; align-items: center; gap: 6px; }
+  .logo-icon { width: 28px; height: 28px; background: #185FA5; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+  .lang-switcher { display: flex; gap: 2px; }
+  .lang-btn { font-size: 12px; padding: 3px 7px; border-radius: 4px; border: 0.5px solid #e0e0e0; background: transparent; color: #666; cursor: pointer; }
+  .lang-btn.active { background: #185FA5; color: white; border-color: #185FA5; }
+  .version-badge { font-size: 11px; color: #999; background: #f4f5f7; padding: 2px 8px; border-radius: 10px; border: 0.5px solid #e0e0e0; }
+  .topbar-right { display: flex; align-items: center; gap: 16px; }
+  .topbar-right a { font-size: 13px; color: #666; text-decoration: none; }
+  .main { display: flex; flex: 1; }
+  .sidebar { width: 220px; background: #fff; border-right: 0.5px solid #e0e0e0; padding: 20px 0; flex-shrink: 0; }
+  .sidebar-label { font-size: 11px; color: #999; padding: 0 16px 6px; letter-spacing: 0.05em; text-transform: uppercase; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 16px; font-size: 13px; color: #666; cursor: pointer; border-left: 2px solid transparent; }
+  .nav-item:hover { background: #f4f5f7; }
+  .nav-item.active { color: #185FA5; background: #E6F1FB; border-left-color: #185FA5; font-weight: 500; }
+  .nav-icon { width: 16px; height: 16px; opacity: 0.6; flex-shrink: 0; }
+  .nav-item.active .nav-icon { opacity: 1; }
+  .nav-badge { margin-left: auto; background: #185FA5; color: white; font-size: 10px; padding: 1px 6px; border-radius: 10px; font-weight: 500; }
+  .content { flex: 1; padding: 28px 32px; overflow: auto; }
+  .breadcrumb { font-size: 12px; color: #999; margin-bottom: 16px; display: flex; align-items: center; gap: 6px; }
+  .breadcrumb a { color: #185FA5; text-decoration: none; }
+  .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .page-header h1 { font-size: 20px; font-weight: 500; color: #1a1a1a; }
+  .btn { font-size: 13px; padding: 7px 14px; border-radius: 8px; cursor: pointer; border: 0.5px solid #e0e0e0; background: #fff; color: #1a1a1a; display: flex; align-items: center; gap: 6px; }
+  .btn:hover { background: #f4f5f7; }
+  .btn-primary { background: #185FA5; color: white; border-color: #185FA5; }
+  .btn-primary:hover { background: #0C447C; }
+
+  /* Stats row */
+  .stats-row { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; margin-bottom: 20px; }
+  .stat-card { background: #fff; border: 0.5px solid #e0e0e0; border-radius: 10px; padding: 12px 16px; display: flex; align-items: center; gap: 12px; }
+  .stat-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .si-blue { background: #E6F1FB; }
+  .si-amber { background: #FAEEDA; }
+  .si-green { background: #EAF3DE; }
+  .si-gray { background: #f4f5f7; }
+  .stat-info { flex: 1; }
+  .stat-label { font-size: 11px; color: #999; }
+  .stat-value { font-size: 20px; font-weight: 500; color: #1a1a1a; }
+
+  /* Toolbar */
+  .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .search-wrap { position: relative; flex: 1; min-width: 200px; max-width: 320px; }
+  .search-wrap input { width: 100%; padding: 8px 12px 8px 32px; font-size: 13px; border: 0.5px solid #e0e0e0; border-radius: 8px; background: #fff; color: #1a1a1a; outline: none; }
+  .search-ico { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #999; pointer-events: none; }
+  .filter-chip { font-size: 12px; padding: 5px 11px; border-radius: 20px; border: 0.5px solid #e0e0e0; background: #fff; color: #666; cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 5px; }
+  .filter-chip.on { background: #E6F1FB; color: #185FA5; border-color: #B5D4F4; }
+  .filter-chip.amber { background: #FAEEDA; color: #854F0B; border-color: #FAC775; }
+  .filter-chip.green { background: #EAF3DE; color: #3B6D11; border-color: #C0DD97; }
+  .date-range { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+  .date-input { padding: 6px 10px; font-size: 12px; border: 0.5px solid #e0e0e0; border-radius: 8px; background: #fff; color: #1a1a1a; outline: none; width: 120px; }
+  .date-sep { font-size: 12px; color: #999; }
+
+  /* Table */
+  .table-wrap { background: #fff; border: 0.5px solid #e0e0e0; border-radius: 12px; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; }
+  thead tr { background: #f4f5f7; }
+  thead th { font-size: 11px; font-weight: 500; color: #666; text-transform: uppercase; letter-spacing: 0.04em; padding: 10px 16px; text-align: left; border-bottom: 0.5px solid #e0e0e0; white-space: nowrap; cursor: pointer; }
+  thead th:hover { color: #1a1a1a; }
+  tbody tr { border-bottom: 0.5px solid #f0f0f0; cursor: pointer; transition: background 0.1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: #f9f9f9; }
+  td { padding: 11px 16px; font-size: 13px; color: #1a1a1a; vertical-align: middle; }
+  .order-id { font-size: 11px; color: #999; font-family: monospace; }
+  .patient-cell { display: flex; align-items: center; gap: 8px; }
+  .avatar-sm { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 500; flex-shrink: 0; }
+  .av-blue { background: #E6F1FB; color: #185FA5; }
+  .av-pink { background: #FBEAF0; color: #993556; }
+  .patient-name-sm { font-size: 13px; color: #1a1a1a; }
+  .desc-cell .main { font-size: 13px; color: #1a1a1a; }
+  .desc-cell .sub { font-size: 11px; color: #999; margin-top: 1px; }
+  .status-pill { font-size: 11px; padding: 3px 9px; border-radius: 20px; font-weight: 500; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+  .pill-draft { background: #FAEEDA; color: #854F0B; }
+  .pill-sent { background: #E6F1FB; color: #185FA5; }
+  .pill-done { background: #EAF3DE; color: #3B6D11; }
+  .specimens-badge { font-size: 12px; color: #666; background: #f4f5f7; padding: 2px 8px; border-radius: 8px; display: inline-block; }
+  .date-cell { font-size: 12px; color: #666; white-space: nowrap; }
+  .actions-cell { display: flex; gap: 5px; align-items: center; }
+  .act-btn { font-size: 11px; padding: 3px 9px; border-radius: 6px; border: 0.5px solid #e0e0e0; background: #fff; cursor: pointer; color: #1a1a1a; white-space: nowrap; }
+  .act-btn:hover { background: #f4f5f7; }
+  .act-btn-del { color: #E24B4A; border-color: #F7C1C1; }
+  .table-footer { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-top: 0.5px solid #e0e0e0; background: #f4f5f7; }
+  .footer-info { font-size: 12px; color: #999; }
+  .pagination { display: flex; align-items: center; gap: 4px; }
+  .page-btn { width: 28px; height: 28px; border-radius: 7px; border: 0.5px solid #e0e0e0; background: #fff; color: #666; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .page-btn.active { background: #185FA5; color: white; border-color: #185FA5; }
+  .page-btn:hover:not(.active) { background: #f4f5f7; }
+  .per-page { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #999; }
+  .per-page select { font-size: 12px; padding: 3px 6px; border: 0.5px solid #e0e0e0; border-radius: 6px; background: #fff; color: #1a1a1a; outline: none; }
+</style>
+
+<div class="app">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="logo">
+        <div class="logo-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="white"><path d="M3 2h10l-2 5H5L3 2zm1 6l1.5 6h5L12 8H4z"/></svg></div>
+        ZetLab
+      </div>
+      <span class="version-badge">v0.1.0</span>
+      <div class="lang-switcher">
+        <button class="lang-btn">DE</button><button class="lang-btn">FR</button><button class="lang-btn">IT</button><button class="lang-btn active">EN</button>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <a href="#">Profile</a>
+      <a href="#" style="color:#E24B4A;">Logout</a>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="sidebar">
+      <div style="margin-bottom:8px;">
+        <div class="sidebar-label">Navigation</div>
+        <div class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
+          Dashboard
+        </div>
+        <div class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="5" r="3"/><path d="M2 13c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>
+          Patients
+          <span class="nav-badge">3</span>
+        </div>
+        <div class="nav-item active">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="2" width="12" height="14" rx="1"/><line x1="5" y1="6" x2="11" y2="6" stroke="currentColor" stroke-width="1.5"/><line x1="5" y1="9" x2="11" y2="9" stroke="currentColor" stroke-width="1.5"/></svg>
+          Orders
+          <span class="nav-badge">12</span>
+        </div>
+        <div class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M3 3h10v2H3zM3 7h10v2H3zM3 11h6v2H3z"/></svg>
+          Results
+        </div>
+      </div>
+      <div style="margin-top:16px;">
+        <div class="sidebar-label">Account</div>
+        <div class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="5" r="3"/><path d="M2 13c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>
+          My Profile
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="breadcrumb">
+        <a href="#">Home</a><span>/</span>
+        <span style="color:#1a1a1a;">Orders</span>
+      </div>
+
+      <div class="page-header">
+        <h1>Orders</h1>
+        <button class="btn btn-primary">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="white"><path d="M6 1v10M1 6h10" stroke="white" stroke-width="1.5"/></svg>
+          New order
+        </button>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-icon si-blue">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="#185FA5"><rect x="2" y="2" width="14" height="14" rx="2"/></svg>
+          </div>
+          <div class="stat-info">
+            <div class="stat-label">Total orders</div>
+            <div class="stat-value">16</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon si-amber">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="#854F0B"><path d="M9 3v6l4 2"/><circle cx="9" cy="9" r="7" stroke="#854F0B" stroke-width="1.5" fill="none"/></svg>
+          </div>
+          <div class="stat-info">
+            <div class="stat-label">Drafts</div>
+            <div class="stat-value">2</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon si-blue">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#185FA5" stroke-width="1.5"><path d="M3 9l4 4 8-8"/></svg>
+          </div>
+          <div class="stat-info">
+            <div class="stat-label">Sent</div>
+            <div class="stat-value">12</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon si-green">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#3B6D11" stroke-width="1.5"><circle cx="9" cy="9" r="7"/><path d="M6 9l2 2 4-4"/></svg>
+          </div>
+          <div class="stat-info">
+            <div class="stat-label">Results ready</div>
+            <div class="stat-value">5</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="search-wrap">
+          <svg class="search-ico" width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#999" stroke-width="1.5"><circle cx="5.5" cy="5.5" r="4"/><path d="M9 9l3 3"/></svg>
+          <input type="text" placeholder="Search orders or patients…" />
+        </div>
+        <button class="filter-chip on">All</button>
+        <button class="filter-chip amber">Draft (2)</button>
+        <button class="filter-chip">Sent (12)</button>
+        <button class="filter-chip green">Done (5)</button>
+        <div class="date-range">
+          <input class="date-input" type="text" placeholder="From" value="29.03.2026" />
+          <span class="date-sep">–</span>
+          <input class="date-input" type="text" placeholder="To" value="31.03.2026" />
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Order ID ↕</th>
+              <th>Patient</th>
+              <th>Description</th>
+              <th>Status</th>
+              <th>Date ↓</th>
+              <th>Specimens</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="order-id">test-sr-draft-001</span></td>
+              <td><div class="patient-cell"><div class="avatar-sm av-blue">HM</div><span class="patient-name-sm">H. Muster</span></div></td>
+              <td><div class="desc-cell"><div class="main">Kleines Blutbild, Eisen, Ferritin</div><div class="sub">3 analyses · Routine</div></div></td>
+              <td><span class="status-pill pill-draft">Draft</span></td>
+              <td class="date-cell">31.03.2026</td>
+              <td><span class="specimens-badge">0</span></td>
+              <td><div class="actions-cell"><button class="act-btn">Edit</button><button class="act-btn act-btn-del">Delete</button></div></td>
+            </tr>
+            <tr>
+              <td><span class="order-id">test-sr-active-001</span></td>
+              <td><div class="patient-cell"><div class="avatar-sm av-blue">HM</div><span class="patient-name-sm">H. Muster</span></div></td>
+              <td><div class="desc-cell"><div class="main">Blutkultur, CRP, PCT</div><div class="sub">3 analyses · Urgent</div></div></td>
+              <td><span class="status-pill pill-sent">Sent</span></td>
+              <td class="date-cell">31.03.2026</td>
+              <td><span class="specimens-badge">0</span></td>
+              <td><div class="actions-cell"><button class="act-btn">Edit</button><button class="act-btn act-btn-del">Delete</button></div></td>
+            </tr>
+            <tr>
+              <td><span class="order-id">ord-20260331-121946</span></td>
+              <td><div class="patient-cell"><div class="avatar-sm av-pink">FA</div><span class="patient-name-sm">F. Arian</span></div></td>
+              <td><div class="desc-cell"><div class="main">4 Untersuchungen</div><div class="sub">4 analyses · Routine</div></div></td>
+              <td><span class="status-pill pill-sent">Sent</span></td>
+              <td class="date-cell">31.03.2026</td>
+              <td><span class="specimens-badge">1</span></td>
+              <td><div class="actions-cell"><button class="act-btn">Edit</button><button class="act-btn act-btn-del">Delete</button></div></td>
+            </tr>
+            <tr>
+              <td><span class="order-id">ord-20260331-070023</span></td>
+              <td><div class="patient-cell"><div class="avatar-sm av-blue">HM</div><span class="patient-name-sm">H. Muster</span></div></td>
+              <td><div class="desc-cell"><div class="main">6 Untersuchungen</div><div class="sub">6 analyses · Routine</div></div></td>
+              <td><span class="status-pill pill-sent">Sent</span></td>
+              <td class="date-cell">31.03.2026</td>
+              <td><span class="specimens-badge">3</span></td>
+              <td><div class="actions-cell"><button class="act-btn">Edit</button><button class="act-btn act-btn-del">Delete</button></div></td>
+            </tr>
+            <tr>
+              <td><span class="order-id">ord-20260330-173313</span></td>
+              <td><div class="patient-cell"><div class="avatar-sm av-pink">FA</div><span class="patient-name-sm">F. Arian</span></div></td>
+              <td><div class="desc-cell"><div class="main">2 Untersuchungen</div><div class="sub">2 analyses · Routine</div></div></td>
+              <td><span class="status-pill pill-sent">Sent</span></td>
+              <td class="date-cell">30.03.2026</td>
+              <td><span class="specimens-badge">2</span></td>
+              <td><div class="actions-cell"><button class="act-btn">Edit</button><button class="act-btn act-btn-del">Delete</button></div></td>
+            </tr>
+            <tr>
+              <td><span class="order-id">order-crp</span></td>
+              <td><div class="patient-cell"><div class="avatar-sm av-blue">HM</div><span class="patient-name-sm">H. Muster</span></div></td>
+              <td><div class="desc-cell"><div class="main">CRP Analyse</div><div class="sub">1 analysis · Routine</div></div></td>
+              <td><span class="status-pill pill-done">Done</span></td>
+              <td class="date-cell">29.03.2026</td>
+              <td><span class="specimens-badge">1</span></td>
+              <td><div class="actions-cell"><button class="act-btn">View</button></div></td>
+            </tr>
+            <tr>
+              <td><span class="order-id">order-blutbild</span></td>
+              <td><div class="patient-cell"><div class="avatar-sm av-blue">HM</div><span class="patient-name-sm">H. Muster</span></div></td>
+              <td><div class="desc-cell"><div class="main">Blutbild (grosses)</div><div class="sub">1 analysis · Routine</div></div></td>
+              <td><span class="status-pill pill-done">Done</span></td>
+              <td class="date-cell">29.03.2026</td>
+              <td><span class="specimens-badge">1</span></td>
+              <td><div class="actions-cell"><button class="act-btn">View</button></div></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="table-footer">
+          <div style="display:flex;align-items:center;gap:16px;">
+            <span class="footer-info">Showing 1–7 of 16 orders</span>
+            <div class="per-page">
+              Rows per page:
+              <select><option>10</option><option>25</option><option>50</option></select>
+            </div>
+          </div>
+          <div class="pagination">
+            <button class="page-btn">«</button>
+            <button class="page-btn">‹</button>
+            <button class="page-btn active">1</button>
+            <button class="page-btn">2</button>
+            <button class="page-btn">›</button>
+            <button class="page-btn">»</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

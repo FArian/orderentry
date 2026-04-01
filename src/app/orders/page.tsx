@@ -252,12 +252,23 @@ export default function OrdersPage() {
                   ✏️ {t("orders.edit")}
                 </Link>
               ) : (
-                <span
-                  className="inline-flex items-center gap-1 rounded border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs text-gray-400 cursor-default"
-                  title={t("orders.locked")}
-                >
-                  🔒 {t("orders.locked")}
-                </span>
+                <div className="relative group inline-flex items-center gap-1">
+                  <span
+                    className="inline-flex items-center gap-1 rounded border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs text-gray-400 cursor-default select-none"
+                  >
+                    🔒 {t("orders.locked")}
+                  </span>
+                  {/* Tooltip explaining why locked and what to do */}
+                  <div className="pointer-events-none absolute left-0 top-full mt-1 z-50 w-72 rounded border border-gray-200 bg-white shadow-lg px-3 py-2 text-xs text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                    <p className="font-semibold mb-1">{t("orders.lockedHint")}</p>
+                    <p className="text-gray-500 leading-relaxed">{t(meta.tooltipKey)}</p>
+                    {o.patientId && (
+                      <p className="mt-2 text-blue-600">
+                        → <a href={`/patient/${o.patientId}`} className="underline hover:text-blue-800 pointer-events-auto">{t("orders.openPatient")}</a>
+                      </p>
+                    )}
+                  </div>
+                </div>
               )}
               <button
                 onClick={() => handleDelete(o)}

@@ -60,15 +60,38 @@ export async function DELETE(
 ) {
   const { id } = await params;
   try {
+    // Try hard DELETE first
     const res = await fetch(`${FHIR_BASE}/ServiceRequest/${id}`, {
       method: "DELETE",
       headers: { accept: "application/fhir+json" },
     });
-    // FHIR DELETE returns 200 or 204 on success
-    if (!res.ok && res.status !== 204) {
-      return NextResponse.json({ error: `FHIR error: ${res.status}` }, { status: res.status });
+    if (res.ok || res.status === 204) {
+      return NextResponse.json({ deleted: true });
     }
-    return NextResponse.json({ deleted: true });
+    // 409 = referential integrity violation (linked Specimen/Encounter/DocumentReference)
+    // Fall back to FHIR soft-delete: set status → entered-in-error
+    if (res.status === 409) {
+      const getRes = await fetch(`${FHIR_BASE}/ServiceRequest/${id}`, {
+        headers: { accept: "application/fhir+json" },
+        cache: "no-store",
+      });
+      if (!getRes.ok) {
+        return NextResponse.json({ error: `FHIR error: ${getRes.status}` }, { status: getRes.status });
+      }
+      const sr = (await getRes.json()) as Record<string, unknown>;
+      const updated = { ...sr, status: "entered-in-error" };
+      const putRes = await fetch(`${FHIR_BASE}/ServiceRequest/${id}`, {
+        method: "PUT",
+        headers: { accept: "application/fhir+json", "content-type": "application/fhir+json" },
+        body: JSON.stringify(updated),
+      });
+      if (!putRes.ok) {
+        const detail = await putRes.text();
+        return NextResponse.json({ error: `FHIR error: ${putRes.status}`, detail }, { status: putRes.status });
+      }
+      return NextResponse.json({ deleted: true, soft: true });
+    }
+    return NextResponse.json({ error: `FHIR error: ${res.status}` }, { status: res.status });
   } catch (err: unknown) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Network error" },

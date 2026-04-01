@@ -15,8 +15,28 @@ RUN apk add --no-cache git
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# write-version.mjs runs as prebuild hook and needs git history;
-# if .git is not present (e.g. in CI), it falls back gracefully.
+# Accept git metadata as build args so the version string matches the source commit.
+# Pass these when building:
+#   docker buildx build \
+#     --build-arg GIT_COMMIT=$(git rev-parse --short HEAD) \
+#     --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) \
+#     --build-arg GIT_COUNT=$(git rev-list --count HEAD) \
+#     ...
+ARG GIT_COMMIT=
+ARG GIT_BRANCH=
+ARG GIT_COUNT=
+# Inject into .env.local so write-version.mjs can use them (or pre-write the value)
+RUN if [ -n "$GIT_COMMIT" ]; then \
+      PKG_VER=$(node -e "process.stdout.write(require('./package.json').version)"); \
+      TS=$(date -u +"%Y%m%d%H%M"); \
+      COUNT_PART=$([ -n "$GIT_COUNT" ] && echo "$GIT_COUNT" || echo "0"); \
+      BRANCH_PART=$([ -n "$GIT_BRANCH" ] && echo "@$GIT_BRANCH" || echo ""); \
+      printf "NEXT_PUBLIC_APP_VERSION=v%s+%s-%s%s (%s)\n" \
+        "$PKG_VER" "$COUNT_PART" "$GIT_COMMIT" "$BRANCH_PART" "$TS" > .env.local; \
+    fi
+
+# write-version.mjs runs as prebuild hook; skips git gracefully if .git is absent.
+# If .env.local was pre-written above, prebuild updates it in-place (same key).
 RUN npm run build
 
 # ---- Stage 3: Production runner ----
@@ -48,6 +68,9 @@ COPY --from=builder /app/.next/standalone ./
 # Copy static assets and build cache
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
+
+# Carry the generated version into the runner so server.js loads it via @next/env
+COPY --from=builder /app/.env.local ./.env.local
 
 # Ensure the data directory exists for the user store (server-side auth)
 RUN mkdir -p /app/data && chown nextjs:nodejs /app/data

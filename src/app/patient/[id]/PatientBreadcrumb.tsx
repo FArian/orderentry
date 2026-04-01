@@ -15,7 +15,7 @@ function nameToString(names?: HumanName[]): string {
   return parts.join(" ") || "Unbekannt";
 }
 
-export default function PatientBreadcrumb({ id }: { id: string }) {
+export default function PatientBreadcrumb({ id, hideNewOrder }: { id: string; hideNewOrder?: boolean }) {
   const { t } = useTranslation();
   const [label, setLabel] = useState<string>("…");
 
@@ -66,12 +66,14 @@ export default function PatientBreadcrumb({ id }: { id: string }) {
         </ol>
       </nav>
       <div className="flex flex-shrink-0 items-center gap-2">
-        <Link
-          href={`/order/${encodeURIComponent(id)}`}
-          className="inline-flex items-center gap-1.5 rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
-        >
-          📋 {t("home.order")}
-        </Link>
+        {!hideNewOrder && (
+          <Link
+            href={`/order/${encodeURIComponent(id)}`}
+            className="inline-flex items-center gap-1.5 rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
+          >
+            📋 {t("home.order")}
+          </Link>
+        )}
         <Link
           href="/orders"
           className="inline-flex items-center gap-1.5 rounded-md bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-900 shadow-sm hover:bg-gray-200"

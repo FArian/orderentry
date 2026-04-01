@@ -31,15 +31,22 @@ export default function AppHeader({ version }: { version: string }) {
 
   return (
     <header className="w-full border-b bg-gray-100 shadow-sm">
-      <div className="mx-auto max-w-7xl px-4 py-2 grid grid-cols-3 items-center">
-        <div className="justify-self-start flex items-center gap-3 text-xs text-gray-500">
-          <span>{t("nav.version")} {version}</span>
-          <div className="flex rounded overflow-hidden border border-gray-300 text-xs">
+      <div className="mx-auto max-w-7xl px-3 sm:px-4 py-2 grid grid-cols-3 items-center gap-2">
+
+        {/* Left: version + locale + refresh */}
+        <div className="justify-self-start flex items-center gap-1.5 sm:gap-3 text-xs text-gray-500 min-w-0">
+          {/* Version — hidden on small screens */}
+          <span className="hidden md:inline whitespace-nowrap shrink-0">
+            {t("nav.version")} {version}
+          </span>
+
+          {/* Locale switcher */}
+          <div className="flex rounded overflow-hidden border border-gray-300 text-xs shrink-0">
             {availableLocales.map((loc) => (
               <button
                 key={loc}
                 onClick={() => setLocale(loc)}
-                className={`px-2 py-0.5 transition-colors ${
+                className={`px-1.5 sm:px-2 py-0.5 transition-colors ${
                   locale === loc
                     ? "bg-blue-600 text-white font-semibold"
                     : "bg-white text-gray-600 hover:bg-gray-100"
@@ -49,8 +56,9 @@ export default function AppHeader({ version }: { version: string }) {
               </button>
             ))}
           </div>
-          {/* Refresh controls */}
-          <div className="flex items-center gap-1.5">
+
+          {/* Refresh controls — hidden on mobile */}
+          <div className="hidden sm:flex items-center gap-1.5 shrink-0">
             <button
               onClick={refresh}
               title={t("nav.refresh")}
@@ -77,27 +85,52 @@ export default function AppHeader({ version }: { version: string }) {
             </select>
           </div>
         </div>
+
+        {/* Center: logo */}
         <div className="justify-self-center">
-          <Image
-            src="/logo.svg"
-            alt="zetLab logo"
-            width={32}
-            height={32}
-            className="h-8 w-auto select-none"
-          />
+          <Link href="/" aria-label="Startseite">
+            <Image
+              src="/logo.svg"
+              alt="zetLab logo"
+              width={32}
+              height={32}
+              className="h-8 w-auto select-none"
+            />
+          </Link>
         </div>
-        <div className="justify-self-end text-sm min-h-[1rem] flex items-center gap-4">
+
+        {/* Right: auth links */}
+        <div className="justify-self-end text-sm min-h-[1rem] flex items-center gap-2 sm:gap-4">
           {authed === null ? null : authed ? (
             <>
-              <Link href="/profile" className="text-gray-600 hover:text-blue-600 hover:underline">
+              {/* Profile: text on sm+, icon on mobile */}
+              <Link
+                href="/profile"
+                className="hidden sm:inline text-gray-600 hover:text-blue-600 hover:underline"
+              >
                 {t("nav.profile")}
               </Link>
+              <Link
+                href="/profile"
+                className="sm:hidden text-gray-500 hover:text-blue-600 text-base leading-none"
+                title={t("nav.profile")}
+                aria-label={t("nav.profile")}
+              >
+                👤
+              </Link>
               <form action="/api/logout" method="post">
-                <button className="text-blue-600 hover:underline" type="submit">{t("nav.logout")}</button>
+                <button
+                  className="text-blue-600 hover:underline text-sm"
+                  type="submit"
+                >
+                  {t("nav.logout")}
+                </button>
               </form>
             </>
           ) : (
-            <Link href="/login" className="text-blue-600 hover:underline">{t("nav.login")}</Link>
+            <Link href="/login" className="text-blue-600 hover:underline">
+              {t("nav.login")}
+            </Link>
           )}
         </div>
       </div>

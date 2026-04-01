@@ -113,7 +113,9 @@
     "tooltipOnHold": "In attesa – il laboratorio ha temporaneamente sospeso la richiesta.",
     "tooltipCompleted": "Completata – il laboratorio ha terminato l'elaborazione. Nessuna ulteriore modifica possibile.",
     "tooltipRevoked": "Annullata – la richiesta è stata revocata. Nessuna ulteriore modifica possibile.",
-    "tooltipError": "Inserimento errato – la richiesta è stata contrassegnata come errata."
+    "tooltipError": "Inserimento errato – la richiesta è stata contrassegnata come errata.",
+    "openPatient": "Apri paziente",
+    "lockedHint": "Bloccato – nessuna modifica possibile."
   },
   "profile": {
     "title": "Il mio profilo",
@@ -149,7 +151,7 @@
   },
   "order": {
     "title": "Inserimento richiesta",
-    "submit": "Invia richiesta",
+    "submit": "Invia + Stampa",
     "saveDraft": "Salva bozza",
     "draftSaved": "Bozza salvata (locale)",
     "sent": "Richiesta inviata",
@@ -187,6 +189,8 @@
     "noObservation": "Nessuna ObservationDefinition trovata.",
     "fhirPreview": "Anteprima FHIR",
     "hl7Preview": "Anteprima HL7",
+    "begleitschein": "Mostra borderò",
+    "printLabel": "Stampa etichetta",
     "editTitle": "Modifica richiesta",
     "readOnly": "Questa richiesta è bloccata e non può più essere modificata."
   },
@@ -220,5 +224,22 @@
     "docDescription": "Descrizione",
     "docAuthor": "Autore",
     "noDocuments": "Nessun documento disponibile"
+  },
+  "bs": {
+    "title": "Borderò",
+    "subtitle": "ZLZ Zentrallabor AG · Inserimento richiesta",
+    "orderNumber": "Numero richiesta",
+    "sectionPatient": "Paziente",
+    "sectionOrderDetails": "Dettagli richiesta",
+    "sectionAnalyses": "Analisi selezionate",
+    "sectionMaterial": "Materiale",
+    "name": "Nome",
+    "colNum": "#",
+    "colCode": "Codice",
+    "colDescription": "Descrizione",
+    "colCategory": "Categoria",
+    "colSpecimen": "Campione / Materiale",
+    "colQuantity": "Quantità",
+    "printedAt": "Stampato il"
   }
 }
