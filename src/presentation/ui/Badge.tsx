@@ -1,22 +1,35 @@
 "use client";
 
 // ── Variants ──────────────────────────────────────────────────────────────────
+// Semantic names — never use generic colors like "blue" or "red".
+// Each variant maps to a specific zt-* design token group.
 
 const VARIANT_CLASSES = {
-  gray:    "bg-gray-100   text-gray-700  border-gray-300",
-  blue:    "bg-blue-100   text-blue-700  border-blue-300",
-  green:   "bg-green-100  text-green-700 border-green-300",
-  yellow:  "bg-yellow-100 text-yellow-700 border-yellow-300",
-  red:     "bg-red-100    text-red-700   border-red-300",
-  purple:  "bg-purple-100 text-purple-700 border-purple-300",
-  indigo:  "bg-indigo-100 text-indigo-700 border-indigo-300",
+  /** Default state — registered, unknown, not-yet-processed */
+  neutral:  "bg-zt-bg-muted      text-zt-text-secondary  border-zt-border",
+  /** Active order, active process, informational */
+  info:     "bg-zt-info-light    text-zt-info            border-zt-info-border",
+  /** Final result, completed order, confirmed */
+  success:  "bg-zt-success-light text-zt-success         border-zt-success-border",
+  /** Pending, on-hold, partially ready */
+  warning:  "bg-zt-warning-bg    text-zt-warning-text    border-zt-warning-border",
+  /** Cancelled, revoked, invalid, entered-in-error */
+  danger:   "bg-zt-danger-light  text-zt-danger          border-zt-danger-border",
+  /** Critical lab values — life-threatening, requires immediate action */
+  critical: "bg-zt-critical-light text-zt-critical       border-zt-critical-border",
+  /** Urgent / STAT orders — time-critical */
+  urgent:   "bg-zt-urgent-light  text-zt-urgent          border-zt-urgent-border",
+  /** Amended or corrected lab report */
+  amended:  "bg-zt-amended-light text-zt-amended         border-zt-amended-border",
 } as const;
+
+export type BadgeVariant = keyof typeof VARIANT_CLASSES;
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
 export interface BadgeProps {
   label: string;
-  variant?: keyof typeof VARIANT_CLASSES;
+  variant?: BadgeVariant;
   icon?: string;
   tooltip?: string;
   className?: string;
@@ -25,13 +38,16 @@ export interface BadgeProps {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 /**
- * Design-system Badge — used for status labels, tags, and counts.
+ * Design-system Badge — status labels, tags, and counts.
  *
+ * Use semantic variants, never raw colors:
  * @example
- * <Badge label="Abgeschlossen" variant="green" icon="✅" tooltip="Befund freigegeben" />
- * <Badge label="Entwurf" variant="gray" icon="✏️" />
+ * <Badge label="Abgeschlossen" variant="success" icon="✅" tooltip="Befund freigegeben" />
+ * <Badge label="Vorläufig"     variant="info"    icon="🔬" />
+ * <Badge label="Kritisch"      variant="critical" icon="⚠️" />
+ * <Badge label="STAT"          variant="urgent"  icon="🚨" />
  */
-export function Badge({ label, variant = "gray", icon, tooltip, className = "" }: BadgeProps) {
+export function Badge({ label, variant = "neutral", icon, tooltip, className = "" }: BadgeProps) {
   return (
     <div className={`relative group inline-block ${className}`}>
       <span
@@ -51,8 +67,8 @@ export function Badge({ label, variant = "gray", icon, tooltip, className = "" }
           role="tooltip"
           className={[
             "pointer-events-none absolute left-0 top-full mt-1 z-50",
-            "w-64 rounded border border-zt-border bg-zt-bg-card shadow-lg",
-            "px-3 py-2 text-xs text-zt-text-primary",
+            "w-64 rounded border border-zt-border bg-zt-bg-card",
+            "shadow-[var(--zt-shadow-md)] px-3 py-2 text-xs text-zt-text-primary",
             "opacity-0 group-hover:opacity-100 transition-opacity duration-150",
           ].join(" ")}
         >

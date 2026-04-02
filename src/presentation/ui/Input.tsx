@@ -19,8 +19,11 @@ export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 
 /**
  * Design-system Input.
  *
+ * Required fields show a red asterisk after the label (aria-hidden — the
+ * `required` attribute already communicates this to screen readers).
+ *
  * @example
- * <Input label="Name" placeholder="Max Mustermann" />
+ * <Input label="Name" placeholder="Max Mustermann" required />
  * <Input prefix="🔍" placeholder="Suchen…" onChange={handleSearch} />
  * <Input label="GLN" error="13 Stellen erforderlich" />
  */
@@ -50,6 +53,9 @@ export function Input({
           className="text-sm font-medium text-zt-text-primary select-none"
         >
           {label}
+          {rest.required && (
+            <span className="ml-0.5 text-zt-danger" aria-hidden="true">*</span>
+          )}
         </label>
       )}
 

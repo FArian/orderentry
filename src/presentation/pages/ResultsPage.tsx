@@ -45,18 +45,31 @@ function Pagination({
   const to = Math.min(page * pageSize, total);
 
   return (
-    <div className="flex items-center justify-between mt-4 text-sm text-gray-600">
-      <span>
+    <div className="flex items-center justify-between px-4 py-3 border-t border-zt-border bg-zt-bg-page">
+      <span className="text-xs text-zt-text-tertiary">
         {t("patient.showing")} {from}–{to} {t("patient.of")} {total}
       </span>
-      <div className="flex items-center gap-1.5">
-        <PaginationButton label={t("patient.first")}    disabled={page <= 1}            onClick={() => onPage(1)} />
-        <PaginationButton label={t("patient.previous")} disabled={page <= 1}            onClick={() => onPage(page - 1)} />
-        <span className="px-2">
-          {t("patient.page")} {page} {t("patient.of")} {totalPages}
-        </span>
-        <PaginationButton label={t("patient.next")}     disabled={page >= totalPages}   onClick={() => onPage(page + 1)} />
-        <PaginationButton label={t("patient.last")}     disabled={page >= totalPages}   onClick={() => onPage(totalPages)} />
+      <div className="flex items-center gap-1">
+        <PaginationButton label="«" disabled={page <= 1}          onClick={() => onPage(1)} />
+        <PaginationButton label="‹" disabled={page <= 1}          onClick={() => onPage(page - 1)} />
+        {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+          const p = Math.max(1, Math.min(page - 2, totalPages - 4)) + i;
+          return (
+            <button
+              key={p}
+              onClick={() => onPage(p)}
+              className={`w-7 h-7 rounded-[7px] border text-xs flex items-center justify-center transition-colors ${
+                p === page
+                  ? "bg-zt-primary text-zt-text-on-primary border-zt-primary"
+                  : "bg-zt-bg-card border-zt-border text-zt-text-secondary hover:bg-zt-bg-page"
+              }`}
+            >
+              {p}
+            </button>
+          );
+        })}
+        <PaginationButton label="›" disabled={page >= totalPages} onClick={() => onPage(page + 1)} />
+        <PaginationButton label="»" disabled={page >= totalPages} onClick={() => onPage(totalPages)} />
       </div>
     </div>
   );
@@ -75,7 +88,7 @@ function PaginationButton({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="rounded border border-gray-300 px-2 py-1 hover:bg-gray-100 disabled:opacity-40"
+      className="w-7 h-7 rounded-[7px] border border-zt-border bg-zt-bg-card text-xs text-zt-text-secondary flex items-center justify-center hover:bg-zt-bg-page disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
     >
       {label}
     </button>
@@ -119,7 +132,6 @@ export default function ResultsPage() {
 
   // ── Search handlers ─────────────────────────────────────────────────────
 
-  /** Debounced patient search — delegates ID vs. name detection to Strategy. */
   const handlePatientSearch = useCallback(
     (input: string) => {
       setPatientInput(input);
@@ -127,8 +139,8 @@ export default function ResultsPage() {
       const orderNumber = orderNumberInput.trim() || undefined;
       search({
         ...params,
-        ...(orderNumber   !== undefined && { orderNumber }),
-        ...(statusFilter  !== ""        && { status: statusFilter }),
+        ...(orderNumber  !== undefined && { orderNumber }),
+        ...(statusFilter !== ""        && { status: statusFilter }),
       });
     },
     [orderNumberInput, statusFilter, search],
@@ -141,8 +153,8 @@ export default function ResultsPage() {
       const orderNumber = input.trim() || undefined;
       search({
         ...patientParams,
-        ...(orderNumber   !== undefined && { orderNumber }),
-        ...(statusFilter  !== ""        && { status: statusFilter }),
+        ...(orderNumber  !== undefined && { orderNumber }),
+        ...(statusFilter !== ""        && { status: statusFilter }),
       });
     },
     [patientInput, statusFilter, search],
@@ -165,114 +177,99 @@ export default function ResultsPage() {
   // ── Render ──────────────────────────────────────────────────────────────
 
   return (
-    <div className="p-4">
+    <div className="p-6 sm:p-8 max-w-7xl mx-auto">
       <PreviewModal modal={modal} onClose={() => setModal(null)} />
 
       {/* Breadcrumb */}
-      <nav className="mb-2 text-sm text-gray-600" aria-label="Brotkrumen">
-        <ol className="flex items-center gap-2">
-          <li>
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1 text-blue-600 hover:underline"
-              title={t("nav.home")}
-            >
-              🏠 {t("nav.home")}
-            </Link>
-          </li>
-          <li className="text-gray-400">/</li>
-          <li className="text-gray-700">{t("results.title")}</li>
-        </ol>
+      <nav className="mb-4 flex items-center gap-1.5 text-xs text-zt-text-tertiary" aria-label="Brotkrumen">
+        <Link href="/" className="text-zt-primary hover:underline">{t("nav.home")}</Link>
+        <span>/</span>
+        <span className="text-zt-text-primary">{t("results.title")}</span>
       </nav>
 
-      {/* Header + search toolbar */}
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <h1 className="text-2xl font-bold">{t("results.title")}</h1>
+      {/* Page header */}
+      <div className="flex items-center justify-between mb-5">
+        <h1 className="text-xl font-medium text-zt-text-primary">{t("results.title")}</h1>
+        <button
+          onClick={reload}
+          title={t("nav.refresh")}
+          aria-label={t("nav.refresh")}
+          className="h-8 w-8 flex items-center justify-center rounded-[8px] border border-zt-border bg-zt-bg-card text-zt-text-secondary hover:bg-zt-bg-page transition-colors text-base"
+        >
+          ↻
+        </button>
+      </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <SearchBar
-            placeholder={t("results.searchPatient")}
-            value={patientInput}
-            onChange={handlePatientSearch}
-            icon="👤"
-            className="w-56"
-          />
-          <SearchBar
-            placeholder={t("results.searchOrder")}
-            value={orderNumberInput}
-            onChange={handleOrderSearch}
-            icon="📋"
-            className="w-48"
-          />
-          <StatusSelect
-            value={statusFilter}
-            onChange={handleStatusChange}
-            t={t}
-          />
+      {/* Toolbar */}
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        <SearchBar
+          placeholder={t("results.searchPatient")}
+          value={patientInput}
+          onChange={handlePatientSearch}
+          icon="👤"
+          className="w-56"
+        />
+        <SearchBar
+          placeholder={t("results.searchOrder")}
+          value={orderNumberInput}
+          onChange={handleOrderSearch}
+          icon="📋"
+          className="w-48"
+        />
+
+        {/* Status filter chips */}
+        <button
+          onClick={() => handleStatusChange("")}
+          className={`text-xs px-3 py-1.5 rounded-full border transition-colors whitespace-nowrap ${
+            statusFilter === ""
+              ? "bg-zt-primary-light text-zt-primary border-zt-primary-border font-medium"
+              : "bg-zt-bg-card text-zt-text-secondary border-zt-border hover:bg-zt-bg-page"
+          }`}
+        >
+          {t("results.allStatuses")}
+        </button>
+        {STATUS_OPTIONS.map((s) => (
           <button
-            onClick={reload}
-            title={t("nav.refresh")}
-            className="rounded border border-gray-300 bg-white px-2 py-1.5 text-gray-600 hover:bg-gray-100 text-sm"
-            aria-label={t("nav.refresh")}
+            key={s}
+            onClick={() => handleStatusChange(s)}
+            className={`text-xs px-3 py-1.5 rounded-full border transition-colors whitespace-nowrap ${
+              statusFilter === s
+                ? "bg-zt-primary-light text-zt-primary border-zt-primary-border font-medium"
+                : "bg-zt-bg-card text-zt-text-secondary border-zt-border hover:bg-zt-bg-page"
+            }`}
           >
-            ↻
+            {t(`befunde.status${s.charAt(0).toUpperCase()}${s.slice(1)}`)}
           </button>
-        </div>
+        ))}
       </div>
 
       {/* Result count */}
       {!loading && !error && (
-        <p className="mb-2 text-xs text-gray-500">
+        <p className="mb-3 text-xs text-zt-text-tertiary">
           {total}{" "}
           {total === 1 ? t("results.resultSingular") : t("results.resultPlural")}
         </p>
       )}
 
-      {/* Table */}
-      <ResultList
-        results={results}
-        loading={loading}
-        error={error}
-        t={t}
-        onOpenModal={setModal}
-        colCount={7}
-      />
+      {/* Table wrapper */}
+      <div className="bg-zt-bg-card border border-zt-border rounded-xl overflow-hidden">
+        <ResultList
+          results={results}
+          loading={loading}
+          error={error}
+          t={t}
+          onOpenModal={setModal}
+          colCount={7}
+        />
 
-      {/* Pagination */}
-      <Pagination
-        page={page}
-        pageSize={pageSize}
-        total={total}
-        onPage={setPage}
-        t={t}
-      />
+        <Pagination
+          page={page}
+          pageSize={pageSize}
+          total={total}
+          onPage={setPage}
+          t={t}
+        />
+      </div>
     </div>
-  );
-}
-
-// ── Extracted sub-component ───────────────────────────────────────────────────
-
-function StatusSelect({
-  value,
-  onChange,
-  t,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  t: (k: string) => string;
-}) {
-  return (
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-700 focus:border-blue-400 focus:outline-none"
-    >
-      <option value="">{t("results.allStatuses")}</option>
-      {STATUS_OPTIONS.map((s) => (
-        <option key={s} value={s}>
-          {t(`befunde.status${s.charAt(0).toUpperCase()}${s.slice(1)}`)}
-        </option>
-      ))}
-    </select>
   );
 }

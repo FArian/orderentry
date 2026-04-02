@@ -19,9 +19,9 @@ export function SkeletonRows({ columns = 5, rows = 6 }: SkeletonRowProps) {
       {Array.from({ length: rows }, (_, i) => (
         <tr key={i} aria-hidden="true">
           {Array.from({ length: columns }, (__, j) => (
-            <td key={j} className="px-3 py-2.5 border-b border-gray-100">
+            <td key={j} className="px-3 py-2.5 border-b border-zt-border">
               <div
-                className="h-4 rounded bg-gray-100 animate-pulse"
+                className="h-4 rounded bg-zt-bg-muted animate-pulse"
                 style={{ width: `${60 + ((i + j) % 4) * 10}%` }}
               />
             </td>
@@ -49,7 +49,7 @@ export function SkeletonBlock({ lines = 3, className = "" }: SkeletonBlockProps)
       {Array.from({ length: lines }, (_, i) => (
         <div
           key={i}
-          className="h-4 rounded bg-gray-100 animate-pulse"
+          className="h-4 rounded bg-zt-bg-muted animate-pulse"
           style={{ width: widths[i % widths.length] }}
         />
       ))}
@@ -65,11 +65,11 @@ export function SkeletonBlock({ lines = 3, className = "" }: SkeletonBlockProps)
 export function PageLoader({ label = "Laden…" }: { label?: string }) {
   return (
     <div
-      className="flex min-h-64 flex-col items-center justify-center gap-3 text-gray-500"
+      className="flex min-h-64 flex-col items-center justify-center gap-3 text-zt-text-tertiary"
       role="status"
       aria-label={label}
     >
-      <span className="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+      <span className="h-8 w-8 animate-spin rounded-full border-2 border-zt-primary border-t-transparent" />
       <span className="text-sm">{label}</span>
     </div>
   );

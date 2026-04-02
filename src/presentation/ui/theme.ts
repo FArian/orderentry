@@ -7,6 +7,7 @@
  *
  *   bg-zt-primary        text-zt-text-primary   border-zt-border
  *   bg-zt-success-light  text-zt-text-secondary border-zt-primary-border
+ *   bg-zt-critical-light text-zt-critical        border-zt-critical-border
  *   …etc.
  *
  * NEVER import this file inside `domain/` or `application/`.
@@ -31,6 +32,30 @@ export const theme = {
     warningText:    "var(--zt-warning-text)",
     warningBg:      "var(--zt-warning-bg)",
     warningBorder:  "var(--zt-warning-border)",
+
+    /** Life-threatening / critical lab values — distinct from danger */
+    critical:       "var(--zt-critical)",
+    criticalLight:  "var(--zt-critical-light)",
+    criticalBorder: "var(--zt-critical-border)",
+    criticalHover:  "var(--zt-critical-hover)",
+
+    /** Urgent / STAT orders — time-critical */
+    urgent:         "var(--zt-urgent)",
+    urgentLight:    "var(--zt-urgent-light)",
+    urgentBorder:   "var(--zt-urgent-border)",
+    urgentHover:    "var(--zt-urgent-hover)",
+
+    /** Preliminary results, active orders */
+    info:           "var(--zt-info)",
+    infoLight:      "var(--zt-info-light)",
+    infoBorder:     "var(--zt-info-border)",
+    infoHover:      "var(--zt-info-hover)",
+
+    /** Amended or corrected lab reports */
+    amended:        "var(--zt-amended)",
+    amendedLight:   "var(--zt-amended-light)",
+    amendedBorder:  "var(--zt-amended-border)",
+    amendedHover:   "var(--zt-amended-hover)",
 
     bgPage:         "var(--zt-bg-page)",
     bgCard:         "var(--zt-bg-card)",

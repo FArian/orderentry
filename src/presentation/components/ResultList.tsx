@@ -13,6 +13,8 @@ import {
 } from "@/components/Table";
 import { PatientCard } from "@/presentation/components/PatientCard";
 import { PreviewButtons } from "@/presentation/components/PreviewModal";
+import { Badge } from "@/presentation/ui/Badge";
+import type { BadgeVariant } from "@/presentation/ui/Badge";
 import { formatDate } from "@/shared/utils/formatDate";
 import type { Result } from "@/domain/entities/Result";
 import type { ModalState } from "@/presentation/components/PreviewModal";
@@ -20,7 +22,7 @@ import type { ModalState } from "@/presentation/components/PreviewModal";
 // ── DiagnosticReport status badge ─────────────────────────────────────────────
 // Exported so befunde/page.tsx can use the same component without duplication.
 
-type DrStatusMeta = { icon: string; badge: string; label: string; tooltip: string };
+type DrStatusMeta = { icon: string; variant: BadgeVariant; label: string; tooltip: string };
 
 export function getDrStatusMeta(
   status: string,
@@ -28,21 +30,21 @@ export function getDrStatusMeta(
 ): DrStatusMeta {
   switch (status) {
     case "registered":
-      return { icon: "📝", badge: "bg-gray-100 text-gray-700 border-gray-300",       label: t("befunde.statusRegistered"),  tooltip: t("befunde.tooltipRegistered")  };
+      return { icon: "📝", variant: "neutral",  label: t("befunde.statusRegistered"),  tooltip: t("befunde.tooltipRegistered")  };
     case "partial":
-      return { icon: "⏳", badge: "bg-yellow-100 text-yellow-700 border-yellow-300", label: t("befunde.statusPartial"),     tooltip: t("befunde.tooltipPartial")     };
+      return { icon: "⏳", variant: "warning",  label: t("befunde.statusPartial"),     tooltip: t("befunde.tooltipPartial")     };
     case "preliminary":
-      return { icon: "🔬", badge: "bg-blue-100 text-blue-700 border-blue-300",       label: t("befunde.statusPreliminary"), tooltip: t("befunde.tooltipPreliminary") };
+      return { icon: "🔬", variant: "info",     label: t("befunde.statusPreliminary"), tooltip: t("befunde.tooltipPreliminary") };
     case "final":
-      return { icon: "✅", badge: "bg-green-100 text-green-700 border-green-300",    label: t("befunde.statusFinal"),       tooltip: t("befunde.tooltipFinal")       };
+      return { icon: "✅", variant: "success",  label: t("befunde.statusFinal"),       tooltip: t("befunde.tooltipFinal")       };
     case "amended":
-      return { icon: "✏️", badge: "bg-purple-100 text-purple-700 border-purple-300", label: t("befunde.statusAmended"),     tooltip: t("befunde.tooltipAmended")     };
+      return { icon: "✏️", variant: "amended",  label: t("befunde.statusAmended"),     tooltip: t("befunde.tooltipAmended")     };
     case "corrected":
-      return { icon: "🔄", badge: "bg-purple-100 text-purple-700 border-purple-300", label: t("befunde.statusCorrected"),   tooltip: t("befunde.tooltipCorrected")   };
+      return { icon: "🔄", variant: "amended",  label: t("befunde.statusCorrected"),   tooltip: t("befunde.tooltipCorrected")   };
     case "cancelled":
-      return { icon: "🚫", badge: "bg-red-100 text-red-700 border-red-300",          label: t("befunde.statusCancelled"),   tooltip: t("befunde.tooltipCancelled")   };
+      return { icon: "🚫", variant: "danger",   label: t("befunde.statusCancelled"),   tooltip: t("befunde.tooltipCancelled")   };
     default:
-      return { icon: "❓", badge: "bg-gray-100 text-gray-500 border-gray-200",       label: status || "?",                  tooltip: ""                              };
+      return { icon: "❓", variant: "neutral",  label: status || "?",                  tooltip: ""                              };
   }
 }
 
@@ -55,22 +57,12 @@ export function DiagnosticReportStatusBadge({
 }) {
   const meta = getDrStatusMeta(status, t);
   return (
-    <div className="relative group inline-block">
-      <span
-        className={`inline-flex items-center gap-1.5 rounded border px-2 py-0.5 text-xs font-medium cursor-default select-none ${meta.badge}`}
-      >
-        <span>{meta.icon}</span>
-        <span>{meta.label}</span>
-      </span>
-      {meta.tooltip && (
-        <div className="pointer-events-none absolute left-0 top-full mt-1 z-50 w-64 rounded border border-gray-200 bg-white shadow-lg px-3 py-2 text-xs text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-          <div className="font-semibold mb-1">
-            {meta.icon} {meta.label}
-          </div>
-          <p className="leading-relaxed text-gray-600">{meta.tooltip}</p>
-        </div>
-      )}
-    </div>
+    <Badge
+      label={meta.label}
+      variant={meta.variant}
+      icon={meta.icon}
+      {...(meta.tooltip ? { tooltip: meta.tooltip } : {})}
+    />
   );
 }
 
@@ -100,7 +92,7 @@ export function ResultList({
         <DataTableRow key={`skel-${i}`}>
           {Array.from({ length: colCount }, (__, j) => (
             <DataTableCell key={j}>
-              <div className="h-4 rounded bg-gray-100 animate-pulse" />
+              <div className="h-4 rounded bg-zt-bg-muted animate-pulse" />
             </DataTableCell>
           ))}
         </DataTableRow>
@@ -110,7 +102,7 @@ export function ResultList({
     if (error) {
       return (
         <DataTableRow>
-          <DataTableCell colSpan={colCount} className="text-red-600">
+          <DataTableCell colSpan={colCount} className="text-zt-danger">
             {t("results.loadError")}: {error}
           </DataTableCell>
         </DataTableRow>
@@ -120,7 +112,7 @@ export function ResultList({
     if (results.length === 0) {
       return (
         <DataTableRow>
-          <DataTableCell colSpan={colCount} className="text-gray-500">
+          <DataTableCell colSpan={colCount} className="text-zt-text-tertiary">
             {t("results.noResults")}
           </DataTableCell>
         </DataTableRow>
@@ -140,7 +132,7 @@ export function ResultList({
         </DataTableCell>
 
         {/* Category */}
-        <DataTableCell className="w-36 text-xs text-gray-600">
+        <DataTableCell className="w-36 text-xs text-zt-text-secondary">
           {r.category || "—"}
         </DataTableCell>
 
@@ -201,7 +193,7 @@ function OrderReferences({
   patientId: string;
 }) {
   if (basedOn.length === 0) {
-    return <span className="text-gray-400 text-xs">—</span>;
+    return <span className="text-zt-text-tertiary text-xs">—</span>;
   }
   return (
     <div className="flex flex-col gap-0.5">
@@ -213,7 +205,7 @@ function OrderReferences({
           <Link
             key={ref}
             href={`/order/${patientId}?sr=${srId}`}
-            className="text-blue-600 hover:underline text-xs font-mono"
+            className="text-zt-primary hover:underline text-xs font-mono"
             title={`ServiceRequest/${srId}`}
           >
             📋 {srId}

@@ -47,9 +47,9 @@ export function EmptyState({
         </span>
       )}
       <div className="flex flex-col gap-1">
-        <p className="text-sm font-semibold text-gray-700">{title}</p>
+        <p className="text-sm font-semibold text-zt-text-primary">{title}</p>
         {description && (
-          <p className="text-xs text-gray-500 max-w-xs">{description}</p>
+          <p className="text-xs text-zt-text-secondary max-w-xs">{description}</p>
         )}
       </div>
       {action && <div className="mt-2">{action}</div>}

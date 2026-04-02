@@ -20,15 +20,40 @@
   --zt-success-hover:   #2C5209;
 
   /* ── Danger / Red ───────────────────────────────────────────────────────── */
-  --zt-danger:          #E24B4A;
+  --zt-danger:          #C63535;
   --zt-danger-light:    #FDEAEA;
   --zt-danger-border:   #F4AAAA;
-  --zt-danger-hover:    #C43938;
+  --zt-danger-hover:    #A02828;
 
   /* ── Warning / Amber ────────────────────────────────────────────────────── */
   --zt-warning-text:    #854F0B;
   --zt-warning-bg:      #FAEEDA;
   --zt-warning-border:  #F0C97A;
+
+  /* ── Critical — life-threatening / critical lab values ──────────────────── */
+  /* Distinct from danger: deeper crimson, higher alarm weight               */
+  --zt-critical:        #8B1A2F;
+  --zt-critical-light:  #FFF0F3;
+  --zt-critical-border: #F5BAC9;
+  --zt-critical-hover:  #6B1224;
+
+  /* ── Urgent / STAT — time-critical orders ───────────────────────────────── */
+  --zt-urgent:          #B94E00;
+  --zt-urgent-light:    #FFF3EC;
+  --zt-urgent-border:   #FFBC95;
+  --zt-urgent-hover:    #8F3C00;
+
+  /* ── Info / Teal — preliminary results, active orders ───────────────────── */
+  --zt-info:            #0B6577;
+  --zt-info-light:      #E3F5F8;
+  --zt-info-border:     #98D5E0;
+  --zt-info-hover:      #084D5A;
+
+  /* ── Amended / Violet — corrected or amended lab reports ────────────────── */
+  --zt-amended:         #5B3DA0;
+  --zt-amended-light:   #F0ECFB;
+  --zt-amended-border:  #C9B8EF;
+  --zt-amended-hover:   #422D78;
 
   /* ── Surface / Background ───────────────────────────────────────────────── */
   --zt-bg-page:         #f4f5f7;
@@ -41,8 +66,8 @@
 
   /* ── Text ───────────────────────────────────────────────────────────────── */
   --zt-text-primary:    #1a1a1a;
-  --zt-text-secondary:  #666666;
-  --zt-text-tertiary:   #999999;
+  --zt-text-secondary:  #555555;
+  --zt-text-tertiary:   #888888;
   --zt-text-disabled:   #aaaaaa;
   --zt-text-on-primary: #ffffff;
   --zt-text-on-success: #ffffff;
@@ -56,6 +81,18 @@
   /* ── Shadows ────────────────────────────────────────────────────────────── */
   --zt-shadow-sm:       0 1px 3px rgba(0, 0, 0, 0.08);
   --zt-shadow-md:       0 2px 8px rgba(0, 0, 0, 0.10);
+  --zt-shadow-lg:       0 4px 16px rgba(0, 0, 0, 0.12);
+
+  /* ── Typography ──────────────────────────────────────────────────────────── */
+  /* System font stack: clear letterforms for clinical data entry             */
+  --zt-font-sans: system-ui, "Segoe UI", Arial, sans-serif;
+  --zt-font-mono: ui-monospace, "Cascadia Code", "Consolas", monospace;
+
+  /* ── Border radius ───────────────────────────────────────────────────────── */
+  --zt-radius-sm:  0.25rem;   /* 4px  — tags, badges */
+  --zt-radius:     0.375rem;  /* 6px  — inputs, buttons */
+  --zt-radius-md:  0.5rem;    /* 8px  — cards, dialogs */
+  --zt-radius-lg:  0.75rem;   /* 12px — modals */
 
   /* Legacy Next.js defaults (kept for compatibility) */
   --background: #ffffff;
@@ -75,14 +112,34 @@
   --zt-success-border:  #4A7A2A;
   --zt-success-hover:   #8ACA5A;
 
-  --zt-danger:          #F07070;
+  --zt-danger:          #E07070;
   --zt-danger-light:    #3A1515;
   --zt-danger-border:   #8A3535;
-  --zt-danger-hover:    #F49090;
+  --zt-danger-hover:    #F09090;
 
   --zt-warning-text:    #F0C97A;
   --zt-warning-bg:      #3A2A05;
   --zt-warning-border:  #7A5A15;
+
+  --zt-critical:        #F48AA0;
+  --zt-critical-light:  #3A0A14;
+  --zt-critical-border: #7A2535;
+  --zt-critical-hover:  #F8A8BB;
+
+  --zt-urgent:          #F4A070;
+  --zt-urgent-light:    #3A1800;
+  --zt-urgent-border:   #7A3500;
+  --zt-urgent-hover:    #F8B888;
+
+  --zt-info:            #60C0D0;
+  --zt-info-light:      #082530;
+  --zt-info-border:     #205A70;
+  --zt-info-hover:      #80D0E0;
+
+  --zt-amended:         #A080E0;
+  --zt-amended-light:   #1A0A3A;
+  --zt-amended-border:  #4A2A7A;
+  --zt-amended-hover:   #C0A0F8;
 
   --zt-bg-page:         #0f1117;
   --zt-bg-card:         #1a1d27;
@@ -110,55 +167,79 @@
 
 @theme inline {
   /* Legacy Next.js theme vars */
-  --color-background:          var(--background);
-  --color-foreground:          var(--foreground);
-  --font-sans:                 var(--font-geist-sans);
-  --font-mono:                 var(--font-geist-mono);
+  --color-background:            var(--background);
+  --color-foreground:            var(--foreground);
+  --font-sans:                   var(--font-geist-sans);
+  --font-mono:                   var(--font-geist-mono);
 
   /* Primary */
-  --color-zt-primary:          var(--zt-primary);
-  --color-zt-primary-light:    var(--zt-primary-light);
-  --color-zt-primary-border:   var(--zt-primary-border);
-  --color-zt-primary-hover:    var(--zt-primary-hover);
+  --color-zt-primary:            var(--zt-primary);
+  --color-zt-primary-light:      var(--zt-primary-light);
+  --color-zt-primary-border:     var(--zt-primary-border);
+  --color-zt-primary-hover:      var(--zt-primary-hover);
 
   /* Success */
-  --color-zt-success:          var(--zt-success);
-  --color-zt-success-light:    var(--zt-success-light);
-  --color-zt-success-border:   var(--zt-success-border);
-  --color-zt-success-hover:    var(--zt-success-hover);
+  --color-zt-success:            var(--zt-success);
+  --color-zt-success-light:      var(--zt-success-light);
+  --color-zt-success-border:     var(--zt-success-border);
+  --color-zt-success-hover:      var(--zt-success-hover);
 
   /* Danger */
-  --color-zt-danger:           var(--zt-danger);
-  --color-zt-danger-light:     var(--zt-danger-light);
-  --color-zt-danger-border:    var(--zt-danger-border);
-  --color-zt-danger-hover:     var(--zt-danger-hover);
+  --color-zt-danger:             var(--zt-danger);
+  --color-zt-danger-light:       var(--zt-danger-light);
+  --color-zt-danger-border:      var(--zt-danger-border);
+  --color-zt-danger-hover:       var(--zt-danger-hover);
 
   /* Warning */
-  --color-zt-warning-text:     var(--zt-warning-text);
-  --color-zt-warning-bg:       var(--zt-warning-bg);
-  --color-zt-warning-border:   var(--zt-warning-border);
+  --color-zt-warning-text:       var(--zt-warning-text);
+  --color-zt-warning-bg:         var(--zt-warning-bg);
+  --color-zt-warning-border:     var(--zt-warning-border);
+
+  /* Critical */
+  --color-zt-critical:           var(--zt-critical);
+  --color-zt-critical-light:     var(--zt-critical-light);
+  --color-zt-critical-border:    var(--zt-critical-border);
+  --color-zt-critical-hover:     var(--zt-critical-hover);
+
+  /* Urgent */
+  --color-zt-urgent:             var(--zt-urgent);
+  --color-zt-urgent-light:       var(--zt-urgent-light);
+  --color-zt-urgent-border:      var(--zt-urgent-border);
+  --color-zt-urgent-hover:       var(--zt-urgent-hover);
+
+  /* Info */
+  --color-zt-info:               var(--zt-info);
+  --color-zt-info-light:         var(--zt-info-light);
+  --color-zt-info-border:        var(--zt-info-border);
+  --color-zt-info-hover:         var(--zt-info-hover);
+
+  /* Amended */
+  --color-zt-amended:            var(--zt-amended);
+  --color-zt-amended-light:      var(--zt-amended-light);
+  --color-zt-amended-border:     var(--zt-amended-border);
+  --color-zt-amended-hover:      var(--zt-amended-hover);
 
   /* Surface */
-  --color-zt-bg-page:          var(--zt-bg-page);
-  --color-zt-bg-card:          var(--zt-bg-card);
-  --color-zt-bg-muted:         var(--zt-bg-muted);
+  --color-zt-bg-page:            var(--zt-bg-page);
+  --color-zt-bg-card:            var(--zt-bg-card);
+  --color-zt-bg-muted:           var(--zt-bg-muted);
 
   /* Borders */
-  --color-zt-border:           var(--zt-border);
-  --color-zt-border-strong:    var(--zt-border-strong);
+  --color-zt-border:             var(--zt-border);
+  --color-zt-border-strong:      var(--zt-border-strong);
 
   /* Text */
-  --color-zt-text-primary:     var(--zt-text-primary);
-  --color-zt-text-secondary:   var(--zt-text-secondary);
-  --color-zt-text-tertiary:    var(--zt-text-tertiary);
-  --color-zt-text-disabled:    var(--zt-text-disabled);
-  --color-zt-text-on-primary:  var(--zt-text-on-primary);
-  --color-zt-text-on-success:  var(--zt-text-on-success);
-  --color-zt-text-on-danger:   var(--zt-text-on-danger);
+  --color-zt-text-primary:       var(--zt-text-primary);
+  --color-zt-text-secondary:     var(--zt-text-secondary);
+  --color-zt-text-tertiary:      var(--zt-text-tertiary);
+  --color-zt-text-disabled:      var(--zt-text-disabled);
+  --color-zt-text-on-primary:    var(--zt-text-on-primary);
+  --color-zt-text-on-success:    var(--zt-text-on-success);
+  --color-zt-text-on-danger:     var(--zt-text-on-danger);
 
   /* Topbar */
-  --color-zt-topbar-bg:        var(--zt-topbar-bg);
-  --color-zt-topbar-border:    var(--zt-topbar-border);
+  --color-zt-topbar-bg:          var(--zt-topbar-bg);
+  --color-zt-topbar-border:      var(--zt-topbar-border);
 }
 
 /* ── Base ────────────────────────────────────────────────────────────────── */
@@ -166,5 +247,23 @@
 body {
   background: var(--zt-bg-page);
   color: var(--zt-text-primary);
-  font-family: Arial, Helvetica, sans-serif;
+  /* Clear, unambiguous letterforms for clinical data entry.
+     Tabular numerals ensure lab value columns stay aligned. */
+  font-family: var(--zt-font-sans);
+  font-feature-settings: "tnum" 1;   /* tabular numerals */
+}
+
+/* ── Monospace — patient IDs, order numbers, HL7 values ─────────────────── */
+.font-mono, code, pre {
+  font-family: var(--zt-font-mono);
+  font-feature-settings: "tnum" 1;
+}
+
+/* ── Dropdown animation ───────────────────────────────────────────────────── */
+@keyframes zt-dropdown-in {
+  from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+.zt-dropdown-enter {
+  animation: zt-dropdown-in 140ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }

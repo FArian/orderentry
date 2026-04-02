@@ -22,7 +22,7 @@ export { Card } from "./Card";
 export type { CardProps } from "./Card";
 
 export { Badge } from "./Badge";
-export type { BadgeProps } from "./Badge";
+export type { BadgeProps, BadgeVariant } from "./Badge";
 
 export { SkeletonRows, SkeletonBlock, PageLoader } from "./Loader";
 
@@ -30,3 +30,9 @@ export { EmptyState } from "./EmptyState";
 export type { EmptyStateProps } from "./EmptyState";
 
 export { theme } from "./theme";
+
+export { Avatar } from "./Avatar";
+export type { AvatarProps } from "./Avatar";
+
+export { Dropdown, DropdownItem, DropdownSeparator, DropdownLabel } from "./Dropdown";
+export type { DropdownProps, DropdownItemProps } from "./Dropdown";
