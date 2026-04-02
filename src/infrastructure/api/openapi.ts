@@ -50,6 +50,12 @@ export const openApiSpec = {
       name: "Auth",
       description: "Session authentication endpoints.",
     },
+    {
+      name: "Users",
+      description:
+        "Admin user management — CRUD for local users and FHIR Practitioner sync. " +
+        "All endpoints require an authenticated session with role=admin.",
+    },
   ],
   paths: {
     // ── Results ───────────────────────────────────────────────────────────────
@@ -550,6 +556,211 @@ export const openApiSpec = {
       },
     },
 
+    // ── Users (admin) ─────────────────────────────────────────────────────────
+    "/users": {
+      get: {
+        tags: ["Users"],
+        summary: "List users",
+        description: "Returns a paginated list of local users. Requires admin role.",
+        operationId: "listUsers",
+        parameters: [
+          {
+            name: "q",
+            in: "query",
+            description: "Username search string",
+            schema: { type: "string" },
+          },
+          {
+            name: "role",
+            in: "query",
+            description: "Filter by role",
+            schema: { type: "string", enum: ["admin", "user"] },
+          },
+          {
+            name: "status",
+            in: "query",
+            description: "Filter by status",
+            schema: { type: "string", enum: ["active", "pending", "suspended"] },
+          },
+          {
+            name: "page",
+            in: "query",
+            schema: { type: "integer", minimum: 1, default: 1 },
+          },
+          {
+            name: "pageSize",
+            in: "query",
+            schema: { type: "integer", minimum: 1, maximum: 100, default: 20 },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "Paginated list of users",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/PagedUsersResponse" },
+              },
+            },
+          },
+          "401": { description: "Not authenticated" },
+          "403": { description: "Forbidden — admin role required" },
+        },
+      },
+      post: {
+        tags: ["Users"],
+        summary: "Create a user",
+        description: "Creates a new local or external user. Requires admin role.",
+        operationId: "createUser",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/CreateUserRequest" },
+            },
+          },
+        },
+        responses: {
+          "201": {
+            description: "Created user",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/UserResponse" },
+              },
+            },
+          },
+          "400": { description: "Invalid request body" },
+          "401": { description: "Not authenticated" },
+          "403": { description: "Forbidden — admin role required" },
+          "409": { description: "Username already exists" },
+        },
+      },
+    },
+
+    "/users/{id}": {
+      get: {
+        tags: ["Users"],
+        summary: "Get a user by ID",
+        description: "Returns a single user. Requires admin role.",
+        operationId: "getUser",
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "User",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/UserResponse" },
+              },
+            },
+          },
+          "401": { description: "Not authenticated" },
+          "403": { description: "Forbidden — admin role required" },
+          "404": { description: "User not found" },
+        },
+      },
+      put: {
+        tags: ["Users"],
+        summary: "Update a user",
+        description: "Updates role, status, or profile of a user. Requires admin role.",
+        operationId: "updateUser",
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/UpdateUserRequest" },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "Updated user",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/UserResponse" },
+              },
+            },
+          },
+          "401": { description: "Not authenticated" },
+          "403": { description: "Forbidden — admin role required" },
+          "404": { description: "User not found" },
+        },
+      },
+      delete: {
+        tags: ["Users"],
+        summary: "Delete a user",
+        description: "Permanently removes a user from the local store. Requires admin role.",
+        operationId: "deleteUser",
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "Delete confirmation",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/DeleteUserResponse" },
+              },
+            },
+          },
+          "401": { description: "Not authenticated" },
+          "403": { description: "Forbidden — admin role required" },
+          "404": { description: "User not found" },
+        },
+      },
+    },
+
+    "/users/{id}/sync": {
+      post: {
+        tags: ["Users"],
+        summary: "Sync user to FHIR",
+        description:
+          "Creates or updates Practitioner / PractitionerRole / Organization " +
+          "resources in the FHIR server based on the user profile. " +
+          "Idempotent — safe to call multiple times. Requires admin role.",
+        operationId: "syncUserToFhir",
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "Sync result",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/UserSyncResponse" },
+              },
+            },
+          },
+          "401": { description: "Not authenticated" },
+          "403": { description: "Forbidden — admin role required" },
+          "404": { description: "User not found" },
+        },
+      },
+    },
+
     // ── Auth ──────────────────────────────────────────────────────────────────
     "/login": {
       post: {
@@ -753,6 +964,103 @@ export const openApiSpec = {
           page: { type: "integer" },
           pageSize: { type: "integer" },
           error: { type: "string", description: "Present only on error" },
+        },
+      },
+
+      UserProfileSchema: {
+        type: "object",
+        description: "Optional profile information for a user (Practitioner/Organization data)",
+        properties: {
+          ptype: { type: "string", enum: ["NAT", "JUR"], description: "NAT = natural person (Practitioner), JUR = legal entity (Organization)" },
+          firstName: { type: "string" },
+          lastName: { type: "string" },
+          organization: { type: "string" },
+          gln: { type: "string", description: "13-digit GLN number" },
+          orgGln: { type: "string", description: "GLN of affiliated/parent organization" },
+          localId: { type: "string" },
+          street: { type: "string" },
+          streetNo: { type: "string" },
+          zip: { type: "string" },
+          city: { type: "string" },
+          canton: { type: "string" },
+          country: { type: "string" },
+          email: { type: "string", format: "email" },
+          phone: { type: "string" },
+        },
+      },
+
+      UserResponse: {
+        type: "object",
+        required: ["id", "username", "role", "status", "providerType", "createdAt", "fhirSyncStatus"],
+        properties: {
+          id: { type: "string" },
+          username: { type: "string" },
+          role: { type: "string", enum: ["admin", "user"] },
+          status: { type: "string", enum: ["active", "pending", "suspended"] },
+          providerType: { type: "string", enum: ["local", "external"] },
+          externalId: { type: "string" },
+          createdAt: { type: "string", format: "date-time" },
+          profile: { $ref: "#/components/schemas/UserProfileSchema" },
+          fhirSyncStatus: { type: "string", enum: ["not_synced", "synced", "error"] },
+          fhirSyncedAt: { type: "string", format: "date-time" },
+          fhirSyncError: { type: "string" },
+          fhirPractitionerId: { type: "string" },
+          fhirPractitionerRoleId: { type: "string" },
+        },
+      },
+
+      PagedUsersResponse: {
+        type: "object",
+        required: ["data", "total", "page", "pageSize"],
+        properties: {
+          data: { type: "array", items: { $ref: "#/components/schemas/UserResponse" } },
+          total: { type: "integer" },
+          page: { type: "integer" },
+          pageSize: { type: "integer" },
+        },
+      },
+
+      CreateUserRequest: {
+        type: "object",
+        required: ["username", "providerType"],
+        properties: {
+          username: { type: "string", minLength: 3 },
+          password: { type: "string", format: "password", description: "Required for providerType=local" },
+          role: { type: "string", enum: ["admin", "user"], default: "user" },
+          status: { type: "string", enum: ["active", "pending", "suspended"], default: "active" },
+          providerType: { type: "string", enum: ["local", "external"] },
+          externalId: { type: "string", description: "Required for providerType=external" },
+          profile: { $ref: "#/components/schemas/UserProfileSchema" },
+        },
+      },
+
+      UpdateUserRequest: {
+        type: "object",
+        properties: {
+          role: { type: "string", enum: ["admin", "user"] },
+          status: { type: "string", enum: ["active", "pending", "suspended"] },
+          profile: { $ref: "#/components/schemas/UserProfileSchema" },
+        },
+      },
+
+      DeleteUserResponse: {
+        type: "object",
+        required: ["deleted"],
+        properties: {
+          deleted: { type: "boolean" },
+          id: { type: "string" },
+        },
+      },
+
+      UserSyncResponse: {
+        type: "object",
+        required: ["synced"],
+        properties: {
+          synced: { type: "boolean" },
+          practitionerId: { type: "string" },
+          practitionerRoleId: { type: "string" },
+          organizationId: { type: "string" },
+          error: { type: "string" },
         },
       },
 

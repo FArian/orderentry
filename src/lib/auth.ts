@@ -64,6 +64,17 @@ export async function requireAuth(): Promise<SessionPayload> {
   return session as SessionPayload;
 }
 
+/** Require authenticated session AND admin role. Returns 403 NextResponse on failure. */
+export async function getAdminSession(): Promise<SessionPayload | null> {
+  const session = await getSessionFromCookies();
+  if (!session) return null;
+  // Import lazily to avoid circular deps
+  const { getUserById } = await import("@/lib/userStore");
+  const user = await getUserById(session.sub);
+  if (!user || user.role !== "admin") return null;
+  return session;
+}
+
 export function cookieName() {
   return COOKIE_NAME;
 }

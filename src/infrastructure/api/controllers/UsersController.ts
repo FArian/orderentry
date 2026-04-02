@@ -1,0 +1,251 @@
+/**
+ * UsersController — handles all /api/users endpoints.
+ *
+ * Reads/writes the JSON user store and triggers FHIR synchronisation.
+ * All mutating operations require admin role (enforced in routes, not here).
+ *
+ * Pattern matches PatientsController / OrdersController:
+ *   - Constructor-injectable fetchFn for testability
+ *   - Returns typed DTOs (never NextResponse)
+ *   - httpStatus field stripped by the route before sending
+ */
+
+import {
+  getUsers,
+  getUserById,
+  findUser,
+  createUser,
+  createExternalUser,
+  updateUser,
+  deleteUser,
+  updateUserFhirSync,
+  validateCredentials,
+} from "@/lib/userStore";
+import { createLogger, type Logger } from "@/infrastructure/logging/Logger";
+import { practitionerMapper, PractitionerMapper } from "@/infrastructure/fhir/PractitionerMapper";
+import type {
+  CreateUserRequestDto,
+  DeleteUserResponseDto,
+  ListUsersQueryDto,
+  PagedUsersResponseDto,
+  UpdateUserRequestDto,
+  UserResponseDto,
+  UserSyncResponseDto,
+} from "../dto/UserDto";
+import type { UserRole, UserStatus } from "@/domain/entities/ManagedUser";
+import type { User } from "@/lib/userStore";
+
+// ── Mapping helper ─────────────────────────────────────────────────────────────
+
+function toDto(u: User): UserResponseDto {
+  return {
+    id:                    u.id,
+    username:              u.username,
+    role:                  u.role ?? "user",
+    status:                u.status ?? "active",
+    providerType:          u.providerType ?? "local",
+    externalId:            u.externalId,
+    createdAt:             u.createdAt,
+    profile:               u.profile ?? {},
+    fhirSyncStatus:        u.fhirSyncStatus ?? "not_synced",
+    fhirSyncedAt:          u.fhirSyncedAt,
+    fhirSyncError:         u.fhirSyncError,
+    fhirPractitionerId:    u.fhirPractitionerId,
+    fhirPractitionerRoleId: u.fhirPractitionerRoleId,
+  };
+}
+
+// ── Controller ────────────────────────────────────────────────────────────────
+
+export class UsersController {
+  private readonly log: Logger;
+  private readonly mapper: PractitionerMapper;
+
+  constructor(
+    mapper?: PractitionerMapper,
+    logger?: Logger,
+  ) {
+    this.log   = logger ?? createLogger("UsersController");
+    this.mapper = mapper ?? practitionerMapper;
+  }
+
+  // ── List ───────────────────────────────────────────────────────────────────
+
+  async list(query: ListUsersQueryDto): Promise<PagedUsersResponseDto> {
+    const { q = "", role, status, page = 1, pageSize = 20 } = query;
+    const safePage     = Math.max(1, page);
+    const safePageSize = Math.max(1, Math.min(pageSize, 100));
+
+    this.log.debug("list Users", { q, role, status, page: safePage });
+
+    try {
+      let users = await getUsers();
+
+      // Filters
+      if (q)      users = users.filter((u) => u.username.toLowerCase().includes(q.toLowerCase()));
+      if (role)   users = users.filter((u) => (u.role ?? "user") === role);
+      if (status) users = users.filter((u) => (u.status ?? "active") === status);
+
+      const total = users.length;
+      const sliced = users.slice((safePage - 1) * safePageSize, safePage * safePageSize);
+
+      this.log.info("Users listed", { count: sliced.length, total });
+      return { data: sliced.map(toDto), total, page: safePage, pageSize: safePageSize };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.log.error("User list threw", { message });
+      return { data: [], total: 0, page: safePage, pageSize: safePageSize, error: message, httpStatus: 500 };
+    }
+  }
+
+  // ── Get by ID ──────────────────────────────────────────────────────────────
+
+  async getById(id: string): Promise<UserResponseDto | { error: string; httpStatus: number }> {
+    this.log.debug("getById User", { id });
+    try {
+      const user = await getUserById(id);
+      if (!user) return { error: "User not found", httpStatus: 404 };
+      return toDto(user);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.log.error("User getById threw", { id, message });
+      return { error: message, httpStatus: 500 };
+    }
+  }
+
+  // ── Create ─────────────────────────────────────────────────────────────────
+
+  async create(body: CreateUserRequestDto): Promise<UserResponseDto | { error: string; httpStatus: number }> {
+    this.log.info("create User", { username: body.username, providerType: body.providerType });
+
+    const providerType = body.providerType ?? "local";
+
+    // Validate username
+    if (!body.username) return { error: "username is required", httpStatus: 400 };
+
+    // Check uniqueness
+    const existing = await findUser(body.username);
+    if (existing) return { error: "Username already exists", httpStatus: 409 };
+
+    try {
+      let user: User;
+
+      if (providerType === "external") {
+        if (!body.externalId) return { error: "externalId is required for external users", httpStatus: 400 };
+        user = await createExternalUser({
+          username:   body.username,
+          externalId: body.externalId,
+          role:       body.role,
+          status:     body.status ?? "pending",
+          profile:    body.profile,
+        });
+      } else {
+        // Local user — validate credentials
+        const validationError = validateCredentials(body.username, body.password ?? "");
+        if (validationError) return { error: validationError, httpStatus: 400 };
+        user = await createUser(body.username, body.password!);
+        // Apply optional extras
+        if (body.role || body.status || body.profile) {
+          user = await updateUser(user.id, {
+            role:    body.role ?? "user",
+            status:  body.status ?? "active",
+            profile: body.profile,
+          });
+        }
+      }
+
+      this.log.info("User created", { id: user.id, username: user.username });
+      return toDto(user);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (message.toLowerCase().includes("exists")) return { error: "Username already exists", httpStatus: 409 };
+      this.log.error("User create threw", { message });
+      return { error: message, httpStatus: 500 };
+    }
+  }
+
+  // ── Update ─────────────────────────────────────────────────────────────────
+
+  async update(id: string, body: UpdateUserRequestDto): Promise<UserResponseDto | { error: string; httpStatus: number }> {
+    this.log.info("update User", { id });
+    try {
+      const existing = await getUserById(id);
+      if (!existing) return { error: "User not found", httpStatus: 404 };
+
+      const patch: Partial<User> = {};
+      if (body.role       !== undefined) patch.role       = body.role       as UserRole;
+      if (body.status     !== undefined) patch.status     = body.status     as UserStatus;
+      if (body.externalId !== undefined) patch.externalId = body.externalId;
+      if (body.profile    !== undefined) patch.profile    = { ...existing.profile, ...body.profile };
+
+      const updated = await updateUser(id, patch);
+      this.log.info("User updated", { id });
+      return toDto(updated);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.log.error("User update threw", { id, message });
+      return { error: message, httpStatus: 500 };
+    }
+  }
+
+  // ── Delete ─────────────────────────────────────────────────────────────────
+
+  async delete(id: string): Promise<DeleteUserResponseDto> {
+    this.log.info("delete User", { id });
+    try {
+      const existing = await getUserById(id);
+      if (!existing) return { deleted: false, error: "User not found", httpStatus: 404 };
+      await deleteUser(id);
+      this.log.info("User deleted", { id });
+      return { deleted: true };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.log.error("User delete threw", { id, message });
+      return { deleted: false, error: message, httpStatus: 500 };
+    }
+  }
+
+  // ── Sync to FHIR ──────────────────────────────────────────────────────────
+
+  async syncToFhir(id: string): Promise<UserSyncResponseDto> {
+    this.log.info("syncToFhir", { id });
+    try {
+      const user = await getUserById(id);
+      if (!user) return { synced: false, error: "User not found", httpStatus: 404 };
+
+      const profile = user.profile;
+      if (!profile?.ptype) {
+        return { synced: false, error: "User profile is incomplete (ptype required)", httpStatus: 422 };
+      }
+
+      const result = await this.mapper.syncUser(id, profile);
+
+      await updateUserFhirSync(id, {
+        fhirSyncStatus:        result.success ? "synced" : "error",
+        fhirSyncedAt:          result.success ? new Date().toISOString() : undefined,
+        fhirSyncError:         result.error,
+        fhirPractitionerId:    result.practitionerId,
+        fhirPractitionerRoleId: result.practitionerRoleId,
+      });
+
+      if (!result.success) {
+        this.log.warn("FHIR sync failed", { id, error: result.error });
+        return { synced: false, error: result.error, httpStatus: 502 };
+      }
+
+      this.log.info("FHIR sync success", { id, practitionerId: result.practitionerId });
+      return {
+        synced: true,
+        fhirPractitionerId:    result.practitionerId,
+        fhirPractitionerRoleId: result.practitionerRoleId,
+      };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.log.error("syncToFhir threw", { id, message });
+      return { synced: false, error: message, httpStatus: 500 };
+    }
+  }
+}
+
+/** Production singleton. */
+export const usersController = new UsersController();

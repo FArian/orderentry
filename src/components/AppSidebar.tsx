@@ -85,6 +85,15 @@ const IconResults = (
   </svg>
 );
 
+const IconUsers = (
+  <svg viewBox="0 0 16 16" fill="currentColor" className="w-full h-full">
+    <circle cx="6" cy="4" r="2.5"/>
+    <path d="M1 13c0-2.8 2.2-5 5-5s5 2.2 5 5"/>
+    <circle cx="12" cy="5" r="2"/>
+    <path d="M10 13c0-1.7.9-3.2 2.2-4"/>
+  </svg>
+);
+
 // ── AppSidebar ────────────────────────────────────────────────────────────────
 
 export function AppSidebar() {
@@ -110,6 +119,14 @@ export function AppSidebar() {
             {t("dashboard.accountSection")}
           </div>
           <NavItem href="/profile" icon={IconPatients} label={t("dashboard.myProfile")} activePaths={["/profile"]} />
+        </div>
+
+        {/* Admin */}
+        <div className="mt-4">
+          <div className="px-4 pb-1.5 text-[11px] font-medium text-zt-text-tertiary uppercase tracking-wide">
+            {t("nav.adminSection")}
+          </div>
+          <NavItem href="/admin/users" icon={IconUsers} label={t("nav.adminUsers")} activePaths={["/admin/users"]} />
         </div>
       </nav>
     </aside>

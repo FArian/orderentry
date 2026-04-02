@@ -24,6 +24,11 @@ export type UserProfile = {
   orgFhirId?: string; // FHIR id of the found/created org resource
 };
 
+export type UserRole          = "admin" | "user";
+export type UserStatus        = "active" | "pending" | "suspended";
+export type UserProviderType  = "local" | "external";
+export type UserFhirSyncStatus = "not_synced" | "synced" | "error";
+
 export type User = {
   id: string;
   username: string;
@@ -31,6 +36,18 @@ export type User = {
   salt: string;
   createdAt: string;
   profile?: UserProfile;
+  // Access control
+  role?: UserRole;
+  status?: UserStatus;
+  // External identity (LDAP / SSO)
+  providerType?: UserProviderType;
+  externalId?: string;
+  // FHIR synchronisation state
+  fhirSyncStatus?: UserFhirSyncStatus;
+  fhirSyncedAt?: string;
+  fhirSyncError?: string;
+  fhirPractitionerId?: string;
+  fhirPractitionerRoleId?: string;
 };
 
 const dataDir = path.join(process.cwd(), "data");
@@ -115,6 +132,72 @@ export async function updateUserProfile(userId: string, profile: UserProfile): P
   users[idx] = { ...existing, profile: { ...existing.profile, ...profile } };
   await fs.writeFile(usersFile, JSON.stringify({ users }, null, 2), "utf8");
   return users[idx]!;
+}
+
+/** Admin: update any mutable field except passwordHash/salt. */
+export async function updateUser(
+  id: string,
+  patch: Partial<Omit<User, "id" | "passwordHash" | "salt">>,
+): Promise<User> {
+  const users = await getUsers();
+  const idx = users.findIndex((u) => u.id === id);
+  if (idx === -1) throw new Error("User not found");
+  users[idx] = { ...users[idx]!, ...patch };
+  await fs.writeFile(usersFile, JSON.stringify({ users }, null, 2), "utf8");
+  return users[idx]!;
+}
+
+/** Admin: hard-delete a user. */
+export async function deleteUser(id: string): Promise<void> {
+  const users = await getUsers();
+  const idx = users.findIndex((u) => u.id === id);
+  if (idx === -1) throw new Error("User not found");
+  users.splice(idx, 1);
+  await fs.writeFile(usersFile, JSON.stringify({ users }, null, 2), "utf8");
+}
+
+/** Admin: create a user from an external provider (LDAP/SSO) – no password. */
+export async function createExternalUser(data: {
+  username: string;
+  externalId: string;
+  role?: UserRole;
+  status?: UserStatus;
+  profile?: UserProfile;
+}): Promise<User> {
+  await ensureDataFile();
+  const existing = await findUser(data.username);
+  if (existing) throw new Error("Username already exists");
+  const user: User = {
+    id: crypto.randomUUID(),
+    username: data.username,
+    passwordHash: "",
+    salt: "",
+    createdAt: new Date().toISOString(),
+    providerType: "external",
+    externalId: data.externalId,
+    role: data.role ?? "user",
+    status: data.status ?? "pending",
+    fhirSyncStatus: "not_synced",
+    ...(data.profile && { profile: data.profile }),
+  };
+  const users = await getUsers();
+  users.push(user);
+  await fs.writeFile(usersFile, JSON.stringify({ users }, null, 2), "utf8");
+  return user;
+}
+
+/** Update FHIR sync state on a user. */
+export async function updateUserFhirSync(
+  id: string,
+  syncData: {
+    fhirSyncStatus: UserFhirSyncStatus;
+    fhirSyncedAt?: string;
+    fhirSyncError?: string;
+    fhirPractitionerId?: string;
+    fhirPractitionerRoleId?: string;
+  },
+): Promise<User> {
+  return updateUser(id, syncData);
 }
 
 export async function verifyUser(username: string, password: string): Promise<User | null> {

@@ -10,6 +10,7 @@ import { patientSearchSelector } from "@/application/strategies/PatientSearchStr
 import { useTranslation } from "@/lib/i18n";
 import { useRefresh } from "@/lib/refresh";
 import type { ModalState } from "@/presentation/components/PreviewModal";
+import { AppSidebar } from "@/components/AppSidebar";
 
 // ── Status filter options (all FHIR DiagnosticReport statuses) ────────────────
 
@@ -177,98 +178,105 @@ export default function ResultsPage() {
   // ── Render ──────────────────────────────────────────────────────────────
 
   return (
-    <div className="p-6 sm:p-8 max-w-7xl mx-auto">
+    <div className="flex flex-1 min-h-0">
+      <AppSidebar />
       <PreviewModal modal={modal} onClose={() => setModal(null)} />
 
-      {/* Breadcrumb */}
-      <nav className="mb-4 flex items-center gap-1.5 text-xs text-zt-text-tertiary" aria-label="Brotkrumen">
-        <Link href="/" className="text-zt-primary hover:underline">{t("nav.home")}</Link>
-        <span>/</span>
-        <span className="text-zt-text-primary">{t("results.title")}</span>
-      </nav>
+      <div className="flex-1 overflow-y-auto bg-zt-bg-page">
+        <div className="px-8 py-7 max-w-[1200px] mx-auto">
 
-      {/* Page header */}
-      <div className="flex items-center justify-between mb-5">
-        <h1 className="text-xl font-medium text-zt-text-primary">{t("results.title")}</h1>
-        <button
-          onClick={reload}
-          title={t("nav.refresh")}
-          aria-label={t("nav.refresh")}
-          className="h-8 w-8 flex items-center justify-center rounded-[8px] border border-zt-border bg-zt-bg-card text-zt-text-secondary hover:bg-zt-bg-page transition-colors text-base"
-        >
-          ↻
-        </button>
-      </div>
+          {/* Breadcrumb */}
+          <nav className="mb-4 flex items-center gap-1.5 text-[12px] text-zt-text-tertiary" aria-label="Brotkrumen">
+            <Link href="/" className="text-zt-primary hover:underline">{t("nav.home")}</Link>
+            <span>/</span>
+            <span className="text-zt-text-primary">{t("results.title")}</span>
+          </nav>
 
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2 mb-4">
-        <SearchBar
-          placeholder={t("results.searchPatient")}
-          value={patientInput}
-          onChange={handlePatientSearch}
-          icon="👤"
-          className="w-56"
-        />
-        <SearchBar
-          placeholder={t("results.searchOrder")}
-          value={orderNumberInput}
-          onChange={handleOrderSearch}
-          icon="📋"
-          className="w-48"
-        />
+          {/* Page header */}
+          <div className="flex items-center justify-between mb-5">
+            <h1 className="text-[20px] font-medium text-zt-text-primary">{t("results.title")}</h1>
+            <button
+              onClick={reload}
+              title={t("nav.refresh")}
+              aria-label={t("nav.refresh")}
+              className="h-8 w-8 flex items-center justify-center rounded-[8px] border border-zt-border bg-zt-bg-card text-zt-text-secondary hover:bg-zt-bg-page transition-colors text-base"
+            >
+              ↻
+            </button>
+          </div>
 
-        {/* Status filter chips */}
-        <button
-          onClick={() => handleStatusChange("")}
-          className={`text-xs px-3 py-1.5 rounded-full border transition-colors whitespace-nowrap ${
-            statusFilter === ""
-              ? "bg-zt-primary-light text-zt-primary border-zt-primary-border font-medium"
-              : "bg-zt-bg-card text-zt-text-secondary border-zt-border hover:bg-zt-bg-page"
-          }`}
-        >
-          {t("results.allStatuses")}
-        </button>
-        {STATUS_OPTIONS.map((s) => (
-          <button
-            key={s}
-            onClick={() => handleStatusChange(s)}
-            className={`text-xs px-3 py-1.5 rounded-full border transition-colors whitespace-nowrap ${
-              statusFilter === s
-                ? "bg-zt-primary-light text-zt-primary border-zt-primary-border font-medium"
-                : "bg-zt-bg-card text-zt-text-secondary border-zt-border hover:bg-zt-bg-page"
-            }`}
-          >
-            {t(`befunde.status${s.charAt(0).toUpperCase()}${s.slice(1)}`)}
-          </button>
-        ))}
-      </div>
+          {/* Toolbar */}
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            <SearchBar
+              placeholder={t("results.searchPatient")}
+              value={patientInput}
+              onChange={handlePatientSearch}
+              icon="👤"
+              className="w-56"
+            />
+            <SearchBar
+              placeholder={t("results.searchOrder")}
+              value={orderNumberInput}
+              onChange={handleOrderSearch}
+              icon="📋"
+              className="w-48"
+            />
 
-      {/* Result count */}
-      {!loading && !error && (
-        <p className="mb-3 text-xs text-zt-text-tertiary">
-          {total}{" "}
-          {total === 1 ? t("results.resultSingular") : t("results.resultPlural")}
-        </p>
-      )}
+            {/* Status filter chips */}
+            <button
+              onClick={() => handleStatusChange("")}
+              className={`text-xs px-3 py-1.5 rounded-full border transition-colors whitespace-nowrap ${
+                statusFilter === ""
+                  ? "bg-zt-primary-light text-zt-primary border-zt-primary-border font-medium"
+                  : "bg-zt-bg-card text-zt-text-secondary border-zt-border hover:bg-zt-bg-page"
+              }`}
+            >
+              {t("results.allStatuses")}
+            </button>
+            {STATUS_OPTIONS.map((s) => (
+              <button
+                key={s}
+                onClick={() => handleStatusChange(s)}
+                className={`text-xs px-3 py-1.5 rounded-full border transition-colors whitespace-nowrap ${
+                  statusFilter === s
+                    ? "bg-zt-primary-light text-zt-primary border-zt-primary-border font-medium"
+                    : "bg-zt-bg-card text-zt-text-secondary border-zt-border hover:bg-zt-bg-page"
+                }`}
+              >
+                {t(`befunde.status${s.charAt(0).toUpperCase()}${s.slice(1)}`)}
+              </button>
+            ))}
+          </div>
 
-      {/* Table wrapper */}
-      <div className="bg-zt-bg-card border border-zt-border rounded-xl overflow-hidden">
-        <ResultList
-          results={results}
-          loading={loading}
-          error={error}
-          t={t}
-          onOpenModal={setModal}
-          colCount={7}
-        />
+          {/* Result count */}
+          {!loading && !error && (
+            <p className="mb-3 text-xs text-zt-text-tertiary">
+              {total}{" "}
+              {total === 1 ? t("results.resultSingular") : t("results.resultPlural")}
+            </p>
+          )}
 
-        <Pagination
-          page={page}
-          pageSize={pageSize}
-          total={total}
-          onPage={setPage}
-          t={t}
-        />
+          {/* Table wrapper */}
+          <div className="bg-zt-bg-card border border-zt-border rounded-xl overflow-hidden">
+            <ResultList
+              results={results}
+              loading={loading}
+              error={error}
+              t={t}
+              onOpenModal={setModal}
+              colCount={7}
+            />
+
+            <Pagination
+              page={page}
+              pageSize={pageSize}
+              total={total}
+              onPage={setPage}
+              t={t}
+            />
+          </div>
+
+        </div>
       </div>
     </div>
   );
