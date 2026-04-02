@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, use } from "react";
 import Link from "next/link";
 import PatientBreadcrumb from "../PatientBreadcrumb";
 import {
@@ -198,8 +198,8 @@ function PreviewButtons({
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
-export default function BefundePage({ params }: { params: { id: string } }) {
-  const { id } = params;
+export default function BefundePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const { t } = useTranslation();
   const { refreshCount } = useRefresh();
 

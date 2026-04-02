@@ -53,7 +53,8 @@ export class PatientIdStrategy implements IPatientSearchStrategy {
  * Name strategy: default fallback — any non-ID input is treated as a name.
  */
 export class PatientNameStrategy implements IPatientSearchStrategy {
-  matches(/* _input */ _: string): boolean {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  matches(_input: string): boolean {
     return true; // fallback — always matches
   }
 
