@@ -10,6 +10,7 @@ import {
   type ClientLogLevel,
   type AppLanguage,
 } from "@/shared/config/RuntimeConfig";
+import { LOCALE_LABELS } from "@/shared/config/localesConfig";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -46,17 +47,15 @@ const LOG_LEVEL_OPTIONS: Array<{ value: ClientLogLevel; label: string }> = [
   { value: "silent", label: "silent" },
 ];
 
-const LANGUAGE_OPTIONS: Array<{ value: AppLanguage; label: string }> = [
-  { value: "de", label: "Deutsch"   },
-  { value: "en", label: "English"   },
-  { value: "fr", label: "Français"  },
-  { value: "it", label: "Italiano"  },
-];
+// Derived from localesConfig — adding a locale there adds it here automatically
+const LANGUAGE_OPTIONS = (
+  Object.entries(LOCALE_LABELS) as Array<[AppLanguage, string]>
+).map(([value, label]) => ({ value, label }));
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
-  const { t } = useTranslation();
+  const { t, setLocale } = useTranslation();
 
   // Client settings
   const [clientLogLevel, setClientLogLevel] = useState<ClientLogLevel>("info");
@@ -126,6 +125,10 @@ export default function SettingsPage() {
       return;
     }
     RuntimeConfig.set({ logLevel: clientLogLevel, language, debugMode });
+    // setLocale() updates the I18nContext immediately → UI re-renders in the
+    // selected language without a page reload. RuntimeConfig.set() above persists
+    // the value so it survives refresh.
+    setLocale(language);
     flash();
   }
 

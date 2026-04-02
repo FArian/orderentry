@@ -6,27 +6,29 @@ import { setLocalSession, verifyLocalUser } from "@/lib/localAuth";
 import { FORCE_LOCAL_AUTH } from "@/lib/appConfig";
 import { apiFetch } from "@/lib/apiFetch";
 import { logAuth } from "@/lib/logAuth";
-
-function toUserMessage(err: unknown): string {
-  const msg = err instanceof Error ? err.message : String(err);
-  if (msg.startsWith("503")) return "Serverdienst nicht verfügbar. Bitte Administrator kontaktieren.";
-  if (msg.startsWith("401")) return "Benutzername oder Passwort ungültig.";
-  if (msg.startsWith("400")) return "Ungültige Eingabe. Bitte Benutzername und Passwort prüfen.";
-  if (
-    msg.includes("Failed to fetch") ||
-    msg.includes("NetworkError") ||
-    msg.includes("Load failed")
-  )
-    return "Server nicht erreichbar. Bitte Internetverbindung prüfen.";
-  return "Anmeldung fehlgeschlagen. Bitte erneut versuchen.";
-}
+import { useTranslation } from "@/lib/i18n";
 
 export default function LoginPage() {
+  const { t } = useTranslation();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  function toUserMessage(err: unknown): string {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.startsWith("503")) return t("auth.error503");
+    if (msg.startsWith("401")) return t("auth.error401");
+    if (msg.startsWith("400")) return t("auth.error400");
+    if (
+      msg.includes("Failed to fetch") ||
+      msg.includes("NetworkError") ||
+      msg.includes("Load failed")
+    )
+      return t("auth.errorNetwork");
+    return t("auth.errorDefault");
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -35,12 +37,10 @@ export default function LoginPage() {
     setError(null);
     try {
       if (FORCE_LOCAL_AUTH) {
-        // Explicit local-auth path — only active when
-        // NEXT_PUBLIC_FORCE_LOCAL_AUTH=true. Never entered otherwise.
         logAuth("LOGIN_LOCAL_ATTEMPT", { username });
         const local = await verifyLocalUser(username, password);
         if (!local) {
-          setError("Ungültige Anmeldedaten (lokaler Speicher).");
+          setError(t("auth.localError"));
           return;
         }
         setLocalSession({ id: local.id, username: local.username });
@@ -49,16 +49,13 @@ export default function LoginPage() {
         return;
       }
 
-      // Server auth — no silent fallback.
-      // apiFetch throws with the exact HTTP status + backend message
-      // on any non-2xx response, so the catch block always has full context.
       await apiFetch("/api/login", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ username, password }),
       });
 
-      setMessage("Erfolgreich angemeldet.");
+      setMessage(t("auth.success"));
       window.location.assign("/patients");
     } catch (err: unknown) {
       logAuth("LOGIN_UI_ERROR", {
@@ -76,8 +73,8 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 px-8 pt-8 pb-6">
           <div className="mb-6 text-center">
-            <h1 className="text-xl font-bold text-gray-900">Anmelden</h1>
-            <p className="text-sm text-gray-500 mt-1">ZetLab OrderEntry</p>
+            <h1 className="text-xl font-bold text-gray-900">{t("auth.title")}</h1>
+            <p className="text-sm text-gray-500 mt-1">{t("auth.subtitle")}</p>
           </div>
 
           <form onSubmit={onSubmit} className="space-y-4">
@@ -86,7 +83,7 @@ export default function LoginPage() {
                 htmlFor="login-username"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Benutzername
+                {t("auth.username")}
               </label>
               <input
                 id="login-username"
@@ -106,7 +103,7 @@ export default function LoginPage() {
                 htmlFor="login-password"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Passwort
+                {t("auth.password")}
               </label>
               <input
                 id="login-password"
@@ -125,7 +122,7 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 transition-colors"
             >
-              {loading ? "Wird geprüft…" : "Anmelden"}
+              {loading ? t("auth.submitting") : t("auth.submit")}
             </button>
           </form>
 
@@ -142,9 +139,9 @@ export default function LoginPage() {
         </div>
 
         <p className="mt-4 text-center text-sm text-gray-600">
-          Noch kein Konto?{" "}
+          {t("auth.noAccount")}{" "}
           <Link href="/signup" className="font-medium text-blue-600 hover:underline">
-            Registrieren
+            {t("auth.register")}
           </Link>
         </p>
       </div>

@@ -302,6 +302,24 @@
     "envEditorRestartNote": "Les variables d'environnement sont chargées au démarrage de l'application. Les modifications de .env.local ne prennent effet qu'après le redémarrage du conteneur. Le rechargement à chaud n'est pas pris en charge.",
     "envEditorUnavailable": "Non disponible dans cet environnement. Gérez les variables d'environnement via le tableau de bord de déploiement (p. ex. Vercel)."
   },
+  "auth": {
+    "title": "Se connecter",
+    "subtitle": "ZetLab OrderEntry",
+    "username": "Nom d'utilisateur",
+    "password": "Mot de passe",
+    "submit": "Se connecter",
+    "submitting": "V\u00e9rification\u2026",
+    "success": "Connexion r\u00e9ussie.",
+    "localSuccess": "Connect\u00e9 (appareil local uniquement).",
+    "localError": "Identifiants invalides (stockage local).",
+    "noAccount": "Pas encore de compte\u00a0?",
+    "register": "S'inscrire",
+    "error503": "Service indisponible. Veuillez contacter l'administrateur.",
+    "error401": "Nom d'utilisateur ou mot de passe invalide.",
+    "error400": "Saisie invalide. Veuillez v\u00e9rifier vos identifiants.",
+    "errorNetwork": "Serveur inaccessible. Veuillez v\u00e9rifier votre connexion.",
+    "errorDefault": "Connexion \u00e9chou\u00e9e. Veuillez r\u00e9essayer."
+  },
   "bs": {
     "title": "Bordereau",
     "subtitle": "ZLZ Zentrallabor AG · Saisie de demande",

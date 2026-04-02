@@ -302,6 +302,24 @@
     "envEditorRestartNote": "Umgebungsvariablen werden beim Start der Anwendung eingelesen. Änderungen an .env.local werden erst nach einem Neustart des Containers wirksam. Ein Hot-Reload ist nicht möglich.",
     "envEditorUnavailable": "In dieser Umgebung nicht verfügbar. Umgebungsvariablen müssen über das Deployment-Dashboard (z. B. Vercel) verwaltet werden."
   },
+  "auth": {
+    "title": "Anmelden",
+    "subtitle": "ZetLab OrderEntry",
+    "username": "Benutzername",
+    "password": "Passwort",
+    "submit": "Anmelden",
+    "submitting": "Wird geprüft\u2026",
+    "success": "Erfolgreich angemeldet.",
+    "localSuccess": "Angemeldet (nur lokales Gerät).",
+    "localError": "Ungültige Anmeldedaten (lokaler Speicher).",
+    "noAccount": "Noch kein Konto?",
+    "register": "Registrieren",
+    "error503": "Serverdienst nicht verfügbar. Bitte Administrator kontaktieren.",
+    "error401": "Benutzername oder Passwort ungültig.",
+    "error400": "Ungültige Eingabe. Bitte Benutzername und Passwort prüfen.",
+    "errorNetwork": "Server nicht erreichbar. Bitte Internetverbindung prüfen.",
+    "errorDefault": "Anmeldung fehlgeschlagen. Bitte erneut versuchen."
+  },
   "bs": {
     "title": "Begleitschein",
     "subtitle": "ZLZ Zentrallabor AG · Auftragserfassung",

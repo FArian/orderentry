@@ -17,8 +17,14 @@
  *   RuntimeConfig.validate({ fhirUrl: "…" })  // returns string[] of error messages
  */
 
+import { LOCALES, isLocale, type Locale } from "@/shared/config/localesConfig";
+
 export type ClientLogLevel = "debug" | "info" | "warn" | "error" | "silent";
-export type AppLanguage = "de" | "en" | "fr" | "it";
+/**
+ * Re-export of Locale as AppLanguage for backward compatibility.
+ * The authoritative list of supported languages lives in localesConfig.ts.
+ */
+export type AppLanguage = Locale;
 
 export interface RuntimeSettings {
   /** Client-side log level written to the browser console. */
@@ -44,15 +50,19 @@ const DEFAULTS: Readonly<RuntimeSettings> = {
 
 // ── Validators ────────────────────────────────────────────────────────────────
 
-const VALID_LEVELS:     ReadonlyArray<ClientLogLevel> = ["debug", "info", "warn", "error", "silent"];
-const VALID_LANGUAGES:  ReadonlyArray<AppLanguage>    = ["de", "en", "fr", "it"];
+const VALID_LEVELS: ReadonlyArray<ClientLogLevel> = ["debug", "info", "warn", "error", "silent"];
+/**
+ * Derived from localesConfig.LOCALES — adding a locale there automatically
+ * makes it a valid value here without touching this file.
+ */
+const VALID_LANGUAGES: ReadonlyArray<AppLanguage> = LOCALES;
 
 function isClientLogLevel(v: unknown): v is ClientLogLevel {
   return VALID_LEVELS.includes(v as ClientLogLevel);
 }
 
 function isAppLanguage(v: unknown): v is AppLanguage {
-  return VALID_LANGUAGES.includes(v as AppLanguage);
+  return isLocale(v);
 }
 
 /**

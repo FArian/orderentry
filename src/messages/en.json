@@ -302,6 +302,24 @@
     "envEditorRestartNote": "Environment variables are loaded at application startup. Changes to .env.local take effect only after restarting the container. Hot-reloading is not supported.",
     "envEditorUnavailable": "Not available in this environment. Manage environment variables via the deployment dashboard (e.g. Vercel)."
   },
+  "auth": {
+    "title": "Sign in",
+    "subtitle": "ZetLab OrderEntry",
+    "username": "Username",
+    "password": "Password",
+    "submit": "Sign in",
+    "submitting": "Verifying\u2026",
+    "success": "Successfully signed in.",
+    "localSuccess": "Signed in (local device only).",
+    "localError": "Invalid credentials (local storage).",
+    "noAccount": "No account yet?",
+    "register": "Register",
+    "error503": "Service unavailable. Please contact your administrator.",
+    "error401": "Invalid username or password.",
+    "error400": "Invalid input. Please check your username and password.",
+    "errorNetwork": "Server unreachable. Please check your internet connection.",
+    "errorDefault": "Sign in failed. Please try again."
+  },
   "bs": {
     "title": "Cover Sheet",
     "subtitle": "ZLZ Zentrallabor AG · Order Entry",

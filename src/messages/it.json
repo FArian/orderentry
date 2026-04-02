@@ -302,6 +302,24 @@
     "envEditorRestartNote": "Le variabili d'ambiente vengono caricate all'avvio dell'applicazione. Le modifiche a .env.local hanno effetto solo dopo il riavvio del container. Il ricaricamento a caldo non è supportato.",
     "envEditorUnavailable": "Non disponibile in questo ambiente. Gestire le variabili d'ambiente tramite il dashboard di deployment (es. Vercel)."
   },
+  "auth": {
+    "title": "Accedi",
+    "subtitle": "ZetLab OrderEntry",
+    "username": "Nome utente",
+    "password": "Password",
+    "submit": "Accedi",
+    "submitting": "Verifica…",
+    "success": "Accesso riuscito.",
+    "localSuccess": "Accesso effettuato (solo dispositivo locale).",
+    "localError": "Credenziali non valide (memoria locale).",
+    "noAccount": "Nessun account?",
+    "register": "Registrati",
+    "error503": "Servizio non disponibile. Contattare l'amministratore.",
+    "error401": "Nome utente o password non validi.",
+    "error400": "Dati non validi. Verificare nome utente e password.",
+    "errorNetwork": "Server non raggiungibile. Verificare la connessione.",
+    "errorDefault": "Accesso non riuscito. Riprovare."
+  },
   "bs": {
     "title": "Borderò",
     "subtitle": "ZLZ Zentrallabor AG · Inserimento richiesta",
