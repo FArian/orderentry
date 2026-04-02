@@ -1,0 +1,28 @@
+# Default: normalize all text files
+* text=auto
+
+# Enforce LF for code and configs (important for Docker & CI)
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# Shell scripts MUST be LF
+*.sh text eol=lf
+
+# Docker MUST be LF
+Dockerfile text eol=lf
+docker/* text eol=lf
+
+# Windows scripts
+*.bat text eol=crlf
+
+# Images / binaries untouched
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
