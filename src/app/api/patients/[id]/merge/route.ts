@@ -13,14 +13,16 @@ import { fhirBase } from "@/config";
  * - target patient survives (id from URL param)
  * - source patient is linked as "replaced-by" → target
  */
+type Ctx = { params: Promise<{ id: string }> };
+
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: Ctx
 ) {
   const session = await getSessionFromCookies();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const targetId = params.id;
+  const { id: targetId } = await params;
   let sourceId: string;
   try {
     const body = await req.json();

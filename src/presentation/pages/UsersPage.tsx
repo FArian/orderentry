@@ -16,10 +16,13 @@ import { useState, useCallback } from "react";
 import Link from "next/link";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Badge } from "@/presentation/ui/Badge";
+import { RoleTagInput } from "@/presentation/ui/RoleTagInput";
 import { useUsers } from "@/presentation/hooks/useUsers";
+import { useRoles } from "@/presentation/hooks/useRoles";
 import { useTranslation } from "@/lib/i18n";
 import { formatDate } from "@/shared/utils/formatDate";
 import type { UserResponseDto, CreateUserRequestDto, UpdateUserRequestDto } from "@/infrastructure/api/dto/UserDto";
+import type { RoleCatalogEntryDto } from "@/infrastructure/api/dto/RoleDto";
 import type { BadgeVariant } from "@/presentation/ui/Badge";
 
 // ── Status / role badge helpers ───────────────────────────────────────────────
@@ -62,6 +65,7 @@ function statusLabel(s: string, t: (k: string) => string) {
 interface UserFormModalProps {
   mode: "create" | "edit";
   initial?: UserResponseDto;
+  catalog: RoleCatalogEntryDto[];
   onSave: (data: CreateUserRequestDto | UpdateUserRequestDto) => Promise<void>;
   onClose: () => void;
   saving: boolean;
@@ -69,7 +73,7 @@ interface UserFormModalProps {
   t: (k: string) => string;
 }
 
-function UserFormModal({ mode, initial, onSave, onClose, saving, error, t }: UserFormModalProps) {
+function UserFormModal({ mode, initial, catalog, onSave, onClose, saving, error, t }: UserFormModalProps) {
   const [username,     setUsername]     = useState(initial?.username     ?? "");
   const [password,     setPassword]     = useState("");
   const [providerType, setProviderType] = useState<"local" | "external">(initial?.providerType ?? "local");
@@ -81,15 +85,26 @@ function UserFormModal({ mode, initial, onSave, onClose, saving, error, t }: Use
   const [email,        setEmail]        = useState(initial?.profile?.email       ?? "");
   const [gln,          setGln]          = useState(initial?.profile?.gln         ?? "");
   const [ptype,        setPtype]        = useState(initial?.profile?.ptype       ?? "");
+  const [roleTypes,    setRoleTypes]    = useState<string[]>(initial?.profile?.roleTypes ?? []);
+  const [glnError,     setGlnError]     = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    // GLN is required for NAT (Practitioner) type
+    if (ptype === "NAT" && !gln.trim()) {
+      setGlnError(t("roles.glnRequired"));
+      return;
+    }
+    setGlnError(null);
+
     const profile = {
-      ...(firstName && { firstName }),
-      ...(lastName  && { lastName }),
-      ...(email     && { email }),
-      ...(gln       && { gln }),
-      ...(ptype     && { ptype }),
+      ...(firstName            && { firstName }),
+      ...(lastName             && { lastName }),
+      ...(email                && { email }),
+      ...(gln                  && { gln }),
+      ...(ptype                && { ptype }),
+      ...(roleTypes.length > 0 && { roleTypes }),
     };
     if (mode === "create") {
       await onSave({
@@ -198,17 +213,36 @@ function UserFormModal({ mode, initial, onSave, onClose, saving, error, t }: Use
                 <input type="email" className={fieldCls} value={email} onChange={(e) => setEmail(e.target.value)} />
               </div>
               <div>
-                <label className={labelCls}>{t("profile.gln")}</label>
-                <input className={fieldCls} value={gln} onChange={(e) => setGln(e.target.value.replace(/\D/g, "").slice(0, 13))} placeholder="7601002145985" maxLength={13} />
+                <label className={labelCls}>
+                  {t("profile.gln")}{ptype === "NAT" ? " *" : ""}
+                </label>
+                <input
+                  className={`${fieldCls}${glnError ? " border-zt-danger" : ""}`}
+                  value={gln}
+                  onChange={(e) => { setGln(e.target.value.replace(/\D/g, "").slice(0, 13)); setGlnError(null); }}
+                  placeholder="7601002145985"
+                  maxLength={13}
+                />
+                {glnError && <p className="mt-1 text-[11px] text-zt-danger">{glnError}</p>}
               </div>
               <div>
                 <label className={labelCls}>{t("users.ptype")}</label>
-                <select className={selectCls} value={ptype} onChange={(e) => setPtype(e.target.value)}>
+                <select className={selectCls} value={ptype} onChange={(e) => { setPtype(e.target.value); setGlnError(null); }}>
                   <option value="">—</option>
-                  <option value="NAT">NAT (Person)</option>
+                  <option value="NAT">NAT (Person / Practitioner)</option>
                   <option value="JUR">JUR (Organisation)</option>
                 </select>
               </div>
+            </div>
+
+            {/* Role assignment — tag-based multi-select */}
+            <div className="mt-3">
+              <RoleTagInput
+                label={t("roles.labelRoleTypes")}
+                value={roleTypes}
+                onChange={setRoleTypes}
+                catalog={catalog}
+              />
             </div>
           </div>
         </div>
@@ -240,6 +274,7 @@ function UserFormModal({ mode, initial, onSave, onClose, saving, error, t }: Use
 
 export default function UsersPage() {
   const { t } = useTranslation();
+  const { roles } = useRoles();          // role catalog for the form dropdown
   const [search, setSearch] = useState("");
 
   const { users, total, loading, error, page, pageSize, setPage, createUser, updateUser, deleteUser, syncToFhir } =
@@ -336,6 +371,7 @@ export default function UsersPage() {
         <UserFormModal
           mode={modal}
           {...(editTarget !== null ? { initial: editTarget } : {})}
+          catalog={roles}
           onSave={handleSave}
           onClose={closeModal}
           saving={modalSaving}

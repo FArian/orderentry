@@ -37,6 +37,8 @@ export interface DropdownItemProps {
   variant?: "default" | "danger";
   /** Visually disabled — no interaction. */
   disabled?: boolean;
+  /** Button type — use "submit" when the item is inside a <form>. Defaults to "button". */
+  type?: "button" | "submit" | "reset";
 }
 
 export function DropdownItem({
@@ -46,6 +48,7 @@ export function DropdownItem({
   href,
   variant = "default",
   disabled = false,
+  type = "button",
 }: DropdownItemProps) {
   const base =
     "flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors duration-100 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-zt-primary/40";
@@ -71,7 +74,7 @@ export function DropdownItem({
   }
 
   return (
-    <button type="button" onClick={disabled ? undefined : onClick} disabled={disabled} className={cls}>
+    <button type={type} onClick={disabled ? undefined : onClick} disabled={disabled} className={cls}>
       {icon && <span className="shrink-0 w-4 text-center leading-none">{icon}</span>}
       <span>{children}</span>
     </button>

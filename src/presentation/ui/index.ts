@@ -36,3 +36,6 @@ export type { AvatarProps } from "./Avatar";
 
 export { Dropdown, DropdownItem, DropdownSeparator, DropdownLabel } from "./Dropdown";
 export type { DropdownProps, DropdownItemProps } from "./Dropdown";
+
+export { RoleTagInput } from "./RoleTagInput";
+export type { RoleTagInputProps } from "./RoleTagInput";

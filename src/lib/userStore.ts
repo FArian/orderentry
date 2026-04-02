@@ -5,8 +5,9 @@ import crypto from "crypto";
 export type UserProfile = {
   gln?: string;
   localId?: string;
-  ptype?: string;    // GLN PTYPE: "NAT" (person) | "JUR" (organisation)
-  roleType?: string; // GLN ROLE.TYPE e.g. "GrpPra"
+  ptype?: string;     // GLN PTYPE: "NAT" (person) | "JUR" (organisation)
+  roleType?: string;  // GLN ROLE.TYPE e.g. "GrpPra" — single, kept for backward compat
+  roleTypes?: string[]; // multi-role — preferred when set
   firstName?: string;
   lastName?: string;
   organization?: string;
@@ -198,6 +199,80 @@ export async function updateUserFhirSync(
   },
 ): Promise<User> {
   return updateUser(id, syncData);
+}
+
+// ── Bootstrap admin ───────────────────────────────────────────────────────────
+//
+// Called once on first login attempt.  Creates a default admin user when the
+// store is completely empty (fresh installation).  Credentials are read from
+// env vars so Docker / Vercel deployments can override them at runtime.
+//
+//   BOOTSTRAP_ADMIN_USER     (default: "admin")
+//   BOOTSTRAP_ADMIN_PASSWORD (default: "Admin1234!")
+//
+// A prominent warning is printed to the server console so operators know the
+// bootstrap ran and can change the password immediately.
+
+export async function ensureBootstrapAdmin(): Promise<void> {
+  let users: User[];
+  try {
+    users = await getUsers();
+  } catch {
+    return; // filesystem unavailable — skip bootstrap
+  }
+
+  // Already has at least one admin — nothing to do.
+  if (users.some((u) => u.role === "admin")) return;
+
+  const bootstrapUsername = (process.env.BOOTSTRAP_ADMIN_USER || "admin").toLowerCase();
+  const bootstrapPassword =  process.env.BOOTSTRAP_ADMIN_PASSWORD || "Admin1234!";
+
+  const line = "═".repeat(51);
+
+  // ── Case A: a user with the bootstrap username already exists ──────────────
+  // Promote them to admin without touching their password.  This handles the
+  // common scenario where the user was created via /signup before the first
+  // login attempt.
+  const existing = users.find((u) => u.username.toLowerCase() === bootstrapUsername);
+  if (existing) {
+    await updateUser(existing.id, { role: "admin", status: "active" });
+    console.warn(
+      `\n╔${line}╗\n` +
+      `║  ⚠️  BOOTSTRAP: promoted "${existing.username}" to admin          ║\n` +
+      `║  Log in with the password you used when creating this account.║\n` +
+      `║  Go to /admin/users to manage roles.                          ║\n` +
+      `╚${line}╝\n`,
+    );
+    return;
+  }
+
+  // ── Case B: no matching user exists — create a fresh admin ────────────────
+  const salt         = crypto.randomBytes(16).toString("hex");
+  const passwordHash = await hashPassword(bootstrapPassword, salt);
+
+  const admin: User = {
+    id:             crypto.randomUUID(),
+    username:       bootstrapUsername,
+    salt,
+    passwordHash,
+    createdAt:      new Date().toISOString(),
+    role:           "admin",
+    status:         "active",
+    providerType:   "local",
+    fhirSyncStatus: "not_synced",
+  };
+
+  users.push(admin);
+  await fs.writeFile(usersFile, JSON.stringify({ users }, null, 2), "utf8");
+
+  console.warn(
+    `\n╔${line}╗\n` +
+    `║  ⚠️  BOOTSTRAP ADMIN CREATED                       ║\n` +
+    `║  Username : ${bootstrapUsername.padEnd(38)}║\n` +
+    `║  Password : ${bootstrapPassword.padEnd(38)}║\n` +
+    `║  Change this password immediately after login!    ║\n` +
+    `╚${line}╝\n`,
+  );
 }
 
 export async function verifyUser(username: string, password: string): Promise<User | null> {

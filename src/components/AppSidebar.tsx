@@ -10,6 +10,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslation } from "@/lib/i18n";
+import { useSession } from "@/lib/session";
 
 // ── Nav item ──────────────────────────────────────────────────────────────────
 
@@ -94,10 +95,33 @@ const IconUsers = (
   </svg>
 );
 
+const IconApi = (
+  <svg viewBox="0 0 16 16" fill="currentColor" className="w-full h-full">
+    <path d="M1 4h14v1.5H1zM1 10.5h14V12H1z"/>
+    <rect x="3" y="6" width="10" height="3" rx="1"/>
+  </svg>
+);
+
+const IconRoles = (
+  <svg viewBox="0 0 16 16" fill="currentColor" className="w-full h-full">
+    <path d="M1 5h9l3 3-3 3H1V5z"/>
+    <circle cx="4.5" cy="8" r="1" fill="white"/>
+  </svg>
+);
+
+const IconFhir = (
+  <svg viewBox="0 0 16 16" fill="currentColor" className="w-full h-full">
+    <rect x="2" y="2" width="5" height="5" rx="1"/>
+    <rect x="9" y="2" width="5" height="5" rx="1"/>
+    <path d="M4.5 7v5M4.5 12h7M11.5 7v5" stroke="white" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+  </svg>
+);
+
 // ── AppSidebar ────────────────────────────────────────────────────────────────
 
 export function AppSidebar() {
   const { t } = useTranslation();
+  const { isAdmin } = useSession();
 
   return (
     <aside className="w-[220px] shrink-0 bg-zt-bg-card border-r border-zt-border flex flex-col overflow-y-auto">
@@ -121,13 +145,18 @@ export function AppSidebar() {
           <NavItem href="/profile" icon={IconPatients} label={t("dashboard.myProfile")} activePaths={["/profile"]} />
         </div>
 
-        {/* Admin */}
-        <div className="mt-4">
-          <div className="px-4 pb-1.5 text-[11px] font-medium text-zt-text-tertiary uppercase tracking-wide">
-            {t("nav.adminSection")}
+        {/* Admin — only visible to users with role="admin" */}
+        {isAdmin && (
+          <div className="mt-4">
+            <div className="px-4 pb-1.5 text-[11px] font-medium text-zt-text-tertiary uppercase tracking-wide">
+              {t("nav.adminSection")}
+            </div>
+            <NavItem href="/admin/users" icon={IconUsers} label={t("nav.adminUsers")} activePaths={["/admin/users"]} />
+            <NavItem href="/admin/roles" icon={IconRoles} label={t("nav.adminRoles")} activePaths={["/admin/roles"]} />
+            <NavItem href="/admin/fhir"  icon={IconFhir}  label={t("nav.adminFhir")}  activePaths={["/admin/fhir"]}  />
+            <NavItem href="/admin/api"   icon={IconApi}   label={t("nav.adminApi")}   activePaths={["/admin/api"]}   />
           </div>
-          <NavItem href="/admin/users" icon={IconUsers} label={t("nav.adminUsers")} activePaths={["/admin/users"]} />
-        </div>
+        )}
       </nav>
     </aside>
   );

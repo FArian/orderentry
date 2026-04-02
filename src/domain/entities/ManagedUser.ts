@@ -16,7 +16,8 @@ export interface ManagedUserProfile {
   gln?: string;
   localId?: string;
   ptype?: string;       // "NAT" | "JUR"
-  roleType?: string;
+  roleType?: string;    // single role — kept for backward compat
+  roleTypes?: string[]; // multi-role — preferred when set
   firstName?: string;
   lastName?: string;
   organization?: string;

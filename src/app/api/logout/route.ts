@@ -6,7 +6,9 @@ import { logAuth } from "@/lib/logAuth";
 export async function GET(req: Request) {
   logAuth("LOGOUT", { method: "GET" });
 
-  const res = NextResponse.redirect(new URL("/login", new URL(req.url).origin));
+  // 302 (not the default 307) causes browsers to convert a POST redirect to GET,
+  // so form-based logout lands on GET /login instead of re-POSTing to it.
+  const res = NextResponse.redirect(new URL("/login", new URL(req.url).origin), 302);
 
   const cookieBase = {
     value: "",

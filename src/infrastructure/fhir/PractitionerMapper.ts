@@ -123,11 +123,18 @@ export class PractitionerMapper {
       practitioner: { reference: `Practitioner/${practId}` },
       organization:  { reference: `Organization/${orgId}` },
     };
-    if (p.roleType) {
-      practitionerRole.code = [{
-        coding: [{ system: ROLE_SYSTEM, code: p.roleType }],
-        text: p.roleType,
-      }];
+    // Resolve role codes: prefer roleTypes[] (multi-role), fall back to single roleType.
+    const roleCodes: string[] = p.roleTypes?.length
+      ? p.roleTypes
+      : p.roleType
+        ? [p.roleType]
+        : [];
+
+    if (roleCodes.length > 0) {
+      practitionerRole.code = roleCodes.map((code) => ({
+        coding: [{ system: ROLE_SYSTEM, code }],
+        text:   code,
+      }));
     }
     entries.push(this.entry(practitionerRole));
 

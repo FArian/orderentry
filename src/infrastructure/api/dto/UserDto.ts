@@ -13,7 +13,8 @@ export interface UserProfileDto {
   gln?: string;
   localId?: string;
   ptype?: string;
-  roleType?: string;
+  roleType?: string;    // single — backward compat
+  roleTypes?: string[]; // multi-role
   firstName?: string;
   lastName?: string;
   organization?: string;

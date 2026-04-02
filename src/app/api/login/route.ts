@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
-import { validateCredentials, verifyUser } from "@/lib/userStore";
+import { validateCredentials, verifyUser, ensureBootstrapAdmin } from "@/lib/userStore";
 import { signSession, ONE_DAY, cookieName } from "@/lib/auth";
 import { logAuth } from "@/lib/logAuth";
 
 export async function POST(req: Request) {
   try {
+    // Ensure at least one admin user exists on first boot (idempotent — fast no-op
+    // once users.json is populated).
+    await ensureBootstrapAdmin();
+
     const body = await req.json().catch(() => ({}));
     const username = String(body.username || "");
     const password = String(body.password || "");

@@ -9,13 +9,13 @@
  *  • Dropdown        — positioned panel with keyboard/click-outside handling
  *
  * Data:
- *  • Fetches the current session from /api/me on mount and on every pathname change.
- *  • Derives username from session; shows a skeleton while loading.
+ *  • Reads the shared SessionContext (populated by SessionProvider in Providers.tsx).
+ *    A single /api/me fetch serves both this component and AppSidebar.
  *
  * Sections in the dropdown:
  *  ┌────────────────────────┐
- *  │  FA  Farhad Arian      │  ← user header (not clickable)
- *  │      farian            │
+ *  │  FA  Farhad Arian      │  ← user header (role badge for admin)
+ *  │      farian  [Admin]   │
  *  ├────────────────────────┤
  *  │  👤  Profil            │
  *  │  ⚙️  Einstellungen    │
@@ -24,28 +24,16 @@
  *  └────────────────────────┘
  */
 
-import { useCallback, useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { useState } from "react";
 import Link from "next/link";
 import { useTranslation } from "@/lib/i18n";
+import { useSession } from "@/lib/session";
 import { Avatar } from "@/presentation/ui/Avatar";
 import {
   Dropdown,
   DropdownItem,
   DropdownSeparator,
 } from "@/presentation/ui/Dropdown";
-
-// ── Types ─────────────────────────────────────────────────────────────────────
-
-interface SessionUser {
-  id: string;
-  username: string;
-}
-
-type SessionState =
-  | { status: "loading" }
-  | { status: "authenticated"; user: SessionUser }
-  | { status: "unauthenticated" };
 
 // ── Locale labels ─────────────────────────────────────────────────────────────
 
@@ -94,30 +82,11 @@ function LocaleSwitcher() {
 
 export function UserMenu() {
   const { t } = useTranslation();
-  const pathname = usePathname();
-  const [session, setSession] = useState<SessionState>({ status: "loading" });
+  const { status, user, isAdmin } = useSession();
   const [open, setOpen] = useState(false);
 
-  // ── Session fetch ──────────────────────────────────────────────────────────
-  const fetchSession = useCallback(async () => {
-    try {
-      const res = await fetch("/api/me", { cache: "no-store" });
-      if (!res.ok) { setSession({ status: "unauthenticated" }); return; }
-      const data = await res.json();
-      setSession(
-        data?.authenticated && data?.user
-          ? { status: "authenticated", user: data.user as SessionUser }
-          : { status: "unauthenticated" }
-      );
-    } catch {
-      setSession({ status: "unauthenticated" });
-    }
-  }, []);
-
-  useEffect(() => { fetchSession(); }, [fetchSession, pathname]);
-
-  // ── Unauthenticated / loading ──────────────────────────────────────────────
-  if (session.status === "loading") {
+  // ── Loading skeleton ───────────────────────────────────────────────────────
+  if (status === "loading") {
     return (
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
         <LocaleSwitcher />
@@ -130,7 +99,8 @@ export function UserMenu() {
     );
   }
 
-  if (session.status === "unauthenticated") {
+  // ── Unauthenticated ────────────────────────────────────────────────────────
+  if (status === "unauthenticated" || !user) {
     return (
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
         <LocaleSwitcher />
@@ -146,7 +116,6 @@ export function UserMenu() {
   }
 
   // ── Authenticated ──────────────────────────────────────────────────────────
-  const { user } = session;
 
   const trigger = (
     <button
@@ -200,12 +169,19 @@ export function UserMenu() {
         align="right"
         minWidth={220}
       >
-        {/* User header — identity at a glance */}
+        {/* User header — identity + role at a glance */}
         <div className="flex items-center gap-3 px-3 py-2.5 border-b border-zt-border mb-1">
           <Avatar username={user.username} size="md" />
           <div className="min-w-0">
-            <div className="text-sm font-semibold text-zt-text-primary truncate leading-tight">
-              {user.username}
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm font-semibold text-zt-text-primary truncate leading-tight">
+                {user.username}
+              </span>
+              {isAdmin && (
+                <span className="shrink-0 rounded px-1 py-0.5 text-[10px] font-semibold leading-none bg-zt-primary text-zt-text-on-primary">
+                  Admin
+                </span>
+              )}
             </div>
             <div className="text-xs text-zt-text-tertiary truncate leading-tight mt-0.5">
               {t("nav.signedIn")}
@@ -223,34 +199,33 @@ export function UserMenu() {
 
         <DropdownSeparator />
 
-        {/* Logout — POST to /api/logout via a form */}
-        <form
-          action="/api/logout"
-          method="post"
-          onSubmit={() => setOpen(false)}
-        >
-          <DropdownItem
-            icon={
-              <svg viewBox="0 0 16 16" fill="none" className="h-3.5 w-3.5" aria-hidden="true">
-                <path
-                  d="M6 14H3a1 1 0 01-1-1V3a1 1 0 011-1h3M10 11l3-3-3-3M13 8H6"
-                  stroke="currentColor"
-                  strokeWidth="1.4"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+        {/* Logout — POST via fetch then navigate; avoids browser POST-redirect quirks */}
+        <DropdownItem
+          icon={
+            <svg viewBox="0 0 16 16" fill="none" className="h-3.5 w-3.5" aria-hidden="true">
+              <path
+                d="M6 14H3a1 1 0 01-1-1V3a1 1 0 011-1h3M10 11l3-3-3-3M13 8H6"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          }
+          variant="danger"
+          onClick={async () => {
+            setOpen(false);
+            // POST clears both the server-signed session cookie and the local
+            // fallback cookie.  We then navigate explicitly — no redirect chain.
+            try {
+              await fetch("/api/logout", { method: "POST" });
+            } finally {
+              window.location.assign("/login");
             }
-            variant="danger"
-            onClick={() => {
-              // The form submission handles the actual logout;
-              // this closes the dropdown immediately for responsiveness.
-              setOpen(false);
-            }}
-          >
-            {t("nav.logout")}
-          </DropdownItem>
-        </form>
+          }}
+        >
+          {t("nav.logout")}
+        </DropdownItem>
       </Dropdown>
     </div>
   );

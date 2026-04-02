@@ -9,14 +9,16 @@ import { fhirBase } from "@/config";
  * - Sets active: true
  * - Removes all "replaced-by" links
  */
+type Ctx = { params: Promise<{ id: string }> };
+
 export async function POST(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: Ctx
 ) {
   const session = await getSessionFromCookies();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { id } = params;
+  const { id } = await params;
 
   try {
     const srcRes = await fetch(`${fhirBase}/Patient/${id}`, {
