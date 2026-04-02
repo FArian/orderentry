@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { setLocalSession, verifyLocalUser } from "@/lib/localAuth";
 import { FORCE_LOCAL_AUTH } from "@/lib/appConfig";
+import { apiFetch } from "@/lib/apiFetch";
+import { logAuth } from "@/lib/logAuth";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -19,42 +21,51 @@ export default function LoginPage() {
     setError(null);
     try {
       if (FORCE_LOCAL_AUTH) {
+        // Explicit local-auth path — only active when
+        // NEXT_PUBLIC_FORCE_LOCAL_AUTH=true. Never entered otherwise.
+        logAuth("LOGIN_LOCAL_ATTEMPT", { username });
         const local = await verifyLocalUser(username, password);
         if (!local) {
-          setError("Ungültige Anmeldedaten (lokal)");
-        } else {
-          setLocalSession({ id: local.id, username: local.username });
-          setMessage("Angemeldet (nur lokales Gerät).");
-          setPassword("");
-          window.location.assign("/patients");
+          setError("Ungültige Anmeldedaten (lokaler Speicher).");
+          return;
         }
+        setLocalSession({ id: local.id, username: local.username });
+        logAuth("LOGIN_LOCAL_SUCCESS", { username });
+        window.location.assign("/patients");
         return;
       }
-      const res = await fetch("/api/login", {
+
+      // Server auth — no silent fallback.
+      // apiFetch throws with the exact HTTP status + backend message
+      // on any non-2xx response, so the catch block always has full context.
+      await apiFetch("/api/login", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ username, password }),
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        const local = await verifyLocalUser(username, password);
-        if (local) {
-          setLocalSession({ id: local.id, username: local.username });
-          setMessage("Angemeldet (nur lokales Gerät).");
-          setPassword("");
-          window.location.assign("/patients");
-          return;
-        }
-        setError(data?.error || `Fehler ${res.status}`);
-      } else {
-        setMessage("Erfolgreich angemeldet.");
-        setPassword("");
-        window.location.assign("/patients");
-      }
+
+      setMessage("Erfolgreich angemeldet.");
+      window.location.assign("/patients");
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : String(err));
+      const raw = err instanceof Error ? err.message : String(err);
+
+      // Provide a human-readable hint for the most common production failures:
+      let hint = "";
+      if (raw.startsWith("503")) {
+        hint =
+          " — Server-Dateisystem nicht verfügbar. Wenden Sie sich an den Administrator.";
+      } else if (raw.startsWith("401")) {
+        hint = " — Benutzername oder Passwort falsch.";
+      } else if (raw.startsWith("400")) {
+        hint = " — Eingabe ungültig.";
+      } else if (raw.includes("Failed to fetch") || raw.includes("NetworkError")) {
+        hint = " — Server nicht erreichbar. Bitte Verbindung prüfen.";
+      }
+
+      setError(raw + hint);
     } finally {
       setLoading(false);
+      setPassword("");
     }
   }
 
@@ -123,7 +134,8 @@ export default function LoginPage() {
           )}
           {error && (
             <div className="mt-4 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
-              {error}
+              <p className="font-medium">Anmeldung fehlgeschlagen</p>
+              <p className="mt-1 font-mono text-xs break-all">{error}</p>
             </div>
           )}
         </div>

@@ -10,7 +10,6 @@ import type {
 } from "@/lib/fhir";
 import {
   fhirGet,
-  fhirPost,
   FHIR_BASE,
   FHIR_SYSTEMS,
   FHIR_EXT,
@@ -20,12 +19,11 @@ import {
   SpecimenDefinition,
   SpecimenDefinitionSearchBundle,
 } from "@/lib/fhir";
+import { useSubmitOrder } from "@/presentation/hooks/useSubmitOrder";
 
 // removed static tabs and local value sets; categories now come from FHIR ActivityDefinition
 
 // no remote expansion type needed; using local catalog
-
-type BundleEntry = { fullUrl?: string; response?: { location?: string } };
 
 // Type guard to avoid explicit any
 function isObject(x: unknown): x is Record<string, unknown> {
@@ -58,6 +56,7 @@ const EXT_ENCOUNTER_CLASS = "https://www.zetlab.ch/fhir/StructureDefinition/enco
 export default function OrderClient({ id, srId }: { id: string; srId?: string }) {
   // tr = translation function; local map callbacks use 't' as variable name
   const { t: tr, locale } = useTranslation();
+  const { submitBundle } = useSubmitOrder();
   const [topTabs, setTopTabs] = useState<string[]>([]);
   const [selectedTopTab, setSelectedTopTab] = useState<string | null>(null);
   const [allAds, setAllAds] = useState<ActivityDefinition[]>([]);
@@ -1498,19 +1497,7 @@ ${labelDivs}
         entry: [encounterEntry, serviceRequestEntry, ...specimenEntries, documentReferenceEntry],
       };
 
-      const resp = await fhirPost(
-        "/",
-        bundle as unknown as Record<string, unknown>
-      );
-      let ids: string[] = [];
-      if (
-        isObject(resp) &&
-        Array.isArray((resp as { entry?: unknown }).entry)
-      ) {
-        ids = (resp as { entry: BundleEntry[] }).entry
-          .map((e) => e.response?.location)
-          .filter((v): v is string => typeof v === "string");
-      }
+      const ids = await submitBundle(bundle as unknown as Record<string, unknown>);
       setSubmitMsg(`${tr("order.sent")}. IDs: ${ids.join(", ") || "ok"}`);
       setSubmitErr(null);
       // Print Begleitschein before clearing state so patient/order data is still available
@@ -1527,7 +1514,7 @@ ${labelDivs}
     } finally {
       setSubmitting(false);
     }
-  }, [buildBegleitscheinBase64, buildHl7Preview, canSubmit, currentSrId, id, printBegleitschein, selectedSpecimens, selectedTests]);
+  }, [buildBegleitscheinBase64, buildHl7Preview, canSubmit, currentSrId, id, printBegleitschein, selectedSpecimens, selectedTests, submitBundle]);
 
   return (
     <div className="flex-1 flex flex-col relative">

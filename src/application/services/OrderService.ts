@@ -14,7 +14,7 @@ export class OrderService {
   private readonly getOrders: GetOrders;
   private readonly createOrder: CreateOrder;
 
-  constructor(repo: IOrderRepository) {
+  constructor(private readonly repo: IOrderRepository) {
     this.getOrders = new GetOrders(repo);
     this.createOrder = new CreateOrder(repo);
   }
@@ -25,5 +25,13 @@ export class OrderService {
 
   create(orderData: Partial<Order>): Promise<Order> {
     return this.createOrder.execute(orderData);
+  }
+
+  /**
+   * Submits a FHIR transaction bundle via the server proxy.
+   * Transitional method — bundle construction will move to infrastructure in a future step.
+   */
+  submitBundle(bundle: Record<string, unknown>): Promise<string[]> {
+    return this.repo.submitBundle(bundle);
   }
 }

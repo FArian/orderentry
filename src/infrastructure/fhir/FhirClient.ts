@@ -27,3 +27,27 @@ export async function fhirGet<T>(
   if (!res.ok) throw new Error(`FHIR ${res.status}: ${path}`);
   return res.json() as Promise<T>;
 }
+
+/**
+ * Posts a FHIR transaction or batch bundle to the server root.
+ * Server-side only — do NOT import this on the client.
+ */
+export async function fhirTransaction<T>(
+  bundle: Record<string, unknown>,
+): Promise<T> {
+  const url = `${FHIR_BASE}/`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "content-type": "application/fhir+json",
+      accept: "application/fhir+json",
+    },
+    body: JSON.stringify(bundle),
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`FHIR transaction ${res.status}: ${text.slice(0, 200)}`);
+  }
+  return res.json() as Promise<T>;
+}

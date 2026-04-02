@@ -67,6 +67,14 @@ export class MockOrderRepository implements IOrderRepository {
     this.data = this.data.filter((o) => o.id !== id);
   }
 
+  /** Track submitBundle calls for assertion in tests */
+  readonly submittedBundles: Record<string, unknown>[] = [];
+
+  async submitBundle(bundle: Record<string, unknown>): Promise<string[]> {
+    this.submittedBundles.push(bundle);
+    return ["mock-id-1"];
+  }
+
   seed(items: Partial<Order>[]): void {
     this.data.push(...items.map((d) => OrderFactory.create(d)));
   }
@@ -75,5 +83,6 @@ export class MockOrderRepository implements IOrderRepository {
     this.data = items.map((d) => OrderFactory.create(d));
     this.deletedIds.length = 0;
     this.createdOrders.length = 0;
+    this.submittedBundles.length = 0;
   }
 }
