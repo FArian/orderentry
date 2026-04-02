@@ -67,8 +67,8 @@ export function Badge({ label, variant = "neutral", icon, tooltip, className = "
           role="tooltip"
           className={[
             "pointer-events-none absolute left-0 top-full mt-1 z-50",
-            "w-64 rounded border border-zt-border bg-zt-bg-card",
-            "shadow-[var(--zt-shadow-md)] px-3 py-2 text-xs text-zt-text-primary",
+            "w-64 rounded-lg border border-zt-border bg-zt-bg-card",
+            "shadow-lg px-3 py-2 text-xs text-zt-text-primary",
             "opacity-0 group-hover:opacity-100 transition-opacity duration-150",
           ].join(" ")}
         >

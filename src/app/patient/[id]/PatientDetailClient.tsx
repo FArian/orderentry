@@ -7,15 +7,7 @@ import { useRefresh } from "@/lib/refresh";
 import { sasísEnabled } from "@/config";
 import { formatDate } from "@/shared/utils/formatDate";
 import { b64toDataUrl, decodeB64Utf8 } from "@/shared/utils/base64";
-import {
-  DataTable,
-  DataTableHead,
-  DataTableHeadRow,
-  DataTableHeaderCell,
-  DataTableBody,
-  DataTableRow,
-  DataTableCell,
-} from "@/components/Table";
+import { AppSidebar } from "@/components/AppSidebar";
 
 // ── FHIR Patient types ────────────────────────────────────────────────────────
 
@@ -112,6 +104,20 @@ function nameToString(names?: HumanName[]): string {
   return parts.join(" ") || "Unbekannt";
 }
 
+function nameInitials(names?: HumanName[]): string {
+  if (!names || names.length === 0) return "?";
+  const n = names[0];
+  if (!n) return "?";
+  const given = n.given?.[0]?.[0] ?? "";
+  const family = n.family?.[0] ?? "";
+  if (given || family) return `${given}${family}`.toUpperCase();
+  if (n.text) {
+    const parts = n.text.trim().split(/\s+/);
+    return parts.map((p) => p[0] ?? "").join("").slice(0, 2).toUpperCase();
+  }
+  return "?";
+}
+
 function addressToString(addrs?: Address[]): string {
   if (!addrs || addrs.length === 0) return "";
   const a = addrs[0];
@@ -160,42 +166,29 @@ function labelForUse(use?: string): string | undefined {
 
 // ── Order status badges ───────────────────────────────────────────────────────
 
-type OrderStatusMeta = { icon: string; badge: string; tooltipKey: string; editable: boolean };
+type OrderStatusMeta = { label: string; pill: string; editable: boolean; tooltipKey: string };
 
 function getOrderStatusMeta(status: string): OrderStatusMeta {
   switch (status) {
-    case "draft":           return { icon: "✏️", badge: "bg-gray-100 text-gray-700 border-gray-300",      tooltipKey: "orders.tooltipDraft",     editable: true  };
-    case "active":          return { icon: "📤", badge: "bg-blue-100 text-blue-700 border-blue-300",       tooltipKey: "orders.tooltipActive",    editable: true  };
-    case "on-hold":         return { icon: "⏸️", badge: "bg-yellow-100 text-yellow-700 border-yellow-300", tooltipKey: "orders.tooltipOnHold",    editable: true  };
-    case "completed":       return { icon: "✅", badge: "bg-green-100 text-green-700 border-green-300",    tooltipKey: "orders.tooltipCompleted", editable: false };
-    case "revoked":         return { icon: "🚫", badge: "bg-red-100 text-red-700 border-red-300",          tooltipKey: "orders.tooltipRevoked",   editable: false };
-    case "entered-in-error":return { icon: "⚠️", badge: "bg-red-100 text-red-700 border-red-300",          tooltipKey: "orders.tooltipError",     editable: false };
-    default:                return { icon: "❓", badge: "bg-gray-100 text-gray-500 border-gray-200",       tooltipKey: "orders.statusUnknown",    editable: false };
+    case "draft":            return { label: "Entwurf",    pill: "bg-zt-warning-bg text-zt-warning-text",       editable: true,  tooltipKey: "orders.tooltipDraft"     };
+    case "active":           return { label: "Aktiv",      pill: "bg-zt-primary-light text-zt-primary",         editable: true,  tooltipKey: "orders.tooltipActive"    };
+    case "on-hold":          return { label: "Pausiert",   pill: "bg-zt-warning-bg text-zt-warning-text",       editable: true,  tooltipKey: "orders.tooltipOnHold"    };
+    case "completed":        return { label: "Abgeschl.",  pill: "bg-zt-success-light text-zt-success",         editable: false, tooltipKey: "orders.tooltipCompleted" };
+    case "revoked":          return { label: "Widerrufen", pill: "bg-zt-danger-light text-zt-danger",           editable: false, tooltipKey: "orders.tooltipRevoked"   };
+    case "entered-in-error": return { label: "Fehler",     pill: "bg-zt-danger-light text-zt-danger",           editable: false, tooltipKey: "orders.tooltipError"     };
+    default:                 return { label: status || "?", pill: "bg-zt-bg-muted text-zt-text-tertiary",       editable: false, tooltipKey: "orders.statusUnknown"    };
   }
 }
 
-function orderStatusLabel(status: string, t: (k: string) => string): string {
-  const map: Record<string, string> = {
-    draft: t("orders.statusDraft"), active: t("orders.statusActive"),
-    "on-hold": t("orders.statusOnHold"), completed: t("orders.statusCompleted"),
-    revoked: t("orders.statusRevoked"), "entered-in-error": t("orders.statusError"),
-  };
-  return map[status] || t("orders.statusUnknown");
-}
-
-function OrderStatusBadge({ status, t }: { status: string; t: (k: string) => string }) {
+function OrderStatusPill({ status, t }: { status: string; t: (k: string) => string }) {
   const meta = getOrderStatusMeta(status);
   return (
     <div className="relative group inline-block">
-      <span className={`inline-flex items-center gap-1.5 rounded border px-2 py-0.5 text-xs font-medium cursor-default select-none ${meta.badge}`}>
-        <span>{meta.icon}</span>
-        <span>{orderStatusLabel(status, t)}</span>
+      <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-[500] cursor-default ${meta.pill}`}>
+        {meta.label}
       </span>
-      <div className="pointer-events-none absolute left-0 top-full mt-1 z-50 w-72 rounded border border-gray-200 bg-white shadow-lg px-3 py-2 text-xs text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-        <div className="font-semibold mb-1 flex items-center gap-1">
-          <span>{meta.icon}</span><span>{orderStatusLabel(status, t)}</span>
-        </div>
-        <p className="leading-relaxed text-gray-600">{t(meta.tooltipKey)}</p>
+      <div className="pointer-events-none absolute left-0 top-full mt-1 z-50 w-72 rounded-lg border border-zt-border bg-zt-bg-card shadow-lg px-3 py-2 text-[12px] text-zt-text-primary opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+        <p className="leading-relaxed text-zt-text-secondary">{t(meta.tooltipKey)}</p>
       </div>
     </div>
   );
@@ -203,35 +196,37 @@ function OrderStatusBadge({ status, t }: { status: string; t: (k: string) => str
 
 // ── Befund (DiagnosticReport) status badges ───────────────────────────────────
 
-type BefundStatusMeta = { icon: string; badge: string; label: string; tooltip: string };
-
-function getBefundStatusMeta(status: string, t: (k: string) => string): BefundStatusMeta {
+function getBefundPill(status: string): string {
   switch (status) {
-    case "registered":  return { icon: "📝", badge: "bg-gray-100 text-gray-700 border-gray-300",      label: t("befunde.statusRegistered"),  tooltip: t("befunde.tooltipRegistered") };
-    case "partial":     return { icon: "⏳", badge: "bg-yellow-100 text-yellow-700 border-yellow-300", label: t("befunde.statusPartial"),     tooltip: t("befunde.tooltipPartial") };
-    case "preliminary": return { icon: "🔬", badge: "bg-blue-100 text-blue-700 border-blue-300",      label: t("befunde.statusPreliminary"), tooltip: t("befunde.tooltipPreliminary") };
-    case "final":       return { icon: "✅", badge: "bg-green-100 text-green-700 border-green-300",   label: t("befunde.statusFinal"),       tooltip: t("befunde.tooltipFinal") };
-    case "amended":     return { icon: "✏️", badge: "bg-purple-100 text-purple-700 border-purple-300", label: t("befunde.statusAmended"),    tooltip: t("befunde.tooltipAmended") };
-    case "corrected":   return { icon: "🔄", badge: "bg-purple-100 text-purple-700 border-purple-300", label: t("befunde.statusCorrected"),  tooltip: t("befunde.tooltipCorrected") };
-    case "cancelled":   return { icon: "🚫", badge: "bg-red-100 text-red-700 border-red-300",         label: t("befunde.statusCancelled"),   tooltip: t("befunde.tooltipCancelled") };
-    default:            return { icon: "❓", badge: "bg-gray-100 text-gray-500 border-gray-200",      label: status || "?",                  tooltip: "" };
+    case "registered":  return "bg-zt-bg-muted text-zt-text-tertiary";
+    case "partial":     return "bg-zt-warning-bg text-zt-warning-text";
+    case "preliminary": return "bg-zt-primary-light text-zt-primary";
+    case "final":       return "bg-zt-success-light text-zt-success";
+    case "amended":
+    case "corrected":   return "bg-zt-primary-light text-zt-primary";
+    case "cancelled":   return "bg-zt-danger-light text-zt-danger";
+    default:            return "bg-zt-bg-muted text-zt-text-tertiary";
   }
 }
 
-function BefundStatusBadge({ status, t }: { status: string; t: (k: string) => string }) {
-  const meta = getBefundStatusMeta(status, t);
+function getBefundLabel(status: string, t: (k: string) => string): string {
+  const map: Record<string, string> = {
+    registered: t("befunde.statusRegistered"),
+    partial: t("befunde.statusPartial"),
+    preliminary: t("befunde.statusPreliminary"),
+    final: t("befunde.statusFinal"),
+    amended: t("befunde.statusAmended"),
+    corrected: t("befunde.statusCorrected"),
+    cancelled: t("befunde.statusCancelled"),
+  };
+  return map[status] || status || "?";
+}
+
+function BefundStatusPill({ status, t }: { status: string; t: (k: string) => string }) {
   return (
-    <div className="relative group inline-block">
-      <span className={`inline-flex items-center gap-1.5 rounded border px-2 py-0.5 text-xs font-medium cursor-default select-none ${meta.badge}`}>
-        <span>{meta.icon}</span><span>{meta.label}</span>
-      </span>
-      {meta.tooltip && (
-        <div className="pointer-events-none absolute left-0 top-full mt-1 z-50 w-64 rounded border border-gray-200 bg-white shadow-lg px-3 py-2 text-xs text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-          <div className="font-semibold mb-1">{meta.icon} {meta.label}</div>
-          <p className="leading-relaxed text-gray-600">{meta.tooltip}</p>
-        </div>
-      )}
-    </div>
+    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-[500] ${getBefundPill(status)}`}>
+      {getBefundLabel(status, t)}
+    </span>
   );
 }
 
@@ -249,17 +244,17 @@ function PreviewButtons({
       {pdfData && (
         <button
           onClick={() => onOpen({ type: "pdf", data: b64toDataUrl(pdfData, "application/pdf"), title: pdfTitle || "PDF" })}
-          className="inline-flex items-center gap-1 rounded border border-rose-300 bg-rose-50 px-2 py-0.5 text-xs text-rose-700 hover:bg-rose-100"
+          className="inline-flex items-center gap-1 rounded-md border border-zt-danger-border bg-zt-danger-light px-2 py-0.5 text-[11px] text-zt-danger hover:opacity-80"
         >
-          📄 PDF
+          PDF
         </button>
       )}
       {hl7Data && (
         <button
           onClick={() => onOpen({ type: "hl7", content: decodeB64Utf8(hl7Data), title: hl7Title || "HL7" })}
-          className="inline-flex items-center gap-1 rounded border border-indigo-300 bg-indigo-50 px-2 py-0.5 text-xs text-indigo-700 hover:bg-indigo-100"
+          className="inline-flex items-center gap-1 rounded-md border border-zt-primary-border bg-zt-primary-light px-2 py-0.5 text-[11px] text-zt-primary hover:opacity-80"
         >
-          🔬 HL7
+          HL7
         </button>
       )}
     </div>
@@ -281,34 +276,31 @@ function PreviewModal({ modal, onClose }: { modal: ModalState; onClose: () => vo
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
       <div
-        className="bg-white rounded-lg shadow-2xl flex flex-col"
+        className="bg-zt-bg-card rounded-xl border border-zt-border shadow-2xl flex flex-col"
         style={{ width: "900px", maxWidth: "96vw", height: "88vh" }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b px-4 py-3 shrink-0">
-          <span className="font-semibold text-gray-800 flex items-center gap-2">
-            {modal.type === "pdf" ? "📄" : "🔬"}
-            {modal.title}
-          </span>
+        <div className="flex items-center justify-between border-b border-zt-border px-4 py-3 shrink-0">
+          <span className="font-[500] text-zt-text-primary text-[14px]">{modal.title}</span>
           <div className="flex items-center gap-2">
             {modal.type === "pdf" && (
               <a
                 href={(modal as { type: "pdf"; data: string }).data}
                 download={`${modal.title}.pdf`}
-                className="rounded border border-gray-300 bg-white px-3 py-1 text-sm text-gray-600 hover:bg-gray-50"
+                className="rounded-lg border border-zt-border bg-zt-bg-page px-3 py-1 text-[12px] text-zt-text-secondary hover:bg-zt-bg-muted"
               >
-                ⬇️ Download
+                Download
               </a>
             )}
             {modal.type === "hl7" && (
               <button
                 onClick={copy}
-                className={`px-3 py-1 rounded text-sm border ${copied ? "bg-green-100 border-green-400 text-green-700" : "bg-white border-gray-300 text-gray-600 hover:bg-gray-50"}`}
+                className={`px-3 py-1 rounded-lg text-[12px] border ${copied ? "bg-zt-success-light border-zt-success-border text-zt-success" : "bg-zt-bg-page border-zt-border text-zt-text-secondary hover:bg-zt-bg-muted"}`}
               >
-                {copied ? "✓ Kopiert" : "📋 Kopieren"}
+                {copied ? "Kopiert" : "Kopieren"}
               </button>
             )}
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-700 text-xl px-1">×</button>
+            <button onClick={onClose} className="text-zt-text-tertiary hover:text-zt-text-primary text-[20px] px-1 leading-none">×</button>
           </div>
         </div>
         <div className="flex-1 overflow-hidden">
@@ -320,7 +312,7 @@ function PreviewModal({ modal, onClose }: { modal: ModalState; onClose: () => vo
             />
           )}
           {modal.type === "hl7" && (
-            <pre className="h-full text-xs font-mono bg-gray-950 text-green-300 p-4 whitespace-pre overflow-auto">
+            <pre className="h-full text-[12px] font-mono bg-gray-950 text-green-300 p-4 whitespace-pre overflow-auto">
               {(modal as { type: "hl7"; content: string }).content}
             </pre>
           )}
@@ -329,6 +321,14 @@ function PreviewModal({ modal, onClose }: { modal: ModalState; onClose: () => vo
     </div>
   );
 }
+
+// ── Icons ─────────────────────────────────────────────────────────────────────
+
+const IconSearch = (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5">
+    <circle cx="6.5" cy="6.5" r="4" /><path d="m10 10 2.5 2.5" strokeLinecap="round" />
+  </svg>
+);
 
 // ── Main component ────────────────────────────────────────────────────────────
 
@@ -369,8 +369,9 @@ export default function PatientDetailClient({ id }: { id: string }) {
   // PDF/HL7 preview modal
   const [modal, setModal] = useState<ModalState>(null);
 
-  // Active tab
+  // Active tab + search
   const [activeTab, setActiveTab] = useState<Tab>("orders");
+  const [tabSearch, setTabSearch] = useState("");
 
   // ── Fetches ───────────────────────────────────────────────────────────────
 
@@ -452,50 +453,11 @@ export default function PatientDetailClient({ id }: { id: string }) {
 
   // ── Computed ──────────────────────────────────────────────────────────────
 
-  const rows = useMemo(() => {
-    const p = data;
-    if (!p) return [] as Array<{ label: string; value: string }>;
-    const list: Array<{ label: string; value: string }> = [];
-    list.push({ label: tr("patient.id"), value: p.id || "-" });
-    if (typeof p.active === "boolean")
-      list.push({ label: tr("patient.active"), value: p.active ? tr("common.yes") : tr("common.no") });
-    if (p.name && p.name.length)
-      list.push({ label: tr("patient.name"), value: nameToString(p.name) });
-    if (p.gender)
-      list.push({ label: tr("patient.gender"), value: tr(genderKey(p.gender)) });
-    if (p.birthDate)
-      list.push({ label: tr("patient.birthdate"), value: formatDate(p.birthDate) });
-    if (p.address && p.address.length)
-      list.push({ label: tr("patient.address"), value: addressToString(p.address) });
-    if (p.telecom && p.telecom.length) {
-      p.telecom.forEach((t) => {
-        const labelBase = systemLabel(t.system);
-        const variant = labelForUse(t.use);
-        const label = variant ? `${labelBase} (${variant})` : labelBase;
-        if (t.value) list.push({ label, value: t.value });
-      });
-    }
-    if (p.maritalStatus) {
-      const ms = p.maritalStatus.text || p.maritalStatus.coding?.[0]?.display;
-      if (ms) list.push({ label: tr("patient.maritalStatus"), value: ms });
-    }
-    if (typeof p.deceasedBoolean === "boolean")
-      list.push({ label: tr("patient.deceased"), value: p.deceasedBoolean ? tr("common.yes") : tr("common.no") });
-    if (p.deceasedDateTime)
-      list.push({ label: tr("patient.deceasedAt"), value: formatDate(p.deceasedDateTime) });
-    if (p.managingOrganization?.display)
-      list.push({ label: tr("patient.facility"), value: p.managingOrganization.display });
-    if (p.meta?.lastUpdated)
-      list.push({ label: tr("patient.lastUpdated"), value: formatDate(p.meta.lastUpdated) });
-    return list;
-  }, [data, tr]);
-
-  // Befunde filtered to only those linked to this patient's orders
   const filteredBefunde = useMemo(() => {
     if (!befunde.length) return befunde;
     const orderIdSet = new Set(orders.map((o) => o.id));
     return befunde.filter((b) => {
-      if (b.basedOn.length === 0) return true; // no basedOn → show (already patient-scoped by API)
+      if (b.basedOn.length === 0) return true;
       return b.basedOn.some((ref) => {
         const srId = ref.startsWith("ServiceRequest/") ? ref.slice("ServiceRequest/".length) : ref;
         return orderIdSet.has(srId);
@@ -503,428 +465,650 @@ export default function PatientDetailClient({ id }: { id: string }) {
     });
   }, [befunde, orders]);
 
-  // ── Early returns ─────────────────────────────────────────────────────────
-
-  if (loading) return <div className="text-gray-600">{tr("common.loading")}</div>;
-  if (error) return <div className="text-red-600">{tr("patient.loadError")}: {error}</div>;
-  if (!data) return null;
-
-  // ── Insurance field extraction ────────────────────────────────────────────
-
-  const p = data as Patient;
-  const ids = p.identifier || [];
-
-  function findById(systemFragments: string[]): Identifier | undefined {
-    return ids.find((i) =>
-      systemFragments.some((f) => (i.system || "").toLowerCase().includes(f.toLowerCase()))
+  const visibleOrders = useMemo(() => {
+    if (!tabSearch.trim()) return orders;
+    const q = tabSearch.toLowerCase();
+    return orders.filter(
+      (o) =>
+        o.orderNumber.toLowerCase().includes(q) ||
+        o.codeText.toLowerCase().includes(q) ||
+        o.status.toLowerCase().includes(q)
     );
-  }
+  }, [orders, tabSearch]);
 
-  const ahvId = findById(["2.16.756.5.32", "ahv", "nss"]);
-  const ahvNumber = ahvId?.value || "";
-  const vekaId = findById(["2.16.756.5.30.1.123.100.1.1", "veka", "card", "karte"]);
-  const vekaNumber = vekaId?.value || "";
-  const ikId = findById(["ik", "institutionskennzeichen", "ikk"]);
-  const ikNumber = ikId?.value || "";
-  const vnrId = findById(["vnr", "vertragsnr", "versicherungsnr", "policynr", "membernr"]);
-  const vnrNumber = vnrId?.value || "";
-  const insuranceId = ikId || vnrId || vekaId;
-  const insurerName = insuranceId?.assigner?.display || p.managingOrganization?.display || "";
-
-  const leftCol = [
-    { label: tr("patient.name"), value: nameToString(p.name) },
-    { label: tr("patient.birthdate"), value: formatDate(p.birthDate) },
-    { label: tr("patient.gender"), value: tr(genderKey(p.gender)) },
-    { label: tr("patient.address"), value: addressToString(p.address) },
-    { label: tr("patient.ahv"), value: ahvNumber },
-  ];
-
-  const insuranceDisplay = { insurerName, ikNumber, vnrNumber, vekaNumber, ahvNumber };
-
-  function startEdit() {
-    setEditFields({ ahv: ahvNumber, ik: ikNumber, vnr: vnrNumber, veka: vekaNumber, insurerName });
-    setSaveMsg(null);
-    setSaveErr(null);
-    setEditMode(true);
-  }
-
-  async function lookupByCard() {
-    setLookupLoading(true);
-    setLookupMsg(null);
-    setLookupErr(null);
-    try {
-      const today = new Date().toISOString().slice(0, 10);
-      const res = await fetch(`/api/insurance-lookup?cardNumber=${encodeURIComponent(lookupCard)}&date=${today}`);
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || `Fehler: ${res.status}`);
-      setEditFields((prev) => ({
-        ...prev,
-        insurerName: json.insurerName || prev.insurerName,
-        ik: json.ik || prev.ik,
-        veka: json.veka || prev.veka,
-        ahv: json.ahv || prev.ahv,
-      }));
-      setLookupMsg(`${tr("insurance.lookupFound")}: ${json.insurerName || ""} — ${json.familyname || ""} ${json.givenname || ""}`);
-    } catch (e: unknown) {
-      setLookupErr(e instanceof Error ? e.message : String(e));
-    } finally {
-      setLookupLoading(false);
-    }
-  }
-
-  async function saveInsurance() {
-    setSaving(true);
-    setSaveMsg(null);
-    setSaveErr(null);
-    try {
-      const res = await fetch(`/api/patients/${encodeURIComponent(id)}`, {
-        method: "PUT",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(editFields),
-      });
-      if (!res.ok) throw new Error(`Fehler: ${res.status}`);
-      const updated = await res.json();
-      setData(updated);
-      setEditMode(false);
-      setSaveMsg(tr("insurance.saved"));
-    } catch (e: unknown) {
-      setSaveErr(e instanceof Error ? e.message : String(e));
-    } finally {
-      setSaving(false);
-    }
-  }
+  const visibleBefunde = useMemo(() => {
+    if (!tabSearch.trim()) return filteredBefunde;
+    const q = tabSearch.toLowerCase();
+    return filteredBefunde.filter(
+      (b) =>
+        b.codeText.toLowerCase().includes(q) ||
+        b.category.toLowerCase().includes(q) ||
+        b.status.toLowerCase().includes(q)
+    );
+  }, [filteredBefunde, tabSearch]);
 
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div>
-      <PreviewModal modal={modal} onClose={() => setModal(null)} />
+    <div className="flex flex-1 overflow-hidden" style={{ height: "calc(100vh - var(--zt-topbar-height))" }}>
+      <AppSidebar />
 
-      {/* Two-column patient summary */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <dl className="divide-y divide-gray-200">
-          {leftCol.map((r) => (
-            <div key={r.label} className="py-2 grid grid-cols-3 gap-4">
-              <dt className="text-sm text-gray-500">{r.label}</dt>
-              <dd className="text-sm text-gray-900 col-span-2">{r.value || "-"}</dd>
-            </div>
-          ))}
-        </dl>
+      <main className="flex-1 overflow-y-auto px-8 py-7">
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-1.5 text-[12px] text-zt-text-tertiary mb-4">
+          <Link href="/" className="text-zt-primary hover:underline">Dashboard</Link>
+          <span>/</span>
+          <Link href="/patients" className="text-zt-primary hover:underline">{tr("patient.title")}</Link>
+          <span>/</span>
+          <span className="text-zt-text-primary">{data ? nameToString(data.name) : id}</span>
+        </nav>
 
-        {/* Insurance */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-700">{tr("insurance.title")}</span>
-            {!editMode && (
-              <button onClick={startEdit} className="text-xs text-blue-600 hover:underline">
-                {tr("insurance.edit")}
-              </button>
-            )}
+        {/* Page header */}
+        <div className="flex items-center justify-between mb-5">
+          <h1 className="text-[20px] font-[500] text-zt-text-primary">
+            {loading ? tr("common.loading") : (data ? nameToString(data.name) : tr("patient.title"))}
+          </h1>
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/order/${encodeURIComponent(id)}`}
+              className="inline-flex items-center gap-1.5 text-[12px] px-3.5 py-[6px] rounded-lg bg-zt-primary text-zt-text-on-primary border border-zt-primary hover:opacity-90"
+            >
+              {tr("home.order")}
+            </Link>
+            <button
+              onClick={refresh}
+              className="inline-flex items-center gap-1.5 text-[12px] px-3.5 py-[6px] rounded-lg bg-zt-bg-card text-zt-text-primary border border-zt-border hover:bg-zt-bg-page"
+            >
+              {tr("nav.refresh")}
+            </button>
           </div>
-          {saveMsg && <div className="mb-2 text-xs text-green-700 bg-green-50 border border-green-200 px-2 py-1 rounded">{saveMsg}</div>}
-          {saveErr && <div className="mb-2 text-xs text-red-700 bg-red-50 border border-red-200 px-2 py-1 rounded">{saveErr}</div>}
-          {editMode ? (
-            <div className="flex flex-col gap-2">
-              {sasísEnabled ? (
-                <div className="rounded bg-blue-50 border border-blue-200 p-2">
-                  <div className="text-xs font-medium text-blue-800 mb-1">{tr("insurance.lookup")}</div>
-                  <div className="flex gap-2">
+        </div>
+
+        {/* Loading */}
+        {loading && (
+          <div className="flex items-center gap-2 text-zt-text-secondary text-[13px] py-8">
+            <svg className="w-4 h-4 animate-spin text-zt-primary" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z"/>
+            </svg>
+            {tr("common.loading")}
+          </div>
+        )}
+
+        {/* Error */}
+        {!loading && error && (
+          <div className="rounded-xl border border-zt-danger-border bg-zt-danger-light px-4 py-3 text-[13px] text-zt-danger">
+            {tr("patient.loadError")}: {error}
+          </div>
+        )}
+
+        {!loading && !error && data && (() => {
+          // Insurance field extraction
+          const p = data;
+          const ids = p.identifier || [];
+
+          function findById(fragments: string[]): Identifier | undefined {
+            return ids.find((i) =>
+              fragments.some((f) => (i.system || "").toLowerCase().includes(f.toLowerCase()))
+            );
+          }
+
+          const ahvId   = findById(["2.16.756.5.32", "ahv", "nss"]);
+          const ahvNumber   = ahvId?.value || "";
+          const vekaId  = findById(["2.16.756.5.30.1.123.100.1.1", "veka", "card", "karte"]);
+          const vekaNumber  = vekaId?.value || "";
+          const ikId    = findById(["ik", "institutionskennzeichen", "ikk"]);
+          const ikNumber    = ikId?.value || "";
+          const vnrId   = findById(["vnr", "vertragsnr", "versicherungsnr", "policynr", "membernr"]);
+          const vnrNumber   = vnrId?.value || "";
+          const insuranceId = ikId || vnrId || vekaId;
+          const insurerName = insuranceId?.assigner?.display || p.managingOrganization?.display || "";
+
+          const leftCol = [
+            { label: tr("patient.name"),    value: nameToString(p.name) },
+            { label: tr("patient.birthdate"), value: formatDate(p.birthDate) },
+            { label: tr("patient.gender"),  value: tr(genderKey(p.gender)) },
+            { label: tr("patient.address"), value: addressToString(p.address) },
+            ...(p.telecom || []).map((tc) => {
+              const base = systemLabel(tc.system);
+              const variant = labelForUse(tc.use);
+              return { label: variant ? `${base} (${variant})` : base, value: tc.value || "" };
+            }),
+            { label: tr("patient.ahv"),     value: ahvNumber },
+          ];
+
+          function startEdit() {
+            setEditFields({ ahv: ahvNumber, ik: ikNumber, vnr: vnrNumber, veka: vekaNumber, insurerName });
+            setSaveMsg(null);
+            setSaveErr(null);
+            setEditMode(true);
+          }
+
+          async function lookupByCard() {
+            setLookupLoading(true);
+            setLookupMsg(null);
+            setLookupErr(null);
+            try {
+              const today = new Date().toISOString().slice(0, 10);
+              const res = await fetch(`/api/insurance-lookup?cardNumber=${encodeURIComponent(lookupCard)}&date=${today}`);
+              const json = await res.json();
+              if (!res.ok) throw new Error(json.error || `Fehler: ${res.status}`);
+              setEditFields((prev) => ({
+                ...prev,
+                insurerName: json.insurerName || prev.insurerName,
+                ik: json.ik || prev.ik,
+                veka: json.veka || prev.veka,
+                ahv: json.ahv || prev.ahv,
+              }));
+              setLookupMsg(`${tr("insurance.lookupFound")}: ${json.insurerName || ""} — ${json.familyname || ""} ${json.givenname || ""}`);
+            } catch (e: unknown) {
+              setLookupErr(e instanceof Error ? e.message : String(e));
+            } finally {
+              setLookupLoading(false);
+            }
+          }
+
+          async function saveInsurance() {
+            setSaving(true);
+            setSaveMsg(null);
+            setSaveErr(null);
+            try {
+              const res = await fetch(`/api/patients/${encodeURIComponent(id)}`, {
+                method: "PUT",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify(editFields),
+              });
+              if (!res.ok) throw new Error(`Fehler: ${res.status}`);
+              const updated = await res.json();
+              setData(updated);
+              setEditMode(false);
+              setSaveMsg(tr("insurance.saved"));
+            } catch (e: unknown) {
+              setSaveErr(e instanceof Error ? e.message : String(e));
+            } finally {
+              setSaving(false);
+            }
+          }
+
+          const initials = nameInitials(p.name);
+
+          return (
+            <>
+              <PreviewModal modal={modal} onClose={() => setModal(null)} />
+
+              {/* ── Hero card ────────────────────────────────────────── */}
+              <div className="bg-zt-bg-card border border-zt-border rounded-xl px-6 py-5 mb-5 flex gap-6 relative">
+                {/* Avatar */}
+                <div className="w-14 h-14 rounded-full bg-zt-primary-light flex items-center justify-center text-[18px] font-[500] text-zt-primary shrink-0 select-none">
+                  {initials}
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="text-[18px] font-[500] text-zt-text-primary mb-1">{nameToString(p.name)}</div>
+                  <div className="flex gap-4 flex-wrap mb-3">
+                    {p.birthDate && (
+                      <div className="flex flex-col gap-px">
+                        <span className="text-[10px] text-zt-text-tertiary uppercase tracking-wider">{tr("patient.birthdate")}</span>
+                        <span className="text-[13px] text-zt-text-primary">{formatDate(p.birthDate)}</span>
+                      </div>
+                    )}
+                    {p.gender && (
+                      <div className="flex flex-col gap-px">
+                        <span className="text-[10px] text-zt-text-tertiary uppercase tracking-wider">{tr("patient.gender")}</span>
+                        <span className="text-[13px] text-zt-text-primary">{tr(genderKey(p.gender))}</span>
+                      </div>
+                    )}
+                    {ahvNumber && (
+                      <div className="flex flex-col gap-px">
+                        <span className="text-[10px] text-zt-text-tertiary uppercase tracking-wider">{tr("patient.ahv")}</span>
+                        <span className="text-[13px] text-zt-text-primary font-mono">{ahvNumber}</span>
+                      </div>
+                    )}
+                    {p.meta?.lastUpdated && (
+                      <div className="flex flex-col gap-px">
+                        <span className="text-[10px] text-zt-text-tertiary uppercase tracking-wider">{tr("patient.lastUpdated")}</span>
+                        <span className="text-[13px] text-zt-text-primary">{formatDate(p.meta.lastUpdated)}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {p.active !== false && (
+                      <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-zt-success-light text-zt-success border border-zt-success-border">
+                        {tr("patient.active")}
+                      </span>
+                    )}
+                    {insurerName && (
+                      <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-zt-primary-light text-zt-primary border border-zt-primary-border">
+                        {insurerName}
+                      </span>
+                    )}
+                    {p.deceasedBoolean && (
+                      <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-zt-danger-light text-zt-danger border border-zt-danger-border">
+                        {tr("patient.deceased")}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Edit button (top-right) */}
+                {!editMode && (
+                  <button
+                    onClick={startEdit}
+                    className="absolute top-4 right-5 text-[12px] text-zt-primary flex items-center gap-1 hover:opacity-75"
+                  >
+                    {tr("insurance.edit")}
+                  </button>
+                )}
+              </div>
+
+              {/* ── Info grid (2 cols) ───────────────────────────────── */}
+              <div className="grid grid-cols-2 gap-4 mb-5">
+                {/* Personal data */}
+                <div className="bg-zt-bg-card border border-zt-border rounded-xl px-5 py-4">
+                  <div className="text-[11px] font-[500] text-zt-text-tertiary uppercase tracking-wider mb-3">
+                    {tr("patient.personalData") || "Persönliche Daten"}
+                  </div>
+                  {leftCol.map((r) => (
+                    <div key={r.label} className="flex justify-between py-1.5 border-b border-zt-border last:border-0 text-[13px]">
+                      <span className="text-zt-text-secondary">{r.label}</span>
+                      <span className={`font-[500] text-right ${r.value ? "text-zt-text-primary" : "text-zt-text-tertiary"}`}>
+                        {r.value || "–"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Insurance */}
+                <div className="bg-zt-bg-card border border-zt-border rounded-xl px-5 py-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[11px] font-[500] text-zt-text-tertiary uppercase tracking-wider">
+                      {tr("insurance.title")}
+                    </span>
+                    {!editMode && (
+                      <button onClick={startEdit} className="text-[11px] text-zt-primary hover:opacity-75">
+                        {tr("insurance.edit")}
+                      </button>
+                    )}
+                  </div>
+
+                  {saveMsg && (
+                    <div className="mb-2 text-[12px] text-zt-success bg-zt-success-light border border-zt-success-border px-3 py-1.5 rounded-lg">
+                      {saveMsg}
+                    </div>
+                  )}
+                  {saveErr && (
+                    <div className="mb-2 text-[12px] text-zt-danger bg-zt-danger-light border border-zt-danger-border px-3 py-1.5 rounded-lg">
+                      {saveErr}
+                    </div>
+                  )}
+
+                  {editMode ? (
+                    <div className="flex flex-col gap-2">
+                      {sasísEnabled ? (
+                        <div className="rounded-lg bg-zt-primary-light border border-zt-primary-border p-3">
+                          <div className="text-[11px] font-[500] text-zt-primary mb-1.5">{tr("insurance.lookup")}</div>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={lookupCard}
+                              onChange={(e) => setLookupCard(e.target.value.replace(/\D/g, ""))}
+                              placeholder={tr("insurance.lookupPlaceholder")}
+                              maxLength={20}
+                              className="flex-1 rounded-lg border border-zt-border px-2.5 py-1.5 text-[12px] bg-zt-bg-card text-zt-text-primary outline-none focus:border-zt-primary"
+                            />
+                            <button
+                              type="button"
+                              onClick={lookupByCard}
+                              disabled={lookupLoading || lookupCard.length !== 20}
+                              className="px-3 py-1.5 rounded-lg bg-zt-primary text-zt-text-on-primary text-[12px] hover:opacity-90 disabled:opacity-40"
+                            >
+                              {lookupLoading ? tr("common.searching") : tr("common.search")}
+                            </button>
+                          </div>
+                          {lookupMsg && <div className="mt-1 text-[11px] text-zt-success">{lookupMsg}</div>}
+                          {lookupErr && <div className="mt-1 text-[11px] text-zt-danger">{lookupErr}</div>}
+                        </div>
+                      ) : (
+                        <div className="rounded-lg bg-zt-bg-muted border border-zt-border px-3 py-2 text-[11px] text-zt-text-tertiary">
+                          {tr("insurance.noSasis")}
+                        </div>
+                      )}
+                      {(["insurerName", "ik", "vnr", "veka", "ahv"] as const).map((field) => (
+                        <div key={field}>
+                          <label className="text-[11px] text-zt-text-tertiary">
+                            {field === "insurerName" ? tr("insurance.name")
+                              : field === "ik" ? tr("insurance.ik")
+                              : field === "vnr" ? tr("insurance.vnr")
+                              : field === "veka" ? tr("insurance.veka")
+                              : tr("insurance.ahv")}
+                          </label>
+                          <input
+                            type="text"
+                            value={editFields[field]}
+                            onChange={(e) => setEditFields((prev) => ({ ...prev, [field]: e.target.value }))}
+                            className="mt-0.5 w-full rounded-lg border border-zt-border px-2.5 py-1.5 text-[12px] text-zt-text-primary bg-zt-bg-card outline-none focus:border-zt-primary"
+                          />
+                        </div>
+                      ))}
+                      <div className="flex gap-2 mt-1">
+                        <button
+                          onClick={saveInsurance}
+                          disabled={saving}
+                          className="px-3.5 py-1.5 rounded-lg bg-zt-primary text-zt-text-on-primary text-[12px] hover:opacity-90 disabled:opacity-40"
+                        >
+                          {saving ? tr("common.saving") : tr("common.save")}
+                        </button>
+                        <button
+                          onClick={() => setEditMode(false)}
+                          className="px-3.5 py-1.5 rounded-lg border border-zt-border text-[12px] text-zt-text-secondary hover:bg-zt-bg-page"
+                        >
+                          {tr("common.cancel")}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {[
+                        { label: tr("insurance.name"), value: insurerName },
+                        { label: tr("insurance.ik"),   value: ikNumber },
+                        { label: tr("insurance.vnr"),  value: vnrNumber },
+                        { label: tr("insurance.veka"), value: vekaNumber },
+                      ].map((r) => (
+                        <div key={r.label} className="flex justify-between py-1.5 border-b border-zt-border last:border-0 text-[13px]">
+                          <span className="text-zt-text-secondary">{r.label}</span>
+                          <span className={`font-[500] text-right ${r.value ? "text-zt-text-primary" : "text-zt-text-tertiary"}`}>
+                            {r.value || "–"}
+                          </span>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* ── Tabs ─────────────────────────────────────────────── */}
+              <div className="flex border-b border-zt-border bg-zt-bg-card rounded-t-xl overflow-hidden">
+                <button
+                  onClick={() => { setActiveTab("orders"); setTabSearch(""); }}
+                  className={`px-5 py-3 text-[13px] flex items-center gap-1.5 border-b-2 transition-colors ${
+                    activeTab === "orders"
+                      ? "border-zt-primary text-zt-primary font-[500] bg-zt-bg-card"
+                      : "border-transparent text-zt-text-secondary hover:text-zt-text-primary hover:bg-zt-bg-page"
+                  }`}
+                >
+                  {tr("orders.title")}
+                  {orders.length > 0 && (
+                    <span className="text-[10px] bg-zt-primary text-zt-text-on-primary px-1.5 py-0.5 rounded-full">
+                      {orders.length}
+                    </span>
+                  )}
+                </button>
+                <button
+                  onClick={() => { setActiveTab("befunde"); setTabSearch(""); }}
+                  className={`px-5 py-3 text-[13px] flex items-center gap-1.5 border-b-2 transition-colors ${
+                    activeTab === "befunde"
+                      ? "border-zt-success text-zt-success font-[500] bg-zt-bg-card"
+                      : "border-transparent text-zt-text-secondary hover:text-zt-text-primary hover:bg-zt-bg-page"
+                  }`}
+                >
+                  {tr("befunde.title")}
+                  {filteredBefunde.length > 0 && (
+                    <span className="text-[10px] bg-zt-success text-zt-text-on-primary px-1.5 py-0.5 rounded-full">
+                      {filteredBefunde.length}
+                    </span>
+                  )}
+                </button>
+              </div>
+
+              {/* ── Tab content ───────────────────────────────────────── */}
+              <div className="bg-zt-bg-card border border-zt-border border-t-0 rounded-b-xl overflow-hidden mb-5">
+                {/* Toolbar */}
+                <div className="px-4 py-3 border-b border-zt-border flex items-center gap-2">
+                  <div className="relative">
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zt-text-tertiary">{IconSearch}</span>
                     <input
                       type="text"
-                      value={lookupCard}
-                      onChange={(e) => setLookupCard(e.target.value.replace(/\D/g, ""))}
-                      placeholder={tr("insurance.lookupPlaceholder")}
-                      maxLength={20}
-                      className="flex-1 rounded border px-2 py-1 text-sm"
+                      value={tabSearch}
+                      onChange={(e) => setTabSearch(e.target.value)}
+                      placeholder={tr("common.search") || "Suchen…"}
+                      className="pl-7 pr-3 py-1.5 text-[12px] border border-zt-border rounded-lg bg-zt-bg-page w-[220px] text-zt-text-primary placeholder:text-zt-text-tertiary outline-none focus:border-zt-primary"
                     />
-                    <button
-                      type="button"
-                      onClick={lookupByCard}
-                      disabled={lookupLoading || lookupCard.length !== 20}
-                      className="px-3 py-1 rounded bg-blue-600 text-white text-sm hover:bg-blue-700 disabled:bg-blue-300"
-                    >
-                      {lookupLoading ? tr("common.searching") : tr("common.search")}
-                    </button>
                   </div>
-                  {lookupMsg && <div className="mt-1 text-xs text-green-700">{lookupMsg}</div>}
-                  {lookupErr && <div className="mt-1 text-xs text-red-600">{lookupErr}</div>}
+                  {flashMsg && (
+                    <div className={`ml-auto rounded-lg border px-3 py-1 text-[12px] ${flashMsg.ok ? "border-zt-success-border bg-zt-success-light text-zt-success" : "border-zt-danger-border bg-zt-danger-light text-zt-danger"}`}>
+                      {flashMsg.text}
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="rounded bg-gray-50 border border-gray-200 px-3 py-2 text-xs text-gray-400">
-                  {tr("insurance.noSasis")}
-                </div>
-              )}
-              {(["insurerName", "ik", "vnr", "veka", "ahv"] as const).map((field) => (
-                <div key={field}>
-                  <label className="text-xs text-gray-500">
-                    {field === "insurerName" ? tr("insurance.name")
-                      : field === "ik" ? tr("insurance.ik")
-                      : field === "vnr" ? tr("insurance.vnr")
-                      : field === "veka" ? tr("insurance.veka")
-                      : tr("insurance.ahv")}
-                  </label>
-                  <input
-                    type="text"
-                    value={editFields[field]}
-                    onChange={(e) => setEditFields((prev) => ({ ...prev, [field]: e.target.value }))}
-                    className="mt-0.5 w-full rounded border px-2 py-1 text-sm text-gray-700"
-                  />
-                </div>
-              ))}
-              <div className="flex gap-2 mt-1">
-                <button onClick={saveInsurance} disabled={saving} className="px-3 py-1.5 rounded bg-blue-600 text-white text-sm hover:bg-blue-700 disabled:bg-blue-300">
-                  {saving ? tr("common.saving") : tr("common.save")}
-                </button>
-                <button onClick={() => setEditMode(false)} className="px-3 py-1.5 rounded border text-sm text-gray-600 hover:bg-gray-50">
-                  {tr("common.cancel")}
-                </button>
-              </div>
-            </div>
-          ) : (
-            <dl className="divide-y divide-gray-200 mt-2">
-              {[
-                { label: tr("insurance.name"), value: insuranceDisplay.insurerName },
-                { label: tr("insurance.ik"), value: insuranceDisplay.ikNumber },
-                { label: tr("insurance.vnr"), value: insuranceDisplay.vnrNumber },
-                { label: tr("insurance.veka"), value: insuranceDisplay.vekaNumber },
-              ].map((r) => (
-                <div key={r.label} className="py-2 grid grid-cols-3 gap-4">
-                  <dt className="text-sm text-gray-500">{r.label}</dt>
-                  <dd className="text-sm text-gray-900 col-span-2">{r.value || "-"}</dd>
-                </div>
-              ))}
-            </dl>
-          )}
-        </div>
-      </div>
 
-      {/* Tab bar */}
-      <div className="border-b mb-4">
-        <div className="flex gap-6">
-          <button
-            onClick={() => setActiveTab("orders")}
-            className={`py-2.5 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === "orders"
-                ? "border-blue-600 text-blue-700"
-                : "border-transparent text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            📋 {tr("orders.title")}
-            {orders.length > 0 && (
-              <span className="ml-1.5 rounded-full bg-blue-100 text-blue-700 px-1.5 py-0.5 text-xs">
-                {orders.length}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab("befunde")}
-            className={`py-2.5 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === "befunde"
-                ? "border-emerald-600 text-emerald-700"
-                : "border-transparent text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            🔬 {tr("befunde.title")}
-            {filteredBefunde.length > 0 && (
-              <span className="ml-1.5 rounded-full bg-emerald-100 text-emerald-700 px-1.5 py-0.5 text-xs">
-                {filteredBefunde.length}
-              </span>
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* ── Orders tab ─────────────────────────────────────────────────────── */}
-      {activeTab === "orders" && (
-        <>
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-lg font-semibold">{tr("orders.title")}</h2>
-            {flashMsg && (
-              <div className={`rounded border px-3 py-1 text-sm ${flashMsg.ok ? "border-green-300 bg-green-50 text-green-700" : "border-red-300 bg-red-50 text-red-700"}`}>
-                {flashMsg.text}
-              </div>
-            )}
-          </div>
-          <DataTable>
-            <DataTableHead>
-              <DataTableHeadRow>
-                <DataTableHeaderCell className="w-52">{tr("orders.id")}</DataTableHeaderCell>
-                <DataTableHeaderCell>{tr("orders.description")}</DataTableHeaderCell>
-                <DataTableHeaderCell className="w-44">{tr("orders.status")}</DataTableHeaderCell>
-                <DataTableHeaderCell className="w-36">{tr("orders.date")}</DataTableHeaderCell>
-                <DataTableHeaderCell className="w-20 text-center">{tr("orders.specimens")}</DataTableHeaderCell>
-                <DataTableHeaderCell className="w-40">{tr("orders.actions")}</DataTableHeaderCell>
-              </DataTableHeadRow>
-            </DataTableHead>
-            <DataTableBody>
-              {ordersLoading &&
-                Array.from({ length: 4 }, (_, i) => (
-                  <DataTableRow key={`ord-skel-${i}`}>
-                    {Array.from({ length: 6 }, (__, j) => (
-                      <DataTableCell key={j}><div className="h-4 rounded bg-gray-100 animate-pulse" /></DataTableCell>
-                    ))}
-                  </DataTableRow>
-                ))}
-              {!ordersLoading && ordersError && (
-                <DataTableRow>
-                  <DataTableCell className="text-red-600" colSpan={6}>
-                    {tr("orders.loadError")}: {ordersError}
-                  </DataTableCell>
-                </DataTableRow>
-              )}
-              {!ordersLoading && !ordersError && orders.length === 0 && (
-                <DataTableRow>
-                  <DataTableCell className="text-gray-500" colSpan={6}>
-                    {tr("orders.noResults")}
-                  </DataTableCell>
-                </DataTableRow>
-              )}
-              {!ordersLoading && !ordersError &&
-                orders.map((o) => {
-                  const meta = getOrderStatusMeta(o.status);
-                  const canEdit = meta.editable;
-                  const isDeleting = deletingId === o.id;
-                  return (
-                    <DataTableRow key={o.id} className={isDeleting ? "opacity-40" : ""}>
-                      <DataTableCell title={o.orderNumber || o.id} className="font-mono text-xs">
-                        {o.orderNumber || o.id}
-                      </DataTableCell>
-                      <DataTableCell title={o.codeText}>{o.codeText || "-"}</DataTableCell>
-                      <DataTableCell><OrderStatusBadge status={o.status} t={tr} /></DataTableCell>
-                      <DataTableCell>{formatDate(o.authoredOn)}</DataTableCell>
-                      <DataTableCell className="text-center">{o.specimenCount || 0}</DataTableCell>
-                      <DataTableCell>
-                        <div className="flex items-center gap-1.5">
-                          {canEdit ? (
-                            <Link
-                              href={`/order/${id}?sr=${o.id}`}
-                              className="inline-flex items-center gap-1 rounded border border-blue-300 bg-blue-50 px-2 py-0.5 text-xs text-blue-700 hover:bg-blue-100"
-                              title={tr("orders.edit")}
-                            >
-                              ✏️ {tr("orders.edit")}
-                            </Link>
-                          ) : (
-                            <span
-                              className="inline-flex items-center gap-1 rounded border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs text-gray-400 cursor-default"
-                              title={tr("orders.locked")}
-                            >
-                              🔒 {tr("orders.locked")}
-                            </span>
-                          )}
-                          <button
-                            onClick={() => handleDeleteOrder(o.id)}
-                            disabled={isDeleting}
-                            title={tr("orders.delete")}
-                            className="inline-flex items-center rounded border border-red-200 bg-red-50 px-2 py-0.5 text-xs text-red-600 hover:bg-red-100 disabled:opacity-40"
-                          >
-                            🗑️
-                          </button>
-                        </div>
-                      </DataTableCell>
-                    </DataTableRow>
-                  );
-                })}
-            </DataTableBody>
-          </DataTable>
-        </>
-      )}
-
-      {/* ── Befunde tab ─────────────────────────────────────────────────────── */}
-      {activeTab === "befunde" && (
-        <>
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-lg font-semibold">{tr("befunde.title")}</h2>
-            <Link
-              href={`/patient/${encodeURIComponent(id)}/befunde`}
-              className="text-xs text-blue-600 hover:underline"
-            >
-              {tr("befunde.title")} → vollständige Ansicht
-            </Link>
-          </div>
-          <DataTable>
-            <DataTableHead>
-              <DataTableHeadRow>
-                <DataTableHeaderCell>{tr("befunde.code")}</DataTableHeaderCell>
-                <DataTableHeaderCell className="w-36">{tr("befunde.category")}</DataTableHeaderCell>
-                <DataTableHeaderCell className="w-40">{tr("befunde.status")}</DataTableHeaderCell>
-                <DataTableHeaderCell className="w-32">{tr("befunde.date")}</DataTableHeaderCell>
-                <DataTableHeaderCell>{tr("befunde.result")}</DataTableHeaderCell>
-                <DataTableHeaderCell className="w-36">{tr("befunde.documents")}</DataTableHeaderCell>
-              </DataTableHeadRow>
-            </DataTableHead>
-            <DataTableBody>
-              {befundeLoading &&
-                Array.from({ length: 4 }, (_, i) => (
-                  <DataTableRow key={`bef-skel-${i}`}>
-                    {Array.from({ length: 6 }, (__, j) => (
-                      <DataTableCell key={j}><div className="h-4 rounded bg-gray-100 animate-pulse" /></DataTableCell>
-                    ))}
-                  </DataTableRow>
-                ))}
-              {!befundeLoading && befundeError && (
-                <DataTableRow>
-                  <DataTableCell className="text-red-600" colSpan={6}>
-                    {tr("befunde.loadError")}: {befundeError}
-                  </DataTableCell>
-                </DataTableRow>
-              )}
-              {!befundeLoading && !befundeError && filteredBefunde.length === 0 && (
-                <DataTableRow>
-                  <DataTableCell className="text-gray-500" colSpan={6}>
-                    {tr("befunde.noResults")}
-                  </DataTableCell>
-                </DataTableRow>
-              )}
-              {!befundeLoading && !befundeError &&
-                filteredBefunde.map((b) => (
-                  <DataTableRow key={b.id}>
-                    <DataTableCell title={b.codeText}>{b.codeText || "-"}</DataTableCell>
-                    <DataTableCell>{b.category || "-"}</DataTableCell>
-                    <DataTableCell><BefundStatusBadge status={b.status} t={tr} /></DataTableCell>
-                    <DataTableCell>{formatDate(b.effectiveDate)}</DataTableCell>
-                    <DataTableCell>
-                      <div className="text-xs text-gray-700">
-                        {b.conclusion ? (
-                          <span title={b.conclusion} className="block max-w-xs truncate">{b.conclusion}</span>
-                        ) : (
-                          <span className="text-gray-400">{b.resultCount} {tr("befunde.observations")}</span>
+                {/* ── Orders table ── */}
+                {activeTab === "orders" && (
+                  <>
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="bg-zt-bg-page">
+                          <th className="px-4 py-2.5 text-left text-[11px] font-[500] text-zt-text-tertiary uppercase tracking-wide border-b border-zt-border whitespace-nowrap">{tr("orders.id")}</th>
+                          <th className="px-4 py-2.5 text-left text-[11px] font-[500] text-zt-text-tertiary uppercase tracking-wide border-b border-zt-border">{tr("orders.description")}</th>
+                          <th className="px-4 py-2.5 text-left text-[11px] font-[500] text-zt-text-tertiary uppercase tracking-wide border-b border-zt-border whitespace-nowrap">{tr("orders.status")}</th>
+                          <th className="px-4 py-2.5 text-left text-[11px] font-[500] text-zt-text-tertiary uppercase tracking-wide border-b border-zt-border whitespace-nowrap">{tr("orders.date")}</th>
+                          <th className="px-4 py-2.5 text-center text-[11px] font-[500] text-zt-text-tertiary uppercase tracking-wide border-b border-zt-border whitespace-nowrap">{tr("orders.specimens")}</th>
+                          <th className="px-4 py-2.5 text-left text-[11px] font-[500] text-zt-text-tertiary uppercase tracking-wide border-b border-zt-border">{tr("orders.actions")}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {ordersLoading &&
+                          Array.from({ length: 4 }, (_, i) => (
+                            <tr key={`ord-skel-${i}`} className="border-b border-zt-border last:border-0">
+                              {Array.from({ length: 6 }, (__, j) => (
+                                <td key={j} className="px-4 py-3">
+                                  <div className="h-4 rounded-md bg-zt-bg-muted animate-pulse" />
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        {!ordersLoading && ordersError && (
+                          <tr>
+                            <td colSpan={6} className="px-4 py-4 text-[13px] text-zt-danger">
+                              {tr("orders.loadError")}: {ordersError}
+                            </td>
+                          </tr>
                         )}
-                        {b.basedOn.length > 0 && (
-                          <div className="mt-0.5 flex flex-wrap gap-1">
-                            {b.basedOn.map((ref) => {
-                              const srId = ref.startsWith("ServiceRequest/") ? ref.slice("ServiceRequest/".length) : ref;
-                              return (
-                                <Link key={ref} href={`/order/${id}?sr=${srId}`} className="text-blue-600 hover:underline text-xs">
-                                  📋 {srId}
-                                </Link>
-                              );
-                            })}
-                          </div>
+                        {!ordersLoading && !ordersError && visibleOrders.length === 0 && (
+                          <tr>
+                            <td colSpan={6} className="px-4 py-8 text-center text-[13px] text-zt-text-tertiary">
+                              {orders.length === 0 ? tr("orders.noResults") : tr("common.noData")}
+                            </td>
+                          </tr>
                         )}
-                      </div>
-                    </DataTableCell>
-                    <DataTableCell>
-                      <PreviewButtons
-                        pdfData={b.pdfData} pdfTitle={b.pdfTitle || b.codeText}
-                        hl7Data={b.hl7Data} hl7Title={b.hl7Title || "HL7 ORU^R01"}
-                        onOpen={setModal}
-                      />
-                    </DataTableCell>
-                  </DataTableRow>
-                ))}
-            </DataTableBody>
-          </DataTable>
-        </>
-      )}
+                        {!ordersLoading && !ordersError &&
+                          visibleOrders.map((o) => {
+                            const meta = getOrderStatusMeta(o.status);
+                            const isDeleting = deletingId === o.id;
+                            return (
+                              <tr
+                                key={o.id}
+                                className={`border-b border-zt-border last:border-0 hover:bg-zt-bg-page transition-colors ${isDeleting ? "opacity-40" : ""}`}
+                              >
+                                <td className="px-4 py-3 text-[11px] text-zt-text-tertiary font-mono whitespace-nowrap">
+                                  {o.orderNumber || o.id}
+                                </td>
+                                <td className="px-4 py-3 text-[13px] text-zt-text-primary max-w-[220px] truncate" title={o.codeText}>
+                                  {o.codeText || "–"}
+                                </td>
+                                <td className="px-4 py-3">
+                                  <OrderStatusPill status={o.status} t={tr} />
+                                </td>
+                                <td className="px-4 py-3 text-[13px] text-zt-text-secondary whitespace-nowrap">
+                                  {formatDate(o.authoredOn)}
+                                </td>
+                                <td className="px-4 py-3 text-center text-[12px] text-zt-text-secondary">
+                                  {o.specimenCount || 0}
+                                </td>
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center gap-1.5">
+                                    {meta.editable ? (
+                                      <Link
+                                        href={`/order/${id}?sr=${o.id}`}
+                                        className="inline-flex items-center gap-1 rounded-md border border-zt-primary-border bg-zt-primary-light px-2 py-0.5 text-[11px] text-zt-primary hover:opacity-80"
+                                        title={tr("orders.edit")}
+                                      >
+                                        {tr("orders.edit")}
+                                      </Link>
+                                    ) : (
+                                      <span
+                                        className="inline-flex items-center gap-1 rounded-md border border-zt-border bg-zt-bg-muted px-2 py-0.5 text-[11px] text-zt-text-tertiary cursor-default"
+                                        title={tr("orders.locked")}
+                                      >
+                                        {tr("orders.locked")}
+                                      </span>
+                                    )}
+                                    <button
+                                      onClick={() => handleDeleteOrder(o.id)}
+                                      disabled={isDeleting}
+                                      title={tr("orders.delete")}
+                                      className="inline-flex items-center rounded-md border border-zt-danger-border bg-zt-danger-light px-2 py-0.5 text-[11px] text-zt-danger hover:opacity-80 disabled:opacity-40"
+                                    >
+                                      {tr("orders.delete")}
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                      </tbody>
+                    </table>
+                    {/* Add-order footer */}
+                    <div className="px-4 py-3 border-t border-zt-border bg-zt-bg-page flex items-center gap-3">
+                      <Link
+                        href={`/order/${encodeURIComponent(id)}`}
+                        className="inline-flex items-center gap-1.5 text-[12px] px-3 py-1.5 rounded-lg bg-zt-primary text-zt-text-on-primary border border-zt-primary hover:opacity-90"
+                      >
+                        + {tr("home.order")}
+                      </Link>
+                      <span className="text-[12px] text-zt-text-tertiary ml-auto">
+                        {ordersLoading ? "…" : `${orders.length} ${tr("orders.title")}`}
+                      </span>
+                    </div>
+                  </>
+                )}
 
-      <details className="mt-6">
-        <summary className="cursor-pointer text-sm text-gray-600 hover:text-gray-800">
-          Alle Daten (JSON) anzeigen
-        </summary>
-        <pre className="mt-2 whitespace-pre-wrap break-words rounded border border-gray-200 bg-gray-50 p-4 text-xs overflow-x-auto">
-          {JSON.stringify(data, null, 2)}
-        </pre>
-      </details>
+                {/* ── Befunde table ── */}
+                {activeTab === "befunde" && (
+                  <>
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="bg-zt-bg-page">
+                          <th className="px-4 py-2.5 text-left text-[11px] font-[500] text-zt-text-tertiary uppercase tracking-wide border-b border-zt-border">{tr("befunde.code")}</th>
+                          <th className="px-4 py-2.5 text-left text-[11px] font-[500] text-zt-text-tertiary uppercase tracking-wide border-b border-zt-border whitespace-nowrap">{tr("befunde.category")}</th>
+                          <th className="px-4 py-2.5 text-left text-[11px] font-[500] text-zt-text-tertiary uppercase tracking-wide border-b border-zt-border whitespace-nowrap">{tr("befunde.status")}</th>
+                          <th className="px-4 py-2.5 text-left text-[11px] font-[500] text-zt-text-tertiary uppercase tracking-wide border-b border-zt-border whitespace-nowrap">{tr("befunde.date")}</th>
+                          <th className="px-4 py-2.5 text-left text-[11px] font-[500] text-zt-text-tertiary uppercase tracking-wide border-b border-zt-border">{tr("befunde.result")}</th>
+                          <th className="px-4 py-2.5 text-left text-[11px] font-[500] text-zt-text-tertiary uppercase tracking-wide border-b border-zt-border whitespace-nowrap">{tr("befunde.documents")}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {befundeLoading &&
+                          Array.from({ length: 4 }, (_, i) => (
+                            <tr key={`bef-skel-${i}`} className="border-b border-zt-border last:border-0">
+                              {Array.from({ length: 6 }, (__, j) => (
+                                <td key={j} className="px-4 py-3">
+                                  <div className="h-4 rounded-md bg-zt-bg-muted animate-pulse" />
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        {!befundeLoading && befundeError && (
+                          <tr>
+                            <td colSpan={6} className="px-4 py-4 text-[13px] text-zt-danger">
+                              {tr("befunde.loadError")}: {befundeError}
+                            </td>
+                          </tr>
+                        )}
+                        {!befundeLoading && !befundeError && visibleBefunde.length === 0 && (
+                          <tr>
+                            <td colSpan={6} className="px-4 py-8 text-center text-[13px] text-zt-text-tertiary">
+                              {filteredBefunde.length === 0 ? tr("befunde.noResults") : tr("common.noData")}
+                            </td>
+                          </tr>
+                        )}
+                        {!befundeLoading && !befundeError &&
+                          visibleBefunde.map((b) => (
+                            <tr
+                              key={b.id}
+                              className="border-b border-zt-border last:border-0 hover:bg-zt-bg-page transition-colors"
+                            >
+                              <td className="px-4 py-3 text-[13px] text-zt-text-primary max-w-[180px] truncate" title={b.codeText}>
+                                {b.codeText || "–"}
+                              </td>
+                              <td className="px-4 py-3 text-[13px] text-zt-text-secondary whitespace-nowrap">
+                                {b.category || "–"}
+                              </td>
+                              <td className="px-4 py-3">
+                                <BefundStatusPill status={b.status} t={tr} />
+                              </td>
+                              <td className="px-4 py-3 text-[13px] text-zt-text-secondary whitespace-nowrap">
+                                {formatDate(b.effectiveDate)}
+                              </td>
+                              <td className="px-4 py-3 text-[13px] text-zt-text-primary max-w-[200px]">
+                                {b.conclusion ? (
+                                  <span title={b.conclusion} className="block truncate">{b.conclusion}</span>
+                                ) : (
+                                  <span className="text-zt-text-tertiary">{b.resultCount} {tr("befunde.observations")}</span>
+                                )}
+                                {b.basedOn.length > 0 && (
+                                  <div className="mt-0.5 flex flex-wrap gap-1">
+                                    {b.basedOn.map((ref) => {
+                                      const srId = ref.startsWith("ServiceRequest/") ? ref.slice("ServiceRequest/".length) : ref;
+                                      return (
+                                        <Link key={ref} href={`/order/${id}?sr=${srId}`} className="text-zt-primary hover:underline text-[11px]">
+                                          {srId}
+                                        </Link>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </td>
+                              <td className="px-4 py-3">
+                                <PreviewButtons
+                                  pdfData={b.pdfData} pdfTitle={b.pdfTitle || b.codeText}
+                                  hl7Data={b.hl7Data} hl7Title={b.hl7Title || "HL7 ORU^R01"}
+                                  onOpen={setModal}
+                                />
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                    {/* Footer */}
+                    <div className="px-4 py-3 border-t border-zt-border bg-zt-bg-page flex items-center justify-between">
+                      <Link
+                        href={`/patient/${encodeURIComponent(id)}/befunde`}
+                        className="text-[12px] text-zt-primary hover:underline"
+                      >
+                        {tr("befunde.title")} → vollständige Ansicht
+                      </Link>
+                      <span className="text-[12px] text-zt-text-tertiary">
+                        {befundeLoading ? "…" : `${filteredBefunde.length} ${tr("befunde.title")}`}
+                      </span>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* JSON toggle */}
+              <details className="mb-4">
+                <summary className="text-[11px] text-zt-primary cursor-pointer hover:opacity-75 select-none">
+                  Alle Daten (JSON) anzeigen
+                </summary>
+                <pre className="mt-2 whitespace-pre-wrap break-words rounded-xl border border-zt-border bg-zt-bg-page p-4 text-[11px] text-zt-text-secondary overflow-x-auto">
+                  {JSON.stringify(data, null, 2)}
+                </pre>
+              </details>
+            </>
+          );
+        })()}
+      </main>
     </div>
   );
 }

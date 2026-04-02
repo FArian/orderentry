@@ -49,12 +49,12 @@ type SessionState =
 
 // ── Locale labels ─────────────────────────────────────────────────────────────
 
-const LOCALE_LABELS: Record<string, string> = {
-  "de-CH": "DE",
-  de:      "DE",
-  fr:      "FR",
-  it:      "IT",
-  en:      "EN",
+const LOCALE_FLAGS: Record<string, { flag: string; label: string }> = {
+  "de-CH": { flag: "🇨🇭", label: "Schweizerdeutsch" },
+  de:      { flag: "🇩🇪", label: "Deutsch" },
+  fr:      { flag: "🇫🇷", label: "Français" },
+  it:      { flag: "🇮🇹", label: "Italiano" },
+  en:      { flag: "🇬🇧", label: "English" },
 };
 
 // ── LocaleSwitcher ────────────────────────────────────────────────────────────
@@ -67,21 +67,25 @@ function LocaleSwitcher() {
       aria-label="Sprachauswahl"
       className="flex rounded overflow-hidden border border-zt-border text-xs"
     >
-      {availableLocales.map((loc) => (
-        <button
-          key={loc}
-          onClick={() => setLocale(loc)}
-          aria-label={`Sprache: ${LOCALE_LABELS[loc] ?? loc.toUpperCase()}`}
-          aria-pressed={locale === loc}
-          className={`px-1.5 sm:px-2 py-0.5 transition-colors ${
-            locale === loc
-              ? "bg-zt-primary text-zt-text-on-primary font-semibold"
-              : "bg-zt-bg-card text-zt-text-secondary hover:bg-zt-bg-muted"
-          }`}
-        >
-          {(LOCALE_LABELS[loc] ?? loc).toUpperCase()}
-        </button>
-      ))}
+      {availableLocales.map((loc) => {
+        const meta = LOCALE_FLAGS[loc] ?? { flag: loc.toUpperCase(), label: loc };
+        return (
+          <button
+            key={loc}
+            onClick={() => setLocale(loc)}
+            aria-label={`Sprache: ${meta.label}`}
+            title={meta.label}
+            aria-pressed={locale === loc}
+            className={`px-1.5 sm:px-2 py-0.5 text-base leading-none transition-colors ${
+              locale === loc
+                ? "bg-zt-primary text-zt-text-on-primary"
+                : "bg-zt-bg-card text-zt-text-secondary hover:bg-zt-bg-muted"
+            }`}
+          >
+            {meta.flag}
+          </button>
+        );
+      })}
     </div>
   );
 }

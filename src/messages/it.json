@@ -75,7 +75,8 @@
     "last": "Ultimo",
     "page": "Pagina",
     "of": "di",
-    "showing": "Visualizzazione"
+    "showing": "Visualizzazione",
+    "personalData": "Dati personali"
   },
   "insurance": {
     "title": "Dati assicurativi",
@@ -121,7 +122,19 @@
     "tooltipRevoked": "Annullata – la richiesta è stata revocata. Nessuna ulteriore modifica possibile.",
     "tooltipError": "Inserimento errato – la richiesta è stata contrassegnata come errata.",
     "openPatient": "Apri paziente",
-    "lockedHint": "Bloccato – nessuna modifica possibile."
+    "lockedHint": "Bloccato – nessuna modifica possibile.",
+    "total": "Totale",
+    "drafts": "Bozze",
+    "sent": "Inviati",
+    "resultsReady": "Risultati pronti",
+    "searchPlaceholder": "Cerca ordini o pazienti…",
+    "filterAll": "Tutti",
+    "filterDraft": "Bozza",
+    "filterSent": "Inviato",
+    "filterDone": "Completato",
+    "patient": "Paziente",
+    "rowsPerPage": "Righe per pagina",
+    "showingOf": "Mostrando {from}–{to} di {total} ordini"
   },
   "profile": {
     "title": "Il mio profilo",
@@ -198,7 +211,11 @@
     "begleitschein": "Mostra borderò",
     "printLabel": "Stampa etichetta",
     "editTitle": "Modifica richiesta",
-    "readOnly": "Questa richiesta è bloccata e non può più essere modificata."
+    "readOnly": "Questa richiesta è bloccata e non può più essere modificata.",
+    "categories": "Categorie",
+    "dob": "Data di nascita",
+    "newOrder": "Nuovo ordine",
+    "copy": "Copia"
   },
   "results": {
     "title": "Referti",

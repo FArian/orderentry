@@ -50,7 +50,7 @@ export function PreviewButtons({
               title: pdfTitle ?? "PDF",
             })
           }
-          className="inline-flex items-center gap-1 rounded border border-rose-300 bg-rose-50 px-2 py-0.5 text-xs text-rose-700 hover:bg-rose-100"
+          className="inline-flex items-center gap-1 rounded border border-rose-300 bg-rose-50 px-2 py-0.5 text-xs text-rose-700 hover:bg-rose-100 cursor-pointer"
         >
           📄 PDF
         </button>
@@ -64,7 +64,7 @@ export function PreviewButtons({
               title: hl7Title ?? "HL7",
             })
           }
-          className="inline-flex items-center gap-1 rounded border border-indigo-300 bg-indigo-50 px-2 py-0.5 text-xs text-indigo-700 hover:bg-indigo-100"
+          className="inline-flex items-center gap-1 rounded border border-indigo-300 bg-indigo-50 px-2 py-0.5 text-xs text-indigo-700 hover:bg-indigo-100 cursor-pointer"
         >
           🔬 HL7
         </button>

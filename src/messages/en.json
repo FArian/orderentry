@@ -75,7 +75,8 @@
     "last": "Last",
     "page": "Page",
     "of": "of",
-    "showing": "Showing"
+    "showing": "Showing",
+    "personalData": "Personal Data"
   },
   "insurance": {
     "title": "Insurance data",
@@ -121,7 +122,19 @@
     "tooltipRevoked": "Revoked – order has been cancelled. No further changes possible.",
     "tooltipError": "Entered in error – order was marked as erroneous.",
     "openPatient": "Open patient",
-    "lockedHint": "Locked – no further editing possible."
+    "lockedHint": "Locked – no further editing possible.",
+    "total": "Total",
+    "drafts": "Drafts",
+    "sent": "Sent",
+    "resultsReady": "Results ready",
+    "searchPlaceholder": "Search orders or patients…",
+    "filterAll": "All",
+    "filterDraft": "Draft",
+    "filterSent": "Sent",
+    "filterDone": "Done",
+    "patient": "Patient",
+    "rowsPerPage": "Rows per page",
+    "showingOf": "Showing {from}–{to} of {total} orders"
   },
   "profile": {
     "title": "My Profile",
@@ -198,7 +211,11 @@
     "begleitschein": "Show cover sheet",
     "printLabel": "Print label",
     "editTitle": "Edit order",
-    "readOnly": "This order is locked and can no longer be edited."
+    "readOnly": "This order is locked and can no longer be edited.",
+    "categories": "Categories",
+    "dob": "Date of birth",
+    "newOrder": "New order",
+    "copy": "Copy"
   },
   "results": {
     "title": "Results",

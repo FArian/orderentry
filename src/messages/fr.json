@@ -75,7 +75,8 @@
     "last": "Dernier",
     "page": "Page",
     "of": "sur",
-    "showing": "Affichage"
+    "showing": "Affichage",
+    "personalData": "Données personnelles"
   },
   "insurance": {
     "title": "Données d'assurance",
@@ -121,7 +122,19 @@
     "tooltipRevoked": "Annulée – la demande a été révoquée. Aucune modification possible.",
     "tooltipError": "Saisie erronée – la demande a été marquée comme erronée.",
     "openPatient": "Ouvrir le patient",
-    "lockedHint": "Verrouillé – aucune modification possible."
+    "lockedHint": "Verrouillé – aucune modification possible.",
+    "total": "Total",
+    "drafts": "Brouillons",
+    "sent": "Envoyés",
+    "resultsReady": "Résultats prêts",
+    "searchPlaceholder": "Rechercher des ordres ou patients…",
+    "filterAll": "Tous",
+    "filterDraft": "Brouillon",
+    "filterSent": "Envoyé",
+    "filterDone": "Terminé",
+    "patient": "Patient",
+    "rowsPerPage": "Lignes par page",
+    "showingOf": "Affichage {from}–{to} sur {total} ordres"
   },
   "profile": {
     "title": "Mon profil",
@@ -198,7 +211,11 @@
     "begleitschein": "Afficher le bordereau",
     "printLabel": "Imprimer l'étiquette",
     "editTitle": "Modifier la demande",
-    "readOnly": "Cette demande est verrouillée et ne peut plus être modifiée."
+    "readOnly": "Cette demande est verrouillée et ne peut plus être modifiée.",
+    "categories": "Catégories",
+    "dob": "Date de naissance",
+    "newOrder": "Nouvel ordre",
+    "copy": "Copier"
   },
   "results": {
     "title": "Résultats",

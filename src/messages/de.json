@@ -75,7 +75,8 @@
     "last": "Letzte",
     "page": "Seite",
     "of": "von",
-    "showing": "Zeige"
+    "showing": "Zeige",
+    "personalData": "Persönliche Daten"
   },
   "insurance": {
     "title": "Versicherungsdaten",
@@ -121,7 +122,19 @@
     "tooltipRevoked": "Storniert – Auftrag wurde widerrufen. Keine Änderungen mehr möglich.",
     "tooltipError": "Fehlerhafter Eintrag – Auftrag wurde als Fehler markiert.",
     "openPatient": "Patient öffnen",
-    "lockedHint": "Gesperrt – keine Bearbeitung möglich."
+    "lockedHint": "Gesperrt – keine Bearbeitung möglich.",
+    "total": "Gesamt",
+    "drafts": "Entwürfe",
+    "sent": "Gesendet",
+    "resultsReady": "Befunde bereit",
+    "searchPlaceholder": "Aufträge oder Patienten suchen…",
+    "filterAll": "Alle",
+    "filterDraft": "Entwurf",
+    "filterSent": "Gesendet",
+    "filterDone": "Abgeschlossen",
+    "patient": "Patient",
+    "rowsPerPage": "Zeilen pro Seite",
+    "showingOf": "Zeige {from}–{to} von {total} Aufträgen"
   },
   "profile": {
     "title": "Mein Profil",
@@ -198,7 +211,11 @@
     "begleitschein": "Begleitschein anzeigen",
     "printLabel": "Etikett drucken",
     "editTitle": "Auftrag bearbeiten",
-    "readOnly": "Dieser Auftrag ist gesperrt und kann nicht mehr bearbeitet werden."
+    "readOnly": "Dieser Auftrag ist gesperrt und kann nicht mehr bearbeitet werden.",
+    "categories": "Kategorien",
+    "dob": "Geburtsdatum",
+    "newOrder": "Neuer Auftrag",
+    "copy": "Kopieren"
   },
   "results": {
     "title": "Befunde",

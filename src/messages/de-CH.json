@@ -75,7 +75,8 @@
     "last": "Letschte",
     "page": "Siite",
     "of": "vo",
-    "showing": "Zeigt"
+    "showing": "Zeigt",
+    "personalData": "Persönlichi Date"
   },
   "insurance": {
     "title": "Versicherigsdaten",
@@ -121,7 +122,19 @@
     "tooltipRevoked": "Storniert – Uftrag isch wiederrüefe worde. Kei Änderige meh möglich.",
     "tooltipError": "Fählerhafter Iitrags – Uftrag isch als Fehler markiert.",
     "openPatient": "Patient ufmache",
-    "lockedHint": "Gesperrt – nix meh mache möglich."
+    "lockedHint": "Gesperrt – nix meh mache möglich.",
+    "total": "Gsamt",
+    "drafts": "Entwürf",
+    "sent": "Gschickt",
+    "resultsReady": "Befund parat",
+    "searchPlaceholder": "Aufträg oder Patient sueche…",
+    "filterAll": "Alli",
+    "filterDraft": "Entwurf",
+    "filterSent": "Gschickt",
+    "filterDone": "Abgschlosse",
+    "patient": "Patient",
+    "rowsPerPage": "Zile pro Siite",
+    "showingOf": "Zeig {from}–{to} vo {total} Aufträg"
   },
   "profile": {
     "title": "Mis Profil",
@@ -198,7 +211,11 @@
     "begleitschein": "Begleitschein azeige",
     "printLabel": "Etikett drucke",
     "editTitle": "Uftrag bearbeite",
-    "readOnly": "Diser Uftrag isch gesperrt und cha nöd meh bearbeitet werde."
+    "readOnly": "Diser Uftrag isch gesperrt und cha nöd meh bearbeitet werde.",
+    "categories": "Kategorie",
+    "dob": "Geburtsdatum",
+    "newOrder": "Neuer Auftrag",
+    "copy": "Kopiere"
   },
   "results": {
     "title": "Befund",

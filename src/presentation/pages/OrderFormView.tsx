@@ -85,12 +85,14 @@ export function OrderFormView({
     searchPractitioners,
     saveDraft,
     getPatientIdentifiers,
+    generateOrderNumber,
   } = form;
 
   const {
     previewModal, setPreviewModal,
     previewContent, previewCopied,
     openPreview, copyPreview,
+    printBegleitschein, printLabel,
   } = docs;
 
   // ── Derived patient display data ───────────────────────────────────────────
@@ -177,8 +179,8 @@ export function OrderFormView({
       {/* ── Main 3-column workspace ────────────────────────────────────────── */}
       <div className="flex flex-1 overflow-hidden">
 
-        {/* Left column: categories */}
-        <div className="w-[200px] shrink-0 flex flex-col border-r border-zt-border bg-zt-bg-card">
+        {/* Left column: categories — width adapts to content (min 180 px, max 300 px) */}
+        <div className="min-w-[180px] max-w-[300px] flex-none flex flex-col border-r border-zt-border bg-zt-bg-card">
 
           {/* Category header */}
           <div className="px-3.5 pt-3 pb-2 border-b border-zt-border shrink-0">
@@ -200,7 +202,7 @@ export function OrderFormView({
 
           {/* Tab row — inside left column */}
           {topTabs.length > 0 && (
-            <div className="flex border-b border-zt-border shrink-0 overflow-x-auto">
+            <div className="flex flex-wrap border-b border-zt-border shrink-0">
               {topTabs.map((t) => (
                 <button
                   key={t}
@@ -240,7 +242,7 @@ export function OrderFormView({
                       : "text-zt-text-secondary border-l-transparent hover:bg-zt-bg-page hover:text-zt-text-primary"
                   }`}
                 >
-                  <span className="truncate">{label}</span>
+                  <span className="whitespace-nowrap">{label}</span>
                 </button>
               );
             })}
@@ -319,7 +321,7 @@ export function OrderFormView({
               const open = infoOpen[key];
               const selected = isSelected(t);
               return (
-                <div key={key}>
+                <div key={key} className="shrink-0">
                   {/* Analysis card */}
                   <div
                     onClick={() => toggleTest(t)}
@@ -636,8 +638,9 @@ export function OrderFormView({
       {/* ── Action bar (fixed height — no layout shift ever) ─────────────── */}
       <div className="h-14 shrink-0 bg-zt-bg-card border-t border-zt-border flex items-center justify-between px-6 gap-3">
 
-        {/* Left: developer preview tools */}
+        {/* Left: preview + print tools */}
         <div className="flex items-center gap-2">
+          {/* Technical previews */}
           <button
             type="button"
             onClick={() => openPreview("fhir")}
@@ -655,6 +658,30 @@ export function OrderFormView({
             className="h-[34px] px-4 rounded-[8px] border border-zt-border bg-zt-bg-card text-[13px] text-zt-text-primary hover:bg-zt-bg-page disabled:text-zt-text-disabled disabled:cursor-not-allowed transition-colors"
           >
             {tr("order.hl7Preview")}
+          </button>
+
+          {/* Separator */}
+          <span className="h-5 w-px bg-zt-border mx-1" aria-hidden="true" />
+
+          {/* Begleitschein */}
+          <button
+            type="button"
+            onClick={() => printBegleitschein(generateOrderNumber())}
+            disabled={selectedTests.length === 0}
+            title="Begleitschein als Druckvorschau anzeigen"
+            className="h-[34px] px-4 rounded-[8px] border border-zt-primary-border bg-zt-primary-light text-[13px] text-zt-primary hover:bg-zt-primary hover:text-zt-text-on-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            🖨 {tr("order.begleitschein")}
+          </button>
+
+          {/* Etikett drucken */}
+          <button
+            type="button"
+            onClick={() => printLabel()}
+            title="Probenetikett drucken"
+            className="h-[34px] px-4 rounded-[8px] border border-zt-border bg-zt-bg-card text-[13px] text-zt-text-primary hover:bg-zt-bg-page transition-colors"
+          >
+            🏷 {tr("order.printLabel")}
           </button>
         </div>
 
