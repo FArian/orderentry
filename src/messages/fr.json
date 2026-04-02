@@ -356,7 +356,15 @@
     "error401": "Nom d'utilisateur ou mot de passe invalide.",
     "error400": "Saisie invalide. Veuillez vérifier vos identifiants.",
     "errorNetwork": "Serveur inaccessible. Veuillez vérifier votre connexion.",
-    "errorDefault": "Connexion échouée. Veuillez réessayer."
+    "errorDefault": "Connexion échouée. Veuillez réessayer.",
+    "signupTitle": "S'inscrire",
+    "usernameHint": "3–32 caractères, lettres, chiffres, _.- uniquement",
+    "passwordHint": "Au moins 8 caractères",
+    "signupSubmit": "Créer un compte",
+    "signupSubmitting": "Création…",
+    "signupSuccess": "Compte créé avec succès.",
+    "signupLocalSuccess": "Compte créé localement sur cet appareil.",
+    "hasAccount": "Vous avez déjà un compte ?"
   },
   "dashboard": {
     "title": "Tableau de bord",

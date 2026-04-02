@@ -4,8 +4,10 @@ import Link from "next/link";
 import { useState } from "react";
 import { createLocalUser } from "@/lib/localAuth";
 import { FORCE_LOCAL_AUTH } from "@/lib/appConfig";
+import { useTranslation } from "@/lib/i18n";
 
 export default function SignupPage() {
+  const { t } = useTranslation();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -20,7 +22,7 @@ export default function SignupPage() {
     try {
       if (FORCE_LOCAL_AUTH) {
         await createLocalUser(username, password);
-        setMessage("Konto lokal auf diesem Gerät erstellt.");
+        setMessage(t("auth.signupLocalSuccess"));
         setUsername("");
         setPassword("");
         return;
@@ -39,24 +41,23 @@ export default function SignupPage() {
         if (maybePermIssue) {
           try {
             await createLocalUser(username, password);
-            setMessage("Konto lokal auf diesem Gerät erstellt.");
+            setMessage(t("auth.signupLocalSuccess"));
             setError(null);
             setUsername("");
             setPassword("");
           } catch (e: unknown) {
-            const emsg = e instanceof Error ? e.message : String(e);
-            setError(emsg || `Fehler ${res.status}`);
+            setError(e instanceof Error ? e.message : t("auth.errorDefault"));
           }
         } else {
-          setError(data?.error || `Fehler ${res.status}`);
+          setError(data?.error || t("auth.errorDefault"));
         }
       } else {
-        setMessage("Konto erfolgreich erstellt.");
+        setMessage(t("auth.signupSuccess"));
         setUsername("");
         setPassword("");
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(err instanceof Error ? err.message : t("auth.errorDefault"));
     } finally {
       setLoading(false);
     }
@@ -67,8 +68,8 @@ export default function SignupPage() {
       <div className="w-full max-w-sm">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 px-8 pt-8 pb-6">
           <div className="mb-6 text-center">
-            <h1 className="text-xl font-bold text-gray-900">Registrieren</h1>
-            <p className="text-sm text-gray-500 mt-1">ZetLab OrderEntry</p>
+            <h1 className="text-xl font-bold text-gray-900">{t("auth.signupTitle")}</h1>
+            <p className="text-sm text-gray-500 mt-1">{t("auth.subtitle")}</p>
           </div>
 
           <form onSubmit={onSubmit} className="space-y-4">
@@ -77,7 +78,7 @@ export default function SignupPage() {
                 htmlFor="signup-username"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Benutzername
+                {t("auth.username")}
               </label>
               <input
                 id="signup-username"
@@ -90,9 +91,7 @@ export default function SignupPage() {
                 required
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
-              <p className="mt-1 text-xs text-gray-400">
-                3–32 Zeichen, nur Buchstaben, Ziffern, _.-
-              </p>
+              <p className="mt-1 text-xs text-gray-400">{t("auth.usernameHint")}</p>
             </div>
 
             <div>
@@ -100,7 +99,7 @@ export default function SignupPage() {
                 htmlFor="signup-password"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Passwort
+                {t("auth.password")}
               </label>
               <input
                 id="signup-password"
@@ -112,7 +111,7 @@ export default function SignupPage() {
                 required
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
-              <p className="mt-1 text-xs text-gray-400">Mindestens 8 Zeichen</p>
+              <p className="mt-1 text-xs text-gray-400">{t("auth.passwordHint")}</p>
             </div>
 
             <button
@@ -120,7 +119,7 @@ export default function SignupPage() {
               disabled={loading}
               className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 transition-colors"
             >
-              {loading ? "Wird erstellt…" : "Konto erstellen"}
+              {loading ? t("auth.signupSubmitting") : t("auth.signupSubmit")}
             </button>
           </form>
 
@@ -137,9 +136,9 @@ export default function SignupPage() {
         </div>
 
         <p className="mt-4 text-center text-sm text-gray-600">
-          Bereits ein Konto?{" "}
+          {t("auth.hasAccount")}{" "}
           <Link href="/login" className="font-medium text-blue-600 hover:underline">
-            Anmelden
+            {t("auth.submit")}
           </Link>
         </p>
       </div>

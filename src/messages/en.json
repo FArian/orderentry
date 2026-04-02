@@ -356,7 +356,15 @@
     "error401": "Invalid username or password.",
     "error400": "Invalid input. Please check your username and password.",
     "errorNetwork": "Server unreachable. Please check your internet connection.",
-    "errorDefault": "Sign in failed. Please try again."
+    "errorDefault": "Sign in failed. Please try again.",
+    "signupTitle": "Register",
+    "usernameHint": "3–32 characters, letters, digits, _.- only",
+    "passwordHint": "At least 8 characters",
+    "signupSubmit": "Create account",
+    "signupSubmitting": "Creating…",
+    "signupSuccess": "Account created successfully.",
+    "signupLocalSuccess": "Account created locally on this device.",
+    "hasAccount": "Already have an account?"
   },
   "dashboard": {
     "title": "Dashboard",

@@ -51,7 +51,13 @@ export type User = {
   fhirPractitionerRoleId?: string;
 };
 
-const dataDir = path.join(process.cwd(), "data");
+// On Vercel the app directory is read-only; write to /tmp instead.
+// /tmp is writable per-function-instance. ensureBootstrapAdmin() runs on
+// every login, so the admin is recreated from BOOTSTRAP_ADMIN_* env vars
+// on each cold start — login always works within that instance.
+const dataDir = process.env.VERCEL
+  ? path.join("/tmp", "zetlab-data")
+  : path.join(process.cwd(), "data");
 const usersFile = path.join(dataDir, "users.json");
 
 async function ensureDataFile() {

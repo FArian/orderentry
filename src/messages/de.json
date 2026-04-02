@@ -356,7 +356,15 @@
     "error401": "Benutzername oder Passwort ungültig.",
     "error400": "Ungültige Eingabe. Bitte Benutzername und Passwort prüfen.",
     "errorNetwork": "Server nicht erreichbar. Bitte Internetverbindung prüfen.",
-    "errorDefault": "Anmeldung fehlgeschlagen. Bitte erneut versuchen."
+    "errorDefault": "Anmeldung fehlgeschlagen. Bitte erneut versuchen.",
+    "signupTitle": "Registrieren",
+    "usernameHint": "3–32 Zeichen, nur Buchstaben, Ziffern, _.-",
+    "passwordHint": "Mindestens 8 Zeichen",
+    "signupSubmit": "Konto erstellen",
+    "signupSubmitting": "Wird erstellt…",
+    "signupSuccess": "Konto erfolgreich erstellt.",
+    "signupLocalSuccess": "Konto lokal auf diesem Gerät erstellt.",
+    "hasAccount": "Bereits ein Konto?"
   },
   "dashboard": {
     "title": "Dashboard",

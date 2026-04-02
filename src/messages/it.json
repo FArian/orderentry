@@ -356,7 +356,15 @@
     "error401": "Nome utente o password non validi.",
     "error400": "Dati non validi. Verificare nome utente e password.",
     "errorNetwork": "Server non raggiungibile. Verificare la connessione.",
-    "errorDefault": "Accesso non riuscito. Riprovare."
+    "errorDefault": "Accesso non riuscito. Riprovare.",
+    "signupTitle": "Registrati",
+    "usernameHint": "3–32 caratteri, solo lettere, cifre, _.-",
+    "passwordHint": "Almeno 8 caratteri",
+    "signupSubmit": "Crea account",
+    "signupSubmitting": "Creazione…",
+    "signupSuccess": "Account creato con successo.",
+    "signupLocalSuccess": "Account creato localmente su questo dispositivo.",
+    "hasAccount": "Hai già un account?"
   },
   "dashboard": {
     "title": "Dashboard",

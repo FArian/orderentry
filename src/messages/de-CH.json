@@ -356,7 +356,15 @@
     "error401": "Falsche Benutzername oder Passwort",
     "error400": "Ungültigi Iiigab. Bitte Benutzername und Passwort prüefe.",
     "errorNetwork": "Server nöd erreichbar 😬",
-    "errorDefault": "Ilogge fehlgschlage"
+    "errorDefault": "Ilogge fehlgschlage",
+    "signupTitle": "Registriere",
+    "usernameHint": "3–32 Zeiche, nur Buechstabe, Ziffere, _.-",
+    "passwordHint": "Mindeschtens 8 Zeiche",
+    "signupSubmit": "Konto erstellä",
+    "signupSubmitting": "Wird erstellet…",
+    "signupSuccess": "Konto erfolgriich erstellt.",
+    "signupLocalSuccess": "Konto lokal uf däm Grät erstellt.",
+    "hasAccount": "Scho es Konto?"
   },
   "dashboard": {
     "title": "Dashboard",
