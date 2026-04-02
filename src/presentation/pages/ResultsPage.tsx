@@ -124,10 +124,11 @@ export default function ResultsPage() {
     (input: string) => {
       setPatientInput(input);
       const params = patientSearchSelector.resolve(input);
+      const orderNumber = orderNumberInput.trim() || undefined;
       search({
         ...params,
-        orderNumber: orderNumberInput.trim() || undefined,
-        status: statusFilter || undefined,
+        ...(orderNumber   !== undefined && { orderNumber }),
+        ...(statusFilter  !== ""        && { status: statusFilter }),
       });
     },
     [orderNumberInput, statusFilter, search],
@@ -137,10 +138,11 @@ export default function ResultsPage() {
     (input: string) => {
       setOrderNumberInput(input);
       const patientParams = patientSearchSelector.resolve(patientInput);
+      const orderNumber = input.trim() || undefined;
       search({
         ...patientParams,
-        orderNumber: input.trim() || undefined,
-        status: statusFilter || undefined,
+        ...(orderNumber   !== undefined && { orderNumber }),
+        ...(statusFilter  !== ""        && { status: statusFilter }),
       });
     },
     [patientInput, statusFilter, search],
@@ -150,10 +152,11 @@ export default function ResultsPage() {
     (status: string) => {
       setStatusFilter(status);
       const patientParams = patientSearchSelector.resolve(patientInput);
+      const orderNumber = orderNumberInput.trim() || undefined;
       search({
         ...patientParams,
-        orderNumber: orderNumberInput.trim() || undefined,
-        status: status || undefined,
+        ...(orderNumber !== undefined && { orderNumber }),
+        ...(status      !== ""        && { status }),
       });
     },
     [patientInput, orderNumberInput, search],

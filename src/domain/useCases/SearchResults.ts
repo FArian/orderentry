@@ -12,13 +12,18 @@ export class SearchResults {
   constructor(private readonly repo: IResultRepository) {}
 
   async execute(query: ResultSearchQuery): Promise<PagedResults> {
+    const q           = (query.q          ?? "").trim() || undefined;
+    const patientName = (query.patientName ?? "").trim() || undefined;
+    const patientId   = (query.patientId   ?? "").trim() || undefined;
+    const orderNumber = (query.orderNumber ?? "").trim() || undefined;
+
     const normalised: ResultSearchQuery = {
-      ...query,
-      q: (query.q ?? "").trim() || undefined,
-      patientName: (query.patientName ?? "").trim() || undefined,
-      patientId: (query.patientId ?? "").trim() || undefined,
-      orderNumber: (query.orderNumber ?? "").trim() || undefined,
-      page: Math.max(1, query.page ?? 1),
+      ...(query.status      !== undefined && { status: query.status }),
+      ...(q                 !== undefined && { q }),
+      ...(patientName       !== undefined && { patientName }),
+      ...(patientId         !== undefined && { patientId }),
+      ...(orderNumber       !== undefined && { orderNumber }),
+      page:     Math.max(1, query.page     ?? 1),
       pageSize: Math.min(100, Math.max(1, query.pageSize ?? 20)),
     };
     return this.repo.search(normalised);

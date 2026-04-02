@@ -1,8 +1,33 @@
-node_modules
-.next
+# Git
 .git
+.gitignore
+
+# Node
+node_modules
+npm-debug.log
+
+# Env (SEHR WICHTIG)
+.env
 .env*
+!.env.example
+
+# Docker
+docker-compose*
+Dockerfile
+
+# Logs & Data
+logs
 data
-*.md
+pdf-outbox
+hl7-outbox
+
+# Build
+.next
+dist
+build
+
+# OS
 .DS_Store
-.vercel
+
+# Docs / AI
+CLAUDE.md

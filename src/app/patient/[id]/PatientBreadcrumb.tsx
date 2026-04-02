@@ -10,6 +10,7 @@ type Patient = { resourceType: "Patient"; id?: string; name?: HumanName[] };
 function nameToString(names?: HumanName[]): string {
   if (!names || names.length === 0) return "Unbekannt";
   const n = names[0];
+  if (!n) return "Unbekannt";
   if (n.text && n.text.trim()) return n.text.trim();
   const parts = [...(n.given || []), n.family || ""].filter(Boolean);
   return parts.join(" ") || "Unbekannt";

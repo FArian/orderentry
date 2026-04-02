@@ -1,13 +1,15 @@
 // Domain entity — framework-independent, no React, no API calls.
 
-export type OrderStatus =
-  | "draft"
-  | "active"
-  | "on-hold"
-  | "completed"
-  | "revoked"
-  | "entered-in-error"
-  | "unknown";
+export enum OrderStatus {
+  DRAFT            = "draft",
+  ACTIVE           = "active",
+  ON_HOLD          = "on-hold",
+  COMPLETED        = "completed",
+  /** FHIR wire value is "revoked" */
+  CANCELLED        = "revoked",
+  ENTERED_IN_ERROR = "entered-in-error",
+  UNKNOWN          = "unknown",
+}
 
 export interface Order {
   id: string;

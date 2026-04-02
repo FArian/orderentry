@@ -101,6 +101,7 @@ type Tab = "orders" | "befunde";
 function nameToString(names?: HumanName[]): string {
   if (!names || names.length === 0) return "Unbekannt";
   const n = names[0];
+  if (!n) return "Unbekannt";
   if (n.text && n.text.trim()) return n.text.trim();
   const parts = [
     ...(n.prefix || []),
@@ -114,6 +115,7 @@ function nameToString(names?: HumanName[]): string {
 function addressToString(addrs?: Address[]): string {
   if (!addrs || addrs.length === 0) return "";
   const a = addrs[0];
+  if (!a) return "";
   if (a.text && a.text.trim()) return a.text.trim();
   const parts = [
     ...(a.line || []),

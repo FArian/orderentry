@@ -111,9 +111,10 @@ export async function updateUserProfile(userId: string, profile: UserProfile): P
   const users = await getUsers();
   const idx = users.findIndex((u) => u.id === userId);
   if (idx === -1) throw new Error("User not found");
-  users[idx] = { ...users[idx], profile: { ...users[idx].profile, ...profile } };
+  const existing = users[idx]!;
+  users[idx] = { ...existing, profile: { ...existing.profile, ...profile } };
   await fs.writeFile(usersFile, JSON.stringify({ users }, null, 2), "utf8");
-  return users[idx];
+  return users[idx]!;
 }
 
 export async function verifyUser(username: string, password: string): Promise<User | null> {

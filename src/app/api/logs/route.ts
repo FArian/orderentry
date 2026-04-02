@@ -84,7 +84,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   // Filter by minimum level
   if (level && level in LEVEL_RANK) {
-    const minRank = LEVEL_RANK[level];
+    const minRank = LEVEL_RANK[level]!;
     entries = entries.filter((e) => (LEVEL_RANK[e.level] ?? -1) >= minRank);
   }
 

@@ -4,7 +4,7 @@ import type { InputHTMLAttributes, ReactNode } from "react";
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
-export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "prefix" | "suffix"> {
   label?: string;
   error?: string;
   hint?: string;

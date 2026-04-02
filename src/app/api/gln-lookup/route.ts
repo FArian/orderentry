@@ -123,7 +123,7 @@ export async function GET(req: NextRequest) {
       if (entries.length === 0) {
         return NextResponse.json({ error: "glnNotFound" }, { status: 404 });
       }
-      item = entries[0];
+      item = entries[0]!;
     }
 
     // ROLE can be an object or an array

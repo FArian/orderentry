@@ -1,12 +1,14 @@
 import { SearchResults } from "@/domain/useCases/SearchResults";
 import { MockResultRepository } from "../../../mocks/MockResultRepository";
+import type { Result } from "@/domain/entities/Result";
+import { ResultStatus } from "@/domain/entities/Result";
 
 describe("SearchResults use case", () => {
-  const seed = [
-    { id: "1", codeText: "Blutbild",      patientId: "p1", patientDisplay: "Müller Hans",   status: "final"       },
-    { id: "2", codeText: "Urinstatus",     patientId: "p2", patientDisplay: "Schmid Maria",  status: "preliminary" },
-    { id: "3", codeText: "Blutbild klein", patientId: "p1", patientDisplay: "Müller Hans",   status: "partial"     },
-    { id: "4", codeText: "Lipidprofil",    patientId: "p3", patientDisplay: "Weber Anna",    status: "final"       },
+  const seed: Partial<Result>[] = [
+    { id: "1", codeText: "Blutbild",      patientId: "p1", patientDisplay: "Müller Hans",   status: ResultStatus.FINAL       },
+    { id: "2", codeText: "Urinstatus",     patientId: "p2", patientDisplay: "Schmid Maria",  status: ResultStatus.PRELIMINARY },
+    { id: "3", codeText: "Blutbild klein", patientId: "p1", patientDisplay: "Müller Hans",   status: ResultStatus.PARTIAL     },
+    { id: "4", codeText: "Lipidprofil",    patientId: "p3", patientDisplay: "Weber Anna",    status: ResultStatus.FINAL       },
   ];
 
   function makeUseCase() {
@@ -31,7 +33,7 @@ describe("SearchResults use case", () => {
     const uc = makeUseCase();
     const result = await uc.execute({ patientId: "p3" });
     expect(result.data).toHaveLength(1);
-    expect(result.data[0].id).toBe("4");
+    expect(result.data[0]!.id).toBe("4");
   });
 
   it("normalises empty string fields to undefined", async () => {

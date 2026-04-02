@@ -47,6 +47,8 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
+# Default FHIR (kann überschrieben werden)
+ENV FHIR_BASE_URL=http://hapi.fhir.org/baseR4
 
 # Runtime environment variables — override via docker run -e or docker-compose
 # AUTH_SECRET=<strong-secret>

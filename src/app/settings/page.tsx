@@ -82,12 +82,13 @@ export default function SettingsPage() {
       .then((r) => (r.ok ? r.json() : null))
       .then((data: { username?: string; profile?: UserProfile } | null) => {
         if (data) {
+          const profile = data.profile as Record<string, string> | undefined;
           setProfile({
-            username:     data.username ?? "",
-            firstName:    (data.profile as Record<string, string> | undefined)?.firstName,
-            lastName:     (data.profile as Record<string, string> | undefined)?.lastName,
-            organization: (data.profile as Record<string, string> | undefined)?.organization,
-            email:        (data.profile as Record<string, string> | undefined)?.email,
+            username: data.username ?? "",
+            ...(profile?.firstName    !== undefined && { firstName:    profile.firstName }),
+            ...(profile?.lastName     !== undefined && { lastName:     profile.lastName }),
+            ...(profile?.organization !== undefined && { organization: profile.organization }),
+            ...(profile?.email        !== undefined && { email:        profile.email }),
           });
         }
       })
@@ -98,7 +99,7 @@ export default function SettingsPage() {
     setSaveError(null);
     const errors = RuntimeConfig.validate({ logLevel: clientLogLevel, language });
     if (errors.length > 0) {
-      setSaveError(errors[0]);
+      setSaveError(errors[0] ?? null);
       return;
     }
     RuntimeConfig.set({ logLevel: clientLogLevel, language, debugMode });

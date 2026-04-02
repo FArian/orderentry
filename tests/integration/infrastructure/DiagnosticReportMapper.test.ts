@@ -127,17 +127,16 @@ describe("DiagnosticReportMapper.toDomain()", () => {
   });
 
   it("handles missing subject gracefully", () => {
-    const fhir: FhirDiagnosticReport = {
-      ...minimalFhir,
-      subject: undefined,
-    };
+    const { subject: _unused, ...rest } = minimalFhir;
+    const fhir: FhirDiagnosticReport = { ...rest };
     const result = DiagnosticReportMapper.toDomain(fhir);
     expect(result.patientId).toBe("");
     expect(result.patientDisplay).toBe("");
   });
 
   it("handles missing id gracefully", () => {
-    const fhir: FhirDiagnosticReport = { ...minimalFhir, id: undefined };
+    const { id: _unused, ...rest } = minimalFhir;
+    const fhir: FhirDiagnosticReport = { ...rest };
     const result = DiagnosticReportMapper.toDomain(fhir);
     expect(result.id).toBe("");
   });

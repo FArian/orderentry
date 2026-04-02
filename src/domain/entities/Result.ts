@@ -1,14 +1,15 @@
 // Domain entity — framework-independent, no React, no API calls.
 
-export type ResultStatus =
-  | "registered"
-  | "partial"
-  | "preliminary"
-  | "final"
-  | "amended"
-  | "corrected"
-  | "cancelled"
-  | "unknown";
+export enum ResultStatus {
+  REGISTERED  = "registered",
+  PARTIAL     = "partial",
+  PRELIMINARY = "preliminary",
+  FINAL       = "final",
+  AMENDED     = "amended",
+  CORRECTED   = "corrected",
+  CANCELLED   = "cancelled",
+  UNKNOWN     = "unknown",
+}
 
 export interface Result {
   id: string;

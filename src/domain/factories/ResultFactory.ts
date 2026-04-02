@@ -1,13 +1,14 @@
-import type { Result, ResultStatus } from "@/domain/entities/Result";
+import type { Result } from "@/domain/entities/Result";
+import { ResultStatus } from "@/domain/entities/Result";
 
 const VALID_STATUSES: readonly ResultStatus[] = [
-  "registered",
-  "partial",
-  "preliminary",
-  "final",
-  "amended",
-  "corrected",
-  "cancelled",
+  ResultStatus.REGISTERED,
+  ResultStatus.PARTIAL,
+  ResultStatus.PRELIMINARY,
+  ResultStatus.FINAL,
+  ResultStatus.AMENDED,
+  ResultStatus.CORRECTED,
+  ResultStatus.CANCELLED,
 ];
 
 /**
@@ -55,6 +56,6 @@ export class ResultFactory {
   private static toStatus(raw: unknown): ResultStatus {
     return (VALID_STATUSES as readonly string[]).includes(String(raw ?? ""))
       ? (raw as ResultStatus)
-      : "unknown";
+      : ResultStatus.UNKNOWN;
   }
 }

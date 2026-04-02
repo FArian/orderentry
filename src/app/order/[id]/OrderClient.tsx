@@ -281,7 +281,8 @@ export default function OrderClient({ id, srId }: { id: string; srId?: string })
       const preferred =
         topTabs.find((t) => t.toLowerCase() === "mibi") ||
         topTabs.find((t) => /mikro/i.test(t)) ||
-        topTabs[0];
+        topTabs[0] ||
+        null;
       setSelectedTopTab(preferred);
     }
   }, [topTabs, selectedTopTab]);
@@ -321,7 +322,7 @@ export default function OrderClient({ id, srId }: { id: string; srId?: string })
           // Restore clinical note
           const notes = sr.note as Array<Record<string, unknown>> | undefined;
           if (Array.isArray(notes) && notes.length > 0) {
-            setClinicalNote(String(notes[0].text || ""));
+            setClinicalNote(String(notes[0]!.text || ""));
           }
           // Restore encounter class from extension
           const exts = sr.extension as Array<Record<string, unknown>> | undefined;
@@ -406,7 +407,7 @@ export default function OrderClient({ id, srId }: { id: string; srId?: string })
   // Auto-select first category once categories are loaded
   useEffect(() => {
     if (!selectedCategory && categories.length > 0) {
-      expandCategory(categories[0]);
+      expandCategory(categories[0]!);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categories]);
@@ -487,7 +488,7 @@ export default function OrderClient({ id, srId }: { id: string; srId?: string })
         const specimenRef = specId ? `kind:${specId}` : `kind:unknown`;
         const label = specId ? `Specimen ${specId}` : "Material";
         if (value !== undefined)
-          items.push({ specimenRef, num: value, unit, label });
+          items.push({ specimenRef, num: value, label, ...(unit !== undefined && { unit }) });
         break; // only the matching AD is needed
       }
       return items;
@@ -520,7 +521,7 @@ export default function OrderClient({ id, srId }: { id: string; srId?: string })
         const specId = (specExt as unknown as { valueReference?: { identifier?: { value?: string } } })?.valueReference?.identifier?.value;
         const specimenRef = specId ? `kind:${specId}` : `kind:unknown`;
         const label = specId ? `Specimen ${specId}` : "Material";
-        if (value !== undefined) items.push({ specimenRef, num: value, unit, label });
+        if (value !== undefined) items.push({ specimenRef, num: value, label, ...(unit !== undefined && { unit }) });
         break;
       }
       return items;
@@ -549,7 +550,7 @@ export default function OrderClient({ id, srId }: { id: string; srId?: string })
           const sum = (curNum || 0) + (Number(it.num) || 0);
           newMaterials[aggKey] = { label: it.label, value: `${sum}${unit ? ` ${unit}` : ""}` };
         } else {
-          newMaterials[aggKey] = { label: it.label, value: current?.value };
+          newMaterials[aggKey] = { label: it.label, ...(current?.value !== undefined && { value: current.value }) };
         }
       }
     }
@@ -598,7 +599,7 @@ export default function OrderClient({ id, srId }: { id: string; srId?: string })
                   value: `${sum}${unit ? ` ${unit}` : ""}`,
                 };
               } else {
-                next[aggKey] = { label: it.label, value: current?.value };
+                next[aggKey] = { label: it.label, ...(current?.value !== undefined && { value: current.value }) };
               }
             }
             return next;
@@ -679,7 +680,11 @@ export default function OrderClient({ id, srId }: { id: string; srId?: string })
               valueQuantity?: { value?: number; unit?: string; code?: string };
             }
           )?.valueQuantity;
-          if (vq) minVol = { value: vq.value, unit: vq.unit, code: vq.code };
+          if (vq) minVol = {
+            ...(vq.value !== undefined && { value: vq.value }),
+            ...(vq.unit  !== undefined && { unit:  vq.unit  }),
+            ...(vq.code  !== undefined && { code:  vq.code  }),
+          };
         }
         let sd: SpecimenDefinition | undefined = undefined;
         // Try to resolve SpecimenDefinition via ActivityDefinition.extension valueReference.identifier
@@ -717,7 +722,12 @@ export default function OrderClient({ id, srId }: { id: string; srId?: string })
         }
         setInfoCache((p) => ({
           ...p,
-          [key]: { ad: activity, od: observation, sd, minVol },
+          [key]: {
+            ...(activity    !== undefined && { ad: activity    }),
+            ...(observation !== undefined && { od: observation }),
+            ...(sd          !== undefined && { sd              }),
+            ...(minVol      !== undefined && { minVol          }),
+          },
         }));
       } catch {
         // swallow errors; UI remains minimal
@@ -775,8 +785,8 @@ export default function OrderClient({ id, srId }: { id: string; srId?: string })
             system: coding.system,
             code: coding.code,
             display: ad.subtitle || coding.display || coding.code,
-            topic: tdisp || undefined,
-            category: subcat || undefined,
+            ...(tdisp  && { topic:    tdisp  }),
+            ...(subcat && { category: subcat }),
           });
         }
         setAvailableTests(list);
@@ -864,7 +874,7 @@ export default function OrderClient({ id, srId }: { id: string; srId?: string })
         ],
         code: {
           text: selectedTests.length === 1
-            ? selectedTests[0].display || selectedTests[0].code
+            ? selectedTests[0]!.display || selectedTests[0]!.code
             : selectedTests.length > 1 ? `${selectedTests.length} Untersuchungen` : "Entwurf",
         },
         orderDetail: selectedTests.map((t) => ({
@@ -1106,7 +1116,7 @@ ${materialRows ? `
       lines.push(`OBR|${seqStr}||${t.code}^${(t.display || t.code).replace(/\|/g, " ")}^${t.system || "LOCAL"}||||||||||||${dept}`);
       // SPM — Specimen segment (one per OBR, cycling through materials)
       if (materialList.length > 0) {
-        const [specRef, m] = materialList[i % materialList.length];
+        const [specRef, m] = materialList[i % materialList.length]!;
         const matCode = (specRef.startsWith("kind:") ? specRef.slice(5) : specRef) || "UNK";
         const specimenId = `${msgId}-${seqStr}`;
         lines.push(`SPM|${seqStr}|^${specimenId}||${matCode}^${m.label.replace(/\|/g, " ")}^LOCAL||||||||||||${collDt}`);
@@ -1174,7 +1184,7 @@ ${materialRows ? `
         encounter: { reference: `Encounter/${encId}` },
         code: {
           text: selectedTests.length === 1
-            ? selectedTests[0].display || selectedTests[0].code
+            ? selectedTests[0]!.display || selectedTests[0]!.code
             : `${selectedTests.length} Untersuchungen`,
         },
         orderDetail: selectedTests.map((t) => ({
@@ -1415,7 +1425,7 @@ ${labelDivs}
           code: {
             text:
               selectedTests.length === 1
-                ? selectedTests[0].display || selectedTests[0].code
+                ? selectedTests[0]!.display || selectedTests[0]!.code
                 : `${selectedTests.length} Untersuchungen`,
           },
           orderDetail: selectedTests.map((t) => ({

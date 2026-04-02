@@ -1,12 +1,13 @@
 import { GetResults } from "@/domain/useCases/GetResults";
 import { MockResultRepository } from "../../../mocks/MockResultRepository";
+import { ResultStatus } from "@/domain/entities/Result";
 
 describe("GetResults use case", () => {
   function makeRepo(count = 5) {
     return new MockResultRepository(
       Array.from({ length: count }, (_, i) => ({
         id: `dr-${i + 1}`,
-        status: i % 2 === 0 ? "final" : "preliminary",
+        status: i % 2 === 0 ? ResultStatus.FINAL : ResultStatus.PRELIMINARY,
         codeText: `Test ${i + 1}`,
         patientId: `patient-${(i % 3) + 1}`,
         patientDisplay: `Patient ${(i % 3) + 1}`,
@@ -28,10 +29,10 @@ describe("GetResults use case", () => {
     const repo = makeRepo(5);
     const useCase = new GetResults(repo);
 
-    const result = await useCase.execute({ status: "final" });
+    const result = await useCase.execute({ status: ResultStatus.FINAL });
 
     // Items 0, 2, 4 are 'final'
-    expect(result.data.every((r) => r.status === "final")).toBe(true);
+    expect(result.data.every((r) => r.status === ResultStatus.FINAL)).toBe(true);
     expect(result.total).toBe(3);
   });
 

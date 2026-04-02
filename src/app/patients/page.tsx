@@ -141,7 +141,7 @@ function PatientPageContent() {
     setMerging(true);
     setMergeMsg(null);
     setMergeErr(null);
-    const [target, source] = mergeSelected; // first selected = merge target (survives)
+    const [target, source] = mergeSelected as [Patient, Patient]; // guarded by length check above
     try {
       const res = await fetch(`/api/patients/${encodeURIComponent(target.id)}/merge`, {
         method: "POST",
@@ -348,13 +348,13 @@ function PatientPageContent() {
           {mergeSelected.length === 0 && <p className="text-xs">{t("patient.mergeSelectFirst")}</p>}
           {mergeSelected.length === 1 && (
             <p className="text-xs">
-              → <strong>{mergeSelected[0].name}</strong> {t("patient.mergeSelectSecond")}
+              → <strong>{mergeSelected[0]!.name}</strong> {t("patient.mergeSelectSecond")}
             </p>
           )}
           {mergeSelected.length === 2 && (
             <div className="flex items-center gap-3 mt-2">
               <span className="text-xs">
-                <strong>{mergeSelected[1].name}</strong> → <strong>{mergeSelected[0].name}</strong>
+                <strong>{mergeSelected[1]!.name}</strong> → <strong>{mergeSelected[0]!.name}</strong>
               </span>
               <button
                 onClick={executeMerge}
@@ -420,11 +420,11 @@ function PatientPageContent() {
           <button className="rounded border px-2 py-1 text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" onClick={() => { const n = Math.max(1, page - 1); setPage(n); fetchPatients(query, n, showInactive); }} disabled={page <= 1 || loading}>{t("patient.previous")}</button>
           {total > 0 && visiblePages.length > 0 && (
             <>
-              {visiblePages[0] > 1 && <span className="px-1 text-gray-500">…</span>}
+              {(visiblePages[0] ?? 1) > 1 && <span className="px-1 text-gray-500">…</span>}
               {visiblePages.map((n) => (
                 <button key={n} className={`rounded px-3 py-1 text-sm border cursor-pointer ${n === page ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-700"}`} onClick={() => { setPage(n); fetchPatients(query, n, showInactive); }} disabled={loading}>{n}</button>
               ))}
-              {visiblePages[visiblePages.length - 1] < totalPages && <span className="px-1 text-gray-500">…</span>}
+              {(visiblePages[visiblePages.length - 1] ?? totalPages) < totalPages && <span className="px-1 text-gray-500">…</span>}
             </>
           )}
           <button className="rounded border px-2 py-1 text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" onClick={() => { const n = Math.min(totalPages, page + 1); setPage(n); fetchPatients(query, n, showInactive); }} disabled={page >= totalPages || loading}>{t("patient.next")}</button>

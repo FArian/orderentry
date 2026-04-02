@@ -44,10 +44,10 @@ function extractContent(content?: FhirDocContent[]) {
   for (const c of content) {
     const ct = (c.attachment?.contentType || "").toLowerCase();
     if (ct.includes("pdf") && c.attachment.data) {
-      pdf = { data: c.attachment.data, title: c.attachment.title };
+      pdf = { data: c.attachment.data, ...(c.attachment.title !== undefined && { title: c.attachment.title }) };
     }
     if ((ct.includes("hl7") || ct.includes("x-hl7")) && c.attachment.data) {
-      hl7 = { data: c.attachment.data, title: c.attachment.title };
+      hl7 = { data: c.attachment.data, ...(c.attachment.title !== undefined && { title: c.attachment.title }) };
     }
   }
   return { pdf, hl7 };

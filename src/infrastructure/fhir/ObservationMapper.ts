@@ -16,6 +16,7 @@ interface FhirObservation {
  */
 export class ObservationMapper {
   static toDomain(fhir: FhirObservation): Analysis {
+    const unit = fhir.valueQuantity?.unit;
     return {
       id: fhir.id ?? "",
       code: fhir.code?.coding?.[0]?.code ?? "",
@@ -25,7 +26,7 @@ export class ObservationMapper {
         fhir.category?.[0]?.text ??
         fhir.category?.[0]?.coding?.[0]?.display ??
         "",
-      unit: fhir.valueQuantity?.unit,
+      ...(unit !== undefined && { unit }),
     };
   }
 }

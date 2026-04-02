@@ -1,4 +1,5 @@
-import type { Result, ResultStatus } from "@/domain/entities/Result";
+import type { Result } from "@/domain/entities/Result";
+import { ResultStatus } from "@/domain/entities/Result";
 
 // Minimal FHIR types scoped to this mapper — no shared FHIR lib dependency.
 interface FhirCoding { system?: string; code?: string; display?: string }
@@ -21,13 +22,18 @@ export interface FhirDiagnosticReport {
   meta?: { lastUpdated?: string };
 }
 
-const VALID_STATUSES: ResultStatus[] = [
-  "registered", "partial", "preliminary", "final",
-  "amended", "corrected", "cancelled",
-];
-
+/** Maps a FHIR DiagnosticReport status string to the domain ResultStatus enum. */
 function toStatus(raw?: string): ResultStatus {
-  return (VALID_STATUSES as string[]).includes(raw ?? "") ? (raw as ResultStatus) : "unknown";
+  switch (raw) {
+    case "registered":  return ResultStatus.REGISTERED;
+    case "partial":     return ResultStatus.PARTIAL;
+    case "preliminary": return ResultStatus.PRELIMINARY;
+    case "final":       return ResultStatus.FINAL;
+    case "amended":     return ResultStatus.AMENDED;
+    case "corrected":   return ResultStatus.CORRECTED;
+    case "cancelled":   return ResultStatus.CANCELLED;
+    default:            return ResultStatus.UNKNOWN;
+  }
 }
 
 function extractPatientId(subject?: { reference?: string }): string {

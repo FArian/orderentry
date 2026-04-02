@@ -1,12 +1,13 @@
-import type { Order, OrderStatus } from "@/domain/entities/Order";
+import type { Order } from "@/domain/entities/Order";
+import { OrderStatus } from "@/domain/entities/Order";
 
 const VALID_STATUSES: readonly OrderStatus[] = [
-  "draft",
-  "active",
-  "on-hold",
-  "completed",
-  "revoked",
-  "entered-in-error",
+  OrderStatus.DRAFT,
+  OrderStatus.ACTIVE,
+  OrderStatus.ON_HOLD,
+  OrderStatus.COMPLETED,
+  OrderStatus.CANCELLED,
+  OrderStatus.ENTERED_IN_ERROR,
 ];
 
 /**
@@ -37,7 +38,7 @@ export class OrderFactory {
    * Useful for the order-entry form initial state.
    */
   static createDraft(patientId: string): Order {
-    return OrderFactory.create({ patientId, status: "draft", intent: "order" });
+    return OrderFactory.create({ patientId, status: OrderStatus.DRAFT, intent: "order" });
   }
 
   // ── Private helpers ─────────────────────────────────────────────────────
@@ -45,6 +46,6 @@ export class OrderFactory {
   private static toStatus(raw: unknown): OrderStatus {
     return (VALID_STATUSES as readonly string[]).includes(String(raw ?? ""))
       ? (raw as OrderStatus)
-      : "unknown";
+      : OrderStatus.UNKNOWN;
   }
 }

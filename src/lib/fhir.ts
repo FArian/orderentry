@@ -217,5 +217,8 @@ export async function fetchActivityAndObservation(system: string, code: string):
     }
   }
 
-  return { activity, observation };
+  return {
+    ...(activity    !== undefined && { activity }),
+    ...(observation !== undefined && { observation }),
+  };
 }

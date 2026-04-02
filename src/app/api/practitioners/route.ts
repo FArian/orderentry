@@ -23,6 +23,7 @@ type FhirBundle = {
 function nameToString(n?: FhirHumanName[]): string {
   if (!n || n.length === 0) return "";
   const first = n[0];
+  if (!first) return "";
   if (first.text?.trim()) return first.text.trim();
   const parts = [
     ...(first.prefix || []),

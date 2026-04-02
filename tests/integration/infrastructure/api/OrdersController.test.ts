@@ -49,12 +49,12 @@ describe("OrdersController.list()", () => {
     const result = await controller.list();
 
     expect(result.data).toHaveLength(1);
-    expect(result.data[0].id).toBe("sr-001");
-    expect(result.data[0].status).toBe("active");
-    expect(result.data[0].codeText).toBe("Grosses Blutbild");
-    expect(result.data[0].orderNumber).toBe("ZLZ-2024-001");
-    expect(result.data[0].specimenCount).toBe(1);
-    expect(result.data[0].patientId).toBe("p-123");
+    expect(result.data[0]!.id).toBe("sr-001");
+    expect(result.data[0]!.status).toBe("active");
+    expect(result.data[0]!.codeText).toBe("Grosses Blutbild");
+    expect(result.data[0]!.orderNumber).toBe("ZLZ-2024-001");
+    expect(result.data[0]!.specimenCount).toBe(1);
+    expect(result.data[0]!.patientId).toBe("p-123");
     expect(result.total).toBe(1);
     expect(result.error).toBeUndefined();
   });

@@ -59,13 +59,13 @@ describe("ResultsController.list()", () => {
     const result = await controller.list({ page: 1, pageSize: 20 });
 
     expect(result.data).toHaveLength(1);
-    expect(result.data[0].id).toBe("dr-001");
-    expect(result.data[0].status).toBe("final");
-    expect(result.data[0].codeText).toBe("Blutbild");
-    expect(result.data[0].patientId).toBe("p-123");
-    expect(result.data[0].patientDisplay).toBe("Müller Hans");
-    expect(result.data[0].resultCount).toBe(2);
-    expect(result.data[0].basedOn).toEqual(["ServiceRequest/sr-001"]);
+    expect(result.data[0]!.id).toBe("dr-001");
+    expect(result.data[0]!.status).toBe("final");
+    expect(result.data[0]!.codeText).toBe("Blutbild");
+    expect(result.data[0]!.patientId).toBe("p-123");
+    expect(result.data[0]!.patientDisplay).toBe("Müller Hans");
+    expect(result.data[0]!.resultCount).toBe(2);
+    expect(result.data[0]!.basedOn).toEqual(["ServiceRequest/sr-001"]);
     expect(result.total).toBe(1);
     expect(result.page).toBe(1);
     expect(result.pageSize).toBe(20);
@@ -137,10 +137,10 @@ describe("ResultsController.list()", () => {
 
     const result = await controller.list({});
 
-    expect(result.data[0].pdfData).toBe("base64pdf==");
-    expect(result.data[0].pdfTitle).toBe("Befund.pdf");
-    expect(result.data[0].hl7Data).toBe("base64hl7==");
-    expect(result.data[0].hl7Title).toBe("ORU.hl7");
+    expect(result.data[0]!.pdfData).toBe("base64pdf==");
+    expect(result.data[0]!.pdfTitle).toBe("Befund.pdf");
+    expect(result.data[0]!.hl7Data).toBe("base64hl7==");
+    expect(result.data[0]!.hl7Title).toBe("ORU.hl7");
   });
 
   it("returns error DTO with httpStatus when FHIR returns non-200", async () => {
@@ -176,7 +176,7 @@ describe("ResultsController.list()", () => {
     const result = await controller.list({});
 
     expect(result.data).toHaveLength(1);
-    expect(result.data[0].id).toBe("dr-good");
+    expect(result.data[0]!.id).toBe("dr-good");
   });
 
   it("uses count bundle total when available", async () => {

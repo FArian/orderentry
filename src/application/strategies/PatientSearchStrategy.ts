@@ -58,7 +58,8 @@ export class PatientNameStrategy implements IPatientSearchStrategy {
   }
 
   buildParams(input: string): PatientSearchParams {
-    return { patientName: input.trim() || undefined };
+    const patientName = input.trim();
+    return patientName ? { patientName } : {};
   }
 }
 

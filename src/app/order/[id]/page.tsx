@@ -9,17 +9,17 @@ import { useTranslation } from "@/lib/i18n";
 function OrderPageInner({ id }: { id: string }) {
   const { t } = useTranslation();
   const searchParams = useSearchParams();
-  const srId = searchParams.get("sr") || undefined;
+  const srIdRaw = searchParams.get("sr") || undefined;
 
   return (
     <div className="min-h-screen flex flex-col">
       <div className="p-4">
         <PatientBreadcrumb id={id} hideNewOrder />
         <h1 className="text-2xl font-bold">
-          {srId ? t("order.editTitle") : t("order.title")}
+          {srIdRaw ? t("order.editTitle") : t("order.title")}
         </h1>
       </div>
-      <OrderClient id={id} srId={srId} />
+      <OrderClient id={id} {...(srIdRaw !== undefined && { srId: srIdRaw })} />
     </div>
   );
 }

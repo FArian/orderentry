@@ -9,6 +9,7 @@
 import { FHIR_BASE } from "@/infrastructure/fhir/FhirClient";
 import { createLogger, type Logger } from "@/infrastructure/logging/Logger";
 import { FHIR_SYSTEMS } from "@/lib/fhir";
+import { OrderStatus } from "@/domain/entities/Order";
 import type {
   DeleteOrderResponseDto,
   ListOrdersResponseDto,
@@ -147,7 +148,7 @@ export class OrdersController {
         }
 
         const sr = (await getRes.json()) as Record<string, unknown>;
-        const updated = { ...sr, status: "entered-in-error" };
+        const updated = { ...sr, status: OrderStatus.ENTERED_IN_ERROR };
         const putRes = await this.fetchFn(
           `${this.fhirBase}/ServiceRequest/${id}`,
           {

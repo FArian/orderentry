@@ -52,10 +52,10 @@ describe("PatientsController.list()", () => {
     const result = await controller.list({ page: 1, pageSize: 10 });
 
     expect(result.data).toHaveLength(1);
-    expect(result.data[0].id).toBe("p-001");
-    expect(result.data[0].name).toBe("Hans Müller");
-    expect(result.data[0].address).toBe("Hauptstrasse 1, Zürich, 8001");
-    expect(result.data[0].createdAt).toBe("2024-03-01T00:00:00Z");
+    expect(result.data[0]!.id).toBe("p-001");
+    expect(result.data[0]!.name).toBe("Hans Müller");
+    expect(result.data[0]!.address).toBe("Hauptstrasse 1, Zürich, 8001");
+    expect(result.data[0]!.createdAt).toBe("2024-03-01T00:00:00Z");
     expect(result.page).toBe(1);
     expect(result.pageSize).toBe(10);
     expect(result.error).toBeUndefined();
@@ -68,7 +68,7 @@ describe("PatientsController.list()", () => {
 
     const result = await controller.list({});
 
-    expect(result.data[0].name).toBe("Prof. Dr. Hans Müller");
+    expect(result.data[0]!.name).toBe("Prof. Dr. Hans Müller");
   });
 
   it("returns 'Unknown' when name array is empty", async () => {
@@ -78,7 +78,7 @@ describe("PatientsController.list()", () => {
 
     const result = await controller.list({});
 
-    expect(result.data[0].name).toBe("Unknown");
+    expect(result.data[0]!.name).toBe("Unknown");
   });
 
   it("uses address.text when present (preferred over structured fields)", async () => {
@@ -88,7 +88,7 @@ describe("PatientsController.list()", () => {
 
     const result = await controller.list({});
 
-    expect(result.data[0].address).toBe("Bahnhofstrasse 7, 8001 Zürich");
+    expect(result.data[0]!.address).toBe("Bahnhofstrasse 7, 8001 Zürich");
   });
 
   it("returns empty address when address array is absent", async () => {
@@ -98,7 +98,7 @@ describe("PatientsController.list()", () => {
 
     const result = await controller.list({});
 
-    expect(result.data[0].address).toBe("");
+    expect(result.data[0]!.address).toBe("");
   });
 
   it("builds FHIR URL with name filter when q is provided", async () => {
@@ -186,6 +186,6 @@ describe("PatientsController.list()", () => {
     const result = await controller.list({});
 
     expect(result.data).toHaveLength(1);
-    expect(result.data[0].id).toBe("p-good");
+    expect(result.data[0]!.id).toBe("p-good");
   });
 });

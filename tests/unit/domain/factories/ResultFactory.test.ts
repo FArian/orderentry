@@ -1,5 +1,6 @@
 import { ResultFactory } from "@/domain/factories/ResultFactory";
 import type { Result } from "@/domain/entities/Result";
+import { ResultStatus } from "@/domain/entities/Result";
 
 describe("ResultFactory", () => {
   describe("create()", () => {
@@ -7,7 +8,7 @@ describe("ResultFactory", () => {
       const result = ResultFactory.create({});
 
       expect(result.id).toBe("");
-      expect(result.status).toBe("unknown");
+      expect(result.status).toBe(ResultStatus.UNKNOWN);
       expect(result.codeText).toBe("");
       expect(result.category).toBe("");
       expect(result.effectiveDate).toBe("");
@@ -25,7 +26,7 @@ describe("ResultFactory", () => {
     it("preserves all provided valid fields", () => {
       const input: Partial<Result> = {
         id: "dr-42",
-        status: "final",
+        status: ResultStatus.FINAL,
         codeText: "Blutbild",
         category: "Hämatologie",
         patientId: "patient-7",
@@ -38,7 +39,7 @@ describe("ResultFactory", () => {
       const result = ResultFactory.create(input);
 
       expect(result.id).toBe("dr-42");
-      expect(result.status).toBe("final");
+      expect(result.status).toBe(ResultStatus.FINAL);
       expect(result.codeText).toBe("Blutbild");
       expect(result.category).toBe("Hämatologie");
       expect(result.patientId).toBe("patient-7");
@@ -48,14 +49,19 @@ describe("ResultFactory", () => {
 
     it("maps unknown status strings to 'unknown'", () => {
       const result = ResultFactory.create({ status: "completely-invalid" as never });
-      expect(result.status).toBe("unknown");
+      expect(result.status).toBe(ResultStatus.UNKNOWN);
     });
 
     it("accepts all valid FHIR DiagnosticReport statuses", () => {
-      const validStatuses = [
-        "registered", "partial", "preliminary",
-        "final", "amended", "corrected", "cancelled",
-      ] as const;
+      const validStatuses: ResultStatus[] = [
+        ResultStatus.REGISTERED,
+        ResultStatus.PARTIAL,
+        ResultStatus.PRELIMINARY,
+        ResultStatus.FINAL,
+        ResultStatus.AMENDED,
+        ResultStatus.CORRECTED,
+        ResultStatus.CANCELLED,
+      ];
 
       for (const status of validStatuses) {
         const result = ResultFactory.create({ status });
@@ -80,14 +86,14 @@ describe("ResultFactory", () => {
   describe("createEmpty()", () => {
     it("returns a valid Result with all defaults", () => {
       const result = ResultFactory.createEmpty();
-      expect(result.status).toBe("unknown");
+      expect(result.status).toBe(ResultStatus.UNKNOWN);
       expect(result.basedOn).toEqual([]);
     });
 
     it("accepts overrides", () => {
-      const result = ResultFactory.createEmpty({ id: "test", status: "final" });
+      const result = ResultFactory.createEmpty({ id: "test", status: ResultStatus.FINAL });
       expect(result.id).toBe("test");
-      expect(result.status).toBe("final");
+      expect(result.status).toBe(ResultStatus.FINAL);
     });
   });
 });

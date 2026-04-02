@@ -43,6 +43,7 @@ interface FhirBundle<T = unknown> {
 function nameToString(n?: FhirHumanName[]): string {
   if (!n || n.length === 0) return "Unknown";
   const first = n[0];
+  if (!first) return "Unknown";
   if (first.text?.trim()) return first.text.trim();
   return [...(first.given ?? []), first.family ?? ""]
     .filter(Boolean)
@@ -52,6 +53,7 @@ function nameToString(n?: FhirHumanName[]): string {
 function addressToString(a?: FhirAddress[]): string {
   if (!a || a.length === 0) return "";
   const first = a[0];
+  if (!first) return "";
   if (first.text?.trim()) return first.text.trim();
   return [
     ...(first.line ?? []),
