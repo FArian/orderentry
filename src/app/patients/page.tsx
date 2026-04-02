@@ -14,6 +14,7 @@ import {
   DataTableCell,
 } from "@/components/Table";
 import { useTranslation } from "@/lib/i18n";
+import { formatDate } from "@/shared/utils/formatDate";
 
 interface Patient {
   id: string;
@@ -21,14 +22,6 @@ interface Patient {
   address: string;
   createdAt: string;
 }
-
-const formatDate = (date: string) => {
-  const d = new Date(date);
-  const day = String(d.getDate()).padStart(2, "0");
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const year = d.getFullYear();
-  return `${day}.${month}.${year}`;
-};
 
 const truncate = (text: string, max: number) =>
   text && text.length > max ? `${text.slice(0, max)}...` : text;

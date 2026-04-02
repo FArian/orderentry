@@ -1,0 +1,35 @@
+/**
+ * Data Transfer Objects for the /api/patients endpoint.
+ */
+
+/** Query parameters accepted by GET /api/patients */
+export interface ListPatientsQueryDto {
+  /** Name search string (forwarded to FHIR as ?name=) */
+  q?: string;
+  /** 1-based page number (default: 1) */
+  page?: number;
+  /** Results per page (default: 10) */
+  pageSize?: number;
+  /** When true, returns inactive patients instead of active ones */
+  showInactive?: boolean;
+}
+
+/** A single Patient as returned by the API */
+export interface PatientResponseDto {
+  id: string;
+  name: string;
+  address: string;
+  createdAt: string;
+}
+
+/** Paginated list response for GET /api/patients */
+export interface PagedPatientsResponseDto {
+  data: PatientResponseDto[];
+  total: number;
+  page: number;
+  pageSize: number;
+  /** Present only on error responses */
+  error?: string;
+  /** Internal: HTTP status to use in the route response */
+  httpStatus?: number;
+}

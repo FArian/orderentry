@@ -99,8 +99,24 @@ export default function AppHeader({ version }: { version: string }) {
           </Link>
         </div>
 
-        {/* Right: auth links */}
+        {/* Right: settings + auth links */}
         <div className="justify-self-end text-sm min-h-[1rem] flex items-center gap-2 sm:gap-4">
+          {/* Settings — always visible */}
+          <Link
+            href="/settings"
+            className="hidden sm:inline text-gray-600 hover:text-blue-600 hover:underline"
+          >
+            {t("nav.settings")}
+          </Link>
+          <Link
+            href="/settings"
+            className="sm:hidden text-gray-500 hover:text-blue-600 text-base leading-none"
+            title={t("nav.settings")}
+            aria-label={t("nav.settings")}
+          >
+            &#9881;
+          </Link>
+
           {authed === null ? null : authed ? (
             <>
               {/* Profile: text on sm+, icon on mobile */}

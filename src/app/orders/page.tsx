@@ -13,6 +13,7 @@ import {
 } from "@/components/Table";
 import { useTranslation } from "@/lib/i18n";
 import { useRefresh } from "@/lib/refresh";
+import { formatDate } from "@/shared/utils/formatDate";
 
 type OrderRow = {
   id: string;
@@ -24,16 +25,6 @@ type OrderRow = {
   specimenCount: number;
   patientId: string;
 };
-
-function formatDate(date?: string): string {
-  if (!date) return "";
-  const d = new Date(date);
-  if (Number.isNaN(d.getTime())) return date;
-  const day = String(d.getDate()).padStart(2, "0");
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const year = d.getFullYear();
-  return `${day}.${month}.${year}`;
-}
 
 type StatusMeta = {
   icon: string;

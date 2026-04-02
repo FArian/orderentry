@@ -75,6 +75,9 @@ COPY --from=builder /app/.env.local ./.env.local
 # Ensure the data directory exists for the user store (server-side auth)
 RUN mkdir -p /app/data && chown nextjs:nodejs /app/data
 
+# Ensure the logs directory exists for optional file logging (LOG_FILE=/app/logs/zetlab.log)
+RUN mkdir -p /app/logs && chown nextjs:nodejs /app/logs
+
 USER nextjs
 
 EXPOSE 3000

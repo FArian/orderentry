@@ -26,10 +26,10 @@ export default function Home() {
           📤 {t("home.orders")}
         </Link>
         <Link
-          href="/patients"
+          href="/results"
           className="inline-flex items-center justify-center gap-2 rounded-md bg-emerald-600 px-6 py-3 text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
         >
-          🔬 {t("befunde.title")}
+          🔬 {t("results.title")}
         </Link>
       </div>
     </main>

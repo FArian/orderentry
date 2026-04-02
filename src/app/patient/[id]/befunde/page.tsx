@@ -14,6 +14,8 @@ import {
 } from "@/components/Table";
 import { useTranslation } from "@/lib/i18n";
 import { useRefresh } from "@/lib/refresh";
+import { formatDate } from "@/shared/utils/formatDate";
+import { b64toDataUrl, decodeB64Utf8 } from "@/shared/utils/base64";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -50,32 +52,6 @@ type DocRefRow = {
 };
 
 type Tab = "reports" | "documents";
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function formatDate(date?: string): string {
-  if (!date) return "";
-  const d = new Date(date);
-  if (Number.isNaN(d.getTime())) return date;
-  return `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.${d.getFullYear()}`;
-}
-
-function b64toDataUrl(b64: string, mime: string): string {
-  return `data:${mime};base64,${b64}`;
-}
-
-function decodeB64Utf8(b64: string): string {
-  try {
-    return decodeURIComponent(
-      atob(b64)
-        .split("")
-        .map((c) => "%" + c.charCodeAt(0).toString(16).padStart(2, "0"))
-        .join("")
-    );
-  } catch {
-    return atob(b64);
-  }
-}
 
 // ── Status badges ─────────────────────────────────────────────────────────────
 
