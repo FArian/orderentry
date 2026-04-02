@@ -37,20 +37,20 @@ export function Card({
     <div
       {...rest}
       className={[
-        "rounded-lg border border-gray-200 bg-white shadow-sm",
+        "rounded-lg border border-zt-border bg-zt-bg-card shadow-sm",
         className,
       ].join(" ")}
     >
       {hasHeader && (
-        <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-4 py-3">
+        <div className="flex items-start justify-between gap-4 border-b border-zt-border px-4 py-3">
           <div className="min-w-0">
             {title && (
-              <h2 className="text-sm font-semibold text-gray-800 leading-tight">
+              <h2 className="text-sm font-semibold text-zt-text-primary leading-tight">
                 {title}
               </h2>
             )}
             {subtitle && (
-              <p className="mt-0.5 text-xs text-gray-500">{subtitle}</p>
+              <p className="mt-0.5 text-xs text-zt-text-secondary">{subtitle}</p>
             )}
           </div>
           {headerAction && (

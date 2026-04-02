@@ -1,23 +1,170 @@
 @import "tailwindcss";
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   ZetLab Design Tokens — single source of truth for all colors and spacing.
+   All components must reference these variables; no hardcoded hex values
+   anywhere in JSX or component files.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 :root {
+  /* ── Brand / Primary (ZLZ blue) ─────────────────────────────────────────── */
+  --zt-primary:         #185FA5;
+  --zt-primary-light:   #E6F1FB;
+  --zt-primary-border:  #B5D4F4;
+  --zt-primary-hover:   #0C447C;
+
+  /* ── Success / Green ────────────────────────────────────────────────────── */
+  --zt-success:         #3B6D11;
+  --zt-success-light:   #EAF3DE;
+  --zt-success-border:  #C0DD97;
+  --zt-success-hover:   #2C5209;
+
+  /* ── Danger / Red ───────────────────────────────────────────────────────── */
+  --zt-danger:          #E24B4A;
+  --zt-danger-light:    #FDEAEA;
+  --zt-danger-border:   #F4AAAA;
+  --zt-danger-hover:    #C43938;
+
+  /* ── Warning / Amber ────────────────────────────────────────────────────── */
+  --zt-warning-text:    #854F0B;
+  --zt-warning-bg:      #FAEEDA;
+  --zt-warning-border:  #F0C97A;
+
+  /* ── Surface / Background ───────────────────────────────────────────────── */
+  --zt-bg-page:         #f4f5f7;
+  --zt-bg-card:         #ffffff;
+  --zt-bg-muted:        #f9fafb;
+
+  /* ── Borders ────────────────────────────────────────────────────────────── */
+  --zt-border:          #e0e0e0;
+  --zt-border-strong:   #c4c4c4;
+
+  /* ── Text ───────────────────────────────────────────────────────────────── */
+  --zt-text-primary:    #1a1a1a;
+  --zt-text-secondary:  #666666;
+  --zt-text-tertiary:   #999999;
+  --zt-text-disabled:   #aaaaaa;
+  --zt-text-on-primary: #ffffff;
+  --zt-text-on-success: #ffffff;
+  --zt-text-on-danger:  #ffffff;
+
+  /* ── Topbar ─────────────────────────────────────────────────────────────── */
+  --zt-topbar-bg:       #ffffff;
+  --zt-topbar-border:   #e0e0e0;
+  --zt-topbar-height:   52px;
+
+  /* ── Shadows ────────────────────────────────────────────────────────────── */
+  --zt-shadow-sm:       0 1px 3px rgba(0, 0, 0, 0.08);
+  --zt-shadow-md:       0 2px 8px rgba(0, 0, 0, 0.10);
+
+  /* Legacy Next.js defaults (kept for compatibility) */
   --background: #ffffff;
   --foreground: #171717;
-  /* Force light UI primitives (forms, scrollbars) */
   color-scheme: light;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* ── Dark theme (opt-in via :root.dark — not yet active) ─────────────────── */
+:root.dark {
+  --zt-primary:         #4A9AE0;
+  --zt-primary-light:   #1A3A5C;
+  --zt-primary-border:  #2A5A8A;
+  --zt-primary-hover:   #6AB0F0;
+
+  --zt-success:         #6DB33F;
+  --zt-success-light:   #1E3A0F;
+  --zt-success-border:  #4A7A2A;
+  --zt-success-hover:   #8ACA5A;
+
+  --zt-danger:          #F07070;
+  --zt-danger-light:    #3A1515;
+  --zt-danger-border:   #8A3535;
+  --zt-danger-hover:    #F49090;
+
+  --zt-warning-text:    #F0C97A;
+  --zt-warning-bg:      #3A2A05;
+  --zt-warning-border:  #7A5A15;
+
+  --zt-bg-page:         #0f1117;
+  --zt-bg-card:         #1a1d27;
+  --zt-bg-muted:        #252836;
+
+  --zt-border:          #2e3245;
+  --zt-border-strong:   #404560;
+
+  --zt-text-primary:    #f0f0f0;
+  --zt-text-secondary:  #a0a0b0;
+  --zt-text-tertiary:   #707080;
+  --zt-text-disabled:   #505060;
+
+  --zt-topbar-bg:       #1a1d27;
+  --zt-topbar-border:   #2e3245;
+
+  --background: #0f1117;
+  --foreground: #f0f0f0;
 }
 
-/* Disable system dark mode: always use light theme */
+/* ═══════════════════════════════════════════════════════════════════════════
+   Tailwind v4 — map CSS tokens to utility class names.
+   --color-zt-primary  →  bg-zt-primary, text-zt-primary, border-zt-primary
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@theme inline {
+  /* Legacy Next.js theme vars */
+  --color-background:          var(--background);
+  --color-foreground:          var(--foreground);
+  --font-sans:                 var(--font-geist-sans);
+  --font-mono:                 var(--font-geist-mono);
+
+  /* Primary */
+  --color-zt-primary:          var(--zt-primary);
+  --color-zt-primary-light:    var(--zt-primary-light);
+  --color-zt-primary-border:   var(--zt-primary-border);
+  --color-zt-primary-hover:    var(--zt-primary-hover);
+
+  /* Success */
+  --color-zt-success:          var(--zt-success);
+  --color-zt-success-light:    var(--zt-success-light);
+  --color-zt-success-border:   var(--zt-success-border);
+  --color-zt-success-hover:    var(--zt-success-hover);
+
+  /* Danger */
+  --color-zt-danger:           var(--zt-danger);
+  --color-zt-danger-light:     var(--zt-danger-light);
+  --color-zt-danger-border:    var(--zt-danger-border);
+  --color-zt-danger-hover:     var(--zt-danger-hover);
+
+  /* Warning */
+  --color-zt-warning-text:     var(--zt-warning-text);
+  --color-zt-warning-bg:       var(--zt-warning-bg);
+  --color-zt-warning-border:   var(--zt-warning-border);
+
+  /* Surface */
+  --color-zt-bg-page:          var(--zt-bg-page);
+  --color-zt-bg-card:          var(--zt-bg-card);
+  --color-zt-bg-muted:         var(--zt-bg-muted);
+
+  /* Borders */
+  --color-zt-border:           var(--zt-border);
+  --color-zt-border-strong:    var(--zt-border-strong);
+
+  /* Text */
+  --color-zt-text-primary:     var(--zt-text-primary);
+  --color-zt-text-secondary:   var(--zt-text-secondary);
+  --color-zt-text-tertiary:    var(--zt-text-tertiary);
+  --color-zt-text-disabled:    var(--zt-text-disabled);
+  --color-zt-text-on-primary:  var(--zt-text-on-primary);
+  --color-zt-text-on-success:  var(--zt-text-on-success);
+  --color-zt-text-on-danger:   var(--zt-text-on-danger);
+
+  /* Topbar */
+  --color-zt-topbar-bg:        var(--zt-topbar-bg);
+  --color-zt-topbar-border:    var(--zt-topbar-border);
+}
+
+/* ── Base ────────────────────────────────────────────────────────────────── */
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--zt-bg-page);
+  color: var(--zt-text-primary);
   font-family: Arial, Helvetica, sans-serif;
 }

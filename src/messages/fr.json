@@ -288,7 +288,19 @@
     "logViewerDisabled": "La journalisation fichier n'est pas active. Définissez LOG_FILE dans les variables d'environnement.",
     "logViewerError": "Impossible de charger les journaux.",
     "logViewerFile": "Fichier journal",
-    "logViewerEntries": "Entrées"
+    "logViewerEntries": "Entrées",
+    "envEditor": "Variables d'environnement",
+    "envEditorHelp": "Seules les variables approuvées sont affichées. Les secrets (AUTH_SECRET, etc.) sont masqués.",
+    "envEditorKey": "Variable",
+    "envEditorValue": "Valeur",
+    "envEditorAdd": "Ajouter une variable",
+    "envEditorDelete": "Supprimer",
+    "envEditorSave": "Enregistrer",
+    "envEditorSaved": "Modifications enregistrées. Veuillez redémarrer l'application ou le conteneur pour les appliquer.",
+    "envEditorError": "Erreur lors de l'enregistrement.",
+    "envEditorEmptyKey": "Le nom de la variable ne peut pas être vide.",
+    "envEditorRestartNote": "Les variables d'environnement sont chargées au démarrage de l'application. Les modifications de .env.local ne prennent effet qu'après le redémarrage du conteneur. Le rechargement à chaud n'est pas pris en charge.",
+    "envEditorUnavailable": "Non disponible dans cet environnement. Gérez les variables d'environnement via le tableau de bord de déploiement (p. ex. Vercel)."
   },
   "bs": {
     "title": "Bordereau",

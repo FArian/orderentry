@@ -288,7 +288,19 @@
     "logViewerDisabled": "Datei-Logging ist nicht aktiv. Setzen Sie LOG_FILE in der Umgebungsvariablen.",
     "logViewerError": "Protokoll konnte nicht geladen werden.",
     "logViewerFile": "Protokolldatei",
-    "logViewerEntries": "Einträge"
+    "logViewerEntries": "Einträge",
+    "envEditor": "Umgebungsvariablen",
+    "envEditorHelp": "Nur freigegebene Variablen werden angezeigt. Geheimnisse (AUTH_SECRET usw.) sind ausgeblendet.",
+    "envEditorKey": "Variable",
+    "envEditorValue": "Wert",
+    "envEditorAdd": "Variable hinzufügen",
+    "envEditorDelete": "Löschen",
+    "envEditorSave": "Speichern",
+    "envEditorSaved": "Gespeichert. Bitte starten Sie die Anwendung bzw. den Container neu, damit die Änderungen wirksam werden.",
+    "envEditorError": "Fehler beim Speichern.",
+    "envEditorEmptyKey": "Variablenname darf nicht leer sein.",
+    "envEditorRestartNote": "Umgebungsvariablen werden beim Start der Anwendung eingelesen. Änderungen an .env.local werden erst nach einem Neustart des Containers wirksam. Ein Hot-Reload ist nicht möglich.",
+    "envEditorUnavailable": "In dieser Umgebung nicht verfügbar. Umgebungsvariablen müssen über das Deployment-Dashboard (z. B. Vercel) verwaltet werden."
   },
   "bs": {
     "title": "Begleitschein",

@@ -26,43 +26,46 @@ export default function AppHeader({ version }: { version: string }) {
 
   useEffect(() => {
     refreshAuth();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
   return (
-    <header className="w-full border-b bg-gray-100 shadow-sm">
-      <div className="mx-auto max-w-7xl px-3 sm:px-4 py-2 grid grid-cols-3 items-center gap-2">
+    <header
+      className="w-full border-b bg-zt-topbar-bg border-zt-topbar-border"
+      style={{ boxShadow: "var(--zt-shadow-sm)" }}
+    >
+      <div className="mx-auto max-w-7xl px-3 sm:px-4 flex items-center justify-between gap-2"
+           style={{ height: "var(--zt-topbar-height)" }}>
 
-        {/* Left: version + locale + refresh */}
-        <div className="justify-self-start flex items-center gap-1.5 sm:gap-3 text-xs text-gray-500 min-w-0">
-          {/* Version — hidden on small screens */}
-          <span className="hidden md:inline whitespace-nowrap shrink-0">
+        {/* Left: logo + brand + refresh controls */}
+        <div className="flex items-center gap-3 min-w-0">
+          {/* Logo + wordmark */}
+          <Link href="/" aria-label="Startseite" className="flex items-center gap-2 shrink-0">
+            <Image
+              src="/logo.svg"
+              alt="ZetLab logo"
+              width={28}
+              height={28}
+              className="h-7 w-auto select-none"
+            />
+            <span className="hidden sm:inline font-semibold text-zt-text-primary text-sm tracking-tight">
+              ZetLab
+            </span>
+          </Link>
+
+          {/* Divider */}
+          <span className="hidden sm:block h-5 w-px bg-zt-border shrink-0" aria-hidden="true" />
+
+          {/* Version */}
+          <span className="hidden md:inline text-xs text-zt-text-tertiary whitespace-nowrap shrink-0">
             {t("nav.version")} {version}
           </span>
 
-          {/* Locale switcher */}
-          <div className="flex rounded overflow-hidden border border-gray-300 text-xs shrink-0">
-            {availableLocales.map((loc) => (
-              <button
-                key={loc}
-                onClick={() => setLocale(loc)}
-                className={`px-1.5 sm:px-2 py-0.5 transition-colors ${
-                  locale === loc
-                    ? "bg-blue-600 text-white font-semibold"
-                    : "bg-white text-gray-600 hover:bg-gray-100"
-                }`}
-              >
-                {loc.toUpperCase()}
-              </button>
-            ))}
-          </div>
-
-          {/* Refresh controls — hidden on mobile */}
+          {/* Refresh controls */}
           <div className="hidden sm:flex items-center gap-1.5 shrink-0">
             <button
               onClick={refresh}
               title={t("nav.refresh")}
-              className="rounded border border-gray-300 bg-white px-1.5 py-0.5 text-gray-600 hover:bg-gray-100 hover:text-blue-600 transition-colors"
+              className="rounded border border-zt-border bg-zt-bg-card px-1.5 py-0.5 text-xs text-zt-text-secondary hover:bg-zt-bg-muted hover:text-zt-primary transition-colors"
               aria-label={t("nav.refresh")}
             >
               ↻
@@ -72,8 +75,8 @@ export default function AppHeader({ version }: { version: string }) {
               onChange={(e) => setAutoRefreshInterval(Number(e.target.value) as RefreshInterval)}
               className={`rounded border px-1.5 py-0.5 text-xs transition-colors ${
                 autoRefreshInterval > 0
-                  ? "border-blue-400 bg-blue-50 text-blue-700 font-medium"
-                  : "border-gray-300 bg-white text-gray-600"
+                  ? "border-zt-primary-border bg-zt-primary-light text-zt-primary font-medium"
+                  : "border-zt-border bg-zt-bg-card text-zt-text-secondary"
               }`}
               title={t("nav.autoRefresh")}
             >
@@ -86,31 +89,35 @@ export default function AppHeader({ version }: { version: string }) {
           </div>
         </div>
 
-        {/* Center: logo */}
-        <div className="justify-self-center">
-          <Link href="/" aria-label="Startseite">
-            <Image
-              src="/logo.svg"
-              alt="zetLab logo"
-              width={32}
-              height={32}
-              className="h-8 w-auto select-none"
-            />
-          </Link>
-        </div>
+        {/* Right: locale + settings + auth */}
+        <div className="flex items-center gap-1.5 sm:gap-3 text-sm min-h-[1rem]">
+          {/* Locale switcher */}
+          <div className="flex rounded overflow-hidden border border-zt-border text-xs shrink-0">
+            {availableLocales.map((loc) => (
+              <button
+                key={loc}
+                onClick={() => setLocale(loc)}
+                className={`px-1.5 sm:px-2 py-0.5 transition-colors ${
+                  locale === loc
+                    ? "bg-zt-primary text-zt-text-on-primary font-semibold"
+                    : "bg-zt-bg-card text-zt-text-secondary hover:bg-zt-bg-muted"
+                }`}
+              >
+                {loc.toUpperCase()}
+              </button>
+            ))}
+          </div>
 
-        {/* Right: settings + auth links */}
-        <div className="justify-self-end text-sm min-h-[1rem] flex items-center gap-2 sm:gap-4">
-          {/* Settings — always visible */}
+          {/* Settings */}
           <Link
             href="/settings"
-            className="hidden sm:inline text-gray-600 hover:text-blue-600 hover:underline"
+            className="hidden sm:inline text-zt-text-secondary hover:text-zt-primary hover:underline"
           >
             {t("nav.settings")}
           </Link>
           <Link
             href="/settings"
-            className="sm:hidden text-gray-500 hover:text-blue-600 text-base leading-none"
+            className="sm:hidden text-zt-text-tertiary hover:text-zt-primary text-base leading-none"
             title={t("nav.settings")}
             aria-label={t("nav.settings")}
           >
@@ -119,16 +126,15 @@ export default function AppHeader({ version }: { version: string }) {
 
           {authed === null ? null : authed ? (
             <>
-              {/* Profile: text on sm+, icon on mobile */}
               <Link
                 href="/profile"
-                className="hidden sm:inline text-gray-600 hover:text-blue-600 hover:underline"
+                className="hidden sm:inline text-zt-text-secondary hover:text-zt-primary hover:underline"
               >
                 {t("nav.profile")}
               </Link>
               <Link
                 href="/profile"
-                className="sm:hidden text-gray-500 hover:text-blue-600 text-base leading-none"
+                className="sm:hidden text-zt-text-tertiary hover:text-zt-primary text-base leading-none"
                 title={t("nav.profile")}
                 aria-label={t("nav.profile")}
               >
@@ -136,7 +142,7 @@ export default function AppHeader({ version }: { version: string }) {
               </Link>
               <form action="/api/logout" method="post">
                 <button
-                  className="text-blue-600 hover:underline text-sm"
+                  className="text-zt-primary hover:underline text-sm"
                   type="submit"
                 >
                   {t("nav.logout")}
@@ -144,7 +150,7 @@ export default function AppHeader({ version }: { version: string }) {
               </form>
             </>
           ) : (
-            <Link href="/login" className="text-blue-600 hover:underline">
+            <Link href="/login" className="text-zt-primary hover:underline">
               {t("nav.login")}
             </Link>
           )}

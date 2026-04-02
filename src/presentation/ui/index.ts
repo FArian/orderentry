@@ -28,3 +28,5 @@ export { SkeletonRows, SkeletonBlock, PageLoader } from "./Loader";
 
 export { EmptyState } from "./EmptyState";
 export type { EmptyStateProps } from "./EmptyState";
+
+export { theme } from "./theme";

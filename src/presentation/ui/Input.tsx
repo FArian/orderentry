@@ -39,15 +39,15 @@ export function Input({
   const hasError = !!error;
 
   const borderClass = hasError
-    ? "border-red-400 focus:border-red-500 focus:ring-red-300"
-    : "border-gray-300 focus:border-blue-400 focus:ring-blue-200";
+    ? "border-zt-danger focus:border-zt-danger focus:ring-zt-danger-border"
+    : "border-zt-border focus:border-zt-primary focus:ring-zt-primary-border";
 
   return (
     <div className={`flex flex-col gap-1 ${className}`}>
       {label && (
         <label
           htmlFor={inputId}
-          className="text-sm font-medium text-gray-700 select-none"
+          className="text-sm font-medium text-zt-text-primary select-none"
         >
           {label}
         </label>
@@ -55,7 +55,7 @@ export function Input({
 
       <div className="relative flex items-center">
         {prefix && (
-          <span className="pointer-events-none absolute left-2.5 text-gray-400 select-none text-sm">
+          <span className="pointer-events-none absolute left-2.5 text-zt-text-tertiary select-none text-sm">
             {prefix}
           </span>
         )}
@@ -67,10 +67,10 @@ export function Input({
             error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined
           }
           className={[
-            "w-full rounded border bg-white py-1.5 text-sm text-gray-800",
-            "placeholder-gray-400 transition-colors duration-150",
+            "w-full rounded border bg-zt-bg-card py-1.5 text-sm text-zt-text-primary",
+            "placeholder-zt-text-tertiary transition-colors duration-150",
             "focus:outline-none focus:ring-2",
-            "disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400",
+            "disabled:cursor-not-allowed disabled:bg-zt-bg-muted disabled:text-zt-text-disabled",
             prefix ? "pl-8" : "pl-3",
             suffix ? "pr-8" : "pr-3",
             borderClass,
@@ -78,19 +78,19 @@ export function Input({
           {...rest}
         />
         {suffix && (
-          <span className="pointer-events-none absolute right-2.5 text-gray-400 select-none text-sm">
+          <span className="pointer-events-none absolute right-2.5 text-zt-text-tertiary select-none text-sm">
             {suffix}
           </span>
         )}
       </div>
 
       {error && (
-        <p id={`${inputId}-error`} role="alert" className="text-xs text-red-600">
+        <p id={`${inputId}-error`} role="alert" className="text-xs text-zt-danger">
           {error}
         </p>
       )}
       {!error && hint && (
-        <p id={`${inputId}-hint`} className="text-xs text-gray-500">
+        <p id={`${inputId}-hint`} className="text-xs text-zt-text-secondary">
           {hint}
         </p>
       )}

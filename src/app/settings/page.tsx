@@ -13,6 +13,11 @@ import {
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
+interface EnvVar {
+  key: string;
+  value: string;
+}
+
 interface ServerSettings {
   logLevel:           string;
   fileLoggingEnabled: boolean;
@@ -62,6 +67,13 @@ export default function SettingsPage() {
   const [server,  setServer]  = useState<ServerSettings | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
 
+  // Env editor
+  const [envVars,        setEnvVars]        = useState<EnvVar[]>([]);
+  const [envSaved,       setEnvSaved]       = useState(false);
+  const [envError,       setEnvError]       = useState<string | null>(null);
+  const [envSaving,      setEnvSaving]      = useState(false);
+  const [envReadOnly,    setEnvReadOnly]    = useState(false);   // true on Vercel
+
   // Feedback
   const [saved,       setSaved]       = useState(false);
   const [saveError,   setSaveError]   = useState<string | null>(null);
@@ -76,6 +88,17 @@ export default function SettingsPage() {
     fetch("/api/settings")
       .then((r) => (r.ok ? r.json() : null))
       .then((data: ServerSettings | null) => { if (data) setServer(data); })
+      .catch(() => {});
+
+    fetch("/api/env")
+      .then((r) => {
+        // 405 = Vercel / read-only environment — editing not supported
+        if (r.status === 405) { setEnvReadOnly(true); return null; }
+        return r.ok ? r.json() : null;
+      })
+      .then((data: { vars?: EnvVar[] } | null) => {
+        if (data?.vars) setEnvVars(data.vars);
+      })
       .catch(() => {});
 
     fetch("/api/me/profile")
@@ -114,6 +137,55 @@ export default function SettingsPage() {
     setDebugMode(defaults.debugMode);
     setSaveError(null);
     flash();
+  }
+
+  // ── Env editor handlers ────────────────────────────────────────────────────
+
+  function handleEnvChange(index: number, field: "key" | "value", val: string) {
+    setEnvVars((prev) =>
+      prev.map((v, i) => (i === index ? { ...v, [field]: val } : v)),
+    );
+  }
+
+  function handleEnvAdd() {
+    setEnvVars((prev) => [...prev, { key: "", value: "" }]);
+  }
+
+  function handleEnvDelete(index: number) {
+    setEnvVars((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  async function handleEnvSave() {
+    setEnvError(null);
+    const emptyKey = envVars.find((v) => !v.key.trim());
+    if (emptyKey !== undefined) {
+      setEnvError(t("settings.envEditorEmptyKey"));
+      return;
+    }
+    setEnvSaving(true);
+    try {
+      const res = await fetch("/api/env", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ vars: envVars }),
+      });
+      if (res.status === 405) {
+        setEnvReadOnly(true);
+        setEnvError(t("settings.envEditorUnavailable"));
+        return;
+      }
+      const data = (await res.json()) as { ok: boolean; message?: string };
+      if (!data.ok) {
+        setEnvError(data.message ?? t("settings.envEditorError"));
+      } else {
+        setEnvSaved(true);
+        setTimeout(() => setEnvSaved(false), 5000);
+      }
+    } catch {
+      setEnvError(t("settings.envEditorError"));
+    } finally {
+      setEnvSaving(false);
+    }
   }
 
   function flash() {
@@ -310,12 +382,92 @@ export default function SettingsPage() {
         )}
       </Card>
 
-      {/* ── 5. Log Viewer ───────────────────────────────────────────────────── */}
+      {/* ── 5. Environment Variables Editor ─────────────────────────────────── */}
+      <Card title={t("settings.envEditor")}>
+        {/* Vercel / read-only environment — editing not supported */}
+        {envReadOnly ? (
+          <div className="flex gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800" role="note">
+            <span className="shrink-0 font-bold">ℹ</span>
+            <span>{t("settings.envEditorUnavailable")}</span>
+          </div>
+        ) : (
+          <>
+            {/* Always-visible restart warning */}
+            <div className="mb-4 flex gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800" role="note">
+              <span className="shrink-0 font-bold">⚠</span>
+              <span>{t("settings.envEditorRestartNote")}</span>
+            </div>
+
+            <p className="text-xs text-gray-500 mb-4">{t("settings.envEditorHelp")}</p>
+
+            <div className="space-y-2">
+              {/* Header row */}
+              <div className="grid grid-cols-[1fr_1fr_auto] gap-2 text-xs font-medium text-gray-500 px-1">
+                <span>{t("settings.envEditorKey")}</span>
+                <span>{t("settings.envEditorValue")}</span>
+                <span />
+              </div>
+
+              {/* Rows */}
+              {envVars.map((v, i) => (
+                <div key={i} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
+                  <input
+                    type="text"
+                    value={v.key}
+                    onChange={(e) => handleEnvChange(i, "key", e.target.value)}
+                    placeholder="VARIABLE_NAME"
+                    className="rounded border border-gray-300 px-2 py-1 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    aria-label={t("settings.envEditorKey")}
+                  />
+                  <input
+                    type="text"
+                    value={v.value}
+                    onChange={(e) => handleEnvChange(i, "value", e.target.value)}
+                    placeholder="value"
+                    className="rounded border border-gray-300 px-2 py-1 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    aria-label={t("settings.envEditorValue")}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleEnvDelete(i)}
+                    className="text-red-500 hover:text-red-700 text-xs px-1"
+                    aria-label={t("settings.envEditorDelete")}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-3 flex items-center gap-3 flex-wrap">
+              <Button variant="ghost" size="sm" onClick={handleEnvAdd}>
+                + {t("settings.envEditorAdd")}
+              </Button>
+              <Button variant="primary" size="sm" onClick={handleEnvSave} loading={envSaving}>
+                {t("settings.envEditorSave")}
+              </Button>
+            </div>
+
+            {envSaved && (
+              <p className="mt-3 text-sm font-medium text-green-600" role="status">
+                {t("settings.envEditorSaved")}
+              </p>
+            )}
+            {envError && (
+              <p className="mt-3 text-sm text-red-600" role="alert">
+                {envError}
+              </p>
+            )}
+          </>
+        )}
+      </Card>
+
+      {/* ── 6. Log Viewer ───────────────────────────────────────────────────── */}
       <Card title={t("settings.logViewer")}>
         <LogViewer />
       </Card>
 
-      {/* ── 6. App Info ─────────────────────────────────────────────────────── */}
+      {/* ── 7. App Info ─────────────────────────────────────────────────────── */}
       <Card title={t("settings.appInfo")}>
         <dl className="space-y-3 text-sm">
           <div className="grid grid-cols-[auto_1fr] gap-x-4">

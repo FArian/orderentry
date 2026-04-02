@@ -5,10 +5,10 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 // ── Variants ──────────────────────────────────────────────────────────────────
 
 const VARIANT_CLASSES = {
-  primary:   "bg-blue-600 text-white border-blue-600 hover:bg-blue-700 focus:ring-blue-500 disabled:bg-blue-300 disabled:border-blue-300",
-  secondary: "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 focus:ring-gray-400 disabled:bg-gray-100 disabled:text-gray-400",
-  danger:    "bg-white text-red-600 border-red-300 hover:bg-red-50 focus:ring-red-400 disabled:opacity-40",
-  ghost:     "bg-transparent text-gray-600 border-transparent hover:bg-gray-100 focus:ring-gray-400 disabled:opacity-40",
+  primary:   "bg-zt-primary text-zt-text-on-primary border-zt-primary hover:bg-zt-primary-hover focus:ring-zt-primary-border disabled:opacity-50",
+  secondary: "bg-zt-bg-card text-zt-text-primary border-zt-border hover:bg-zt-bg-muted focus:ring-zt-border-strong disabled:opacity-40",
+  danger:    "bg-zt-bg-card text-zt-danger border-zt-danger-border hover:bg-zt-danger-light focus:ring-zt-danger-border disabled:opacity-40",
+  ghost:     "bg-transparent text-zt-text-secondary border-transparent hover:bg-zt-bg-muted focus:ring-zt-border disabled:opacity-40",
 } as const;
 
 const SIZE_CLASSES = {

@@ -51,8 +51,8 @@ export function Badge({ label, variant = "gray", icon, tooltip, className = "" }
           role="tooltip"
           className={[
             "pointer-events-none absolute left-0 top-full mt-1 z-50",
-            "w-64 rounded border border-gray-200 bg-white shadow-lg",
-            "px-3 py-2 text-xs text-gray-700",
+            "w-64 rounded border border-zt-border bg-zt-bg-card shadow-lg",
+            "px-3 py-2 text-xs text-zt-text-primary",
             "opacity-0 group-hover:opacity-100 transition-opacity duration-150",
           ].join(" ")}
         >
@@ -61,7 +61,7 @@ export function Badge({ label, variant = "gray", icon, tooltip, className = "" }
               {icon} {label}
             </div>
           )}
-          <p className="leading-relaxed text-gray-600">{tooltip}</p>
+          <p className="leading-relaxed text-zt-text-secondary">{tooltip}</p>
         </div>
       )}
     </div>

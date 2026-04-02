@@ -288,7 +288,19 @@
     "logViewerDisabled": "File logging is not active. Set LOG_FILE in the environment variables.",
     "logViewerError": "Could not load logs.",
     "logViewerFile": "Log file",
-    "logViewerEntries": "Entries"
+    "logViewerEntries": "Entries",
+    "envEditor": "Environment Variables",
+    "envEditorHelp": "Only approved variables are shown. Secrets (AUTH_SECRET, etc.) are hidden.",
+    "envEditorKey": "Variable",
+    "envEditorValue": "Value",
+    "envEditorAdd": "Add variable",
+    "envEditorDelete": "Delete",
+    "envEditorSave": "Save",
+    "envEditorSaved": "Changes saved. Please restart the application or container to apply them.",
+    "envEditorError": "Error while saving.",
+    "envEditorEmptyKey": "Variable name must not be empty.",
+    "envEditorRestartNote": "Environment variables are loaded at application startup. Changes to .env.local take effect only after restarting the container. Hot-reloading is not supported.",
+    "envEditorUnavailable": "Not available in this environment. Manage environment variables via the deployment dashboard (e.g. Vercel)."
   },
   "bs": {
     "title": "Cover Sheet",

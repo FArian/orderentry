@@ -288,7 +288,19 @@
     "logViewerDisabled": "La registrazione su file non è attiva. Impostare LOG_FILE nelle variabili d'ambiente.",
     "logViewerError": "Impossibile caricare i log.",
     "logViewerFile": "File di log",
-    "logViewerEntries": "Voci"
+    "logViewerEntries": "Voci",
+    "envEditor": "Variabili d'ambiente",
+    "envEditorHelp": "Vengono mostrate solo le variabili approvate. I segreti (AUTH_SECRET, ecc.) sono nascosti.",
+    "envEditorKey": "Variabile",
+    "envEditorValue": "Valore",
+    "envEditorAdd": "Aggiungi variabile",
+    "envEditorDelete": "Elimina",
+    "envEditorSave": "Salva",
+    "envEditorSaved": "Modifiche salvate. Riavviare l'applicazione o il container per applicarle.",
+    "envEditorError": "Errore durante il salvataggio.",
+    "envEditorEmptyKey": "Il nome della variabile non può essere vuoto.",
+    "envEditorRestartNote": "Le variabili d'ambiente vengono caricate all'avvio dell'applicazione. Le modifiche a .env.local hanno effetto solo dopo il riavvio del container. Il ricaricamento a caldo non è supportato.",
+    "envEditorUnavailable": "Non disponibile in questo ambiente. Gestire le variabili d'ambiente tramite il dashboard di deployment (es. Vercel)."
   },
   "bs": {
     "title": "Borderò",

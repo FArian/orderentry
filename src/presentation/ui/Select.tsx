@@ -44,15 +44,15 @@ export function Select({
   const hasError = !!error;
 
   const borderClass = hasError
-    ? "border-red-400 focus:border-red-500 focus:ring-red-300"
-    : "border-gray-300 focus:border-blue-400 focus:ring-blue-200";
+    ? "border-zt-danger focus:border-zt-danger focus:ring-zt-danger-border"
+    : "border-zt-border focus:border-zt-primary focus:ring-zt-primary-border";
 
   return (
     <div className={`flex flex-col gap-1 ${className}`}>
       {label && (
         <label
           htmlFor={selectId}
-          className="text-sm font-medium text-gray-700 select-none"
+          className="text-sm font-medium text-zt-text-primary select-none"
         >
           {label}
         </label>
@@ -66,10 +66,10 @@ export function Select({
           error ? `${selectId}-error` : hint ? `${selectId}-hint` : undefined
         }
         className={[
-          "w-full rounded border bg-white px-3 py-1.5 text-sm text-gray-800",
+          "w-full rounded border bg-zt-bg-card px-3 py-1.5 text-sm text-zt-text-primary",
           "transition-colors duration-150 appearance-none",
           "focus:outline-none focus:ring-2",
-          "disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400",
+          "disabled:cursor-not-allowed disabled:bg-zt-bg-muted disabled:text-zt-text-disabled",
           borderClass,
         ].join(" ")}
         {...rest}
@@ -85,12 +85,12 @@ export function Select({
       </select>
 
       {error && (
-        <p id={`${selectId}-error`} role="alert" className="text-xs text-red-600">
+        <p id={`${selectId}-error`} role="alert" className="text-xs text-zt-danger">
           {error}
         </p>
       )}
       {!error && hint && (
-        <p id={`${selectId}-hint`} className="text-xs text-gray-500">
+        <p id={`${selectId}-hint`} className="text-xs text-zt-text-secondary">
           {hint}
         </p>
       )}
