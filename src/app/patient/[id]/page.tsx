@@ -1,11 +1,13 @@
 "use client";
 
+import { use } from "react";
 import PatientDetailClient from "./PatientDetailClient";
 
 export default function PatientDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  return <PatientDetailClient id={params.id} />;
+  const { id } = use(params);
+  return <PatientDetailClient id={id} />;
 }
