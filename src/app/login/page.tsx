@@ -7,6 +7,20 @@ import { FORCE_LOCAL_AUTH } from "@/lib/appConfig";
 import { apiFetch } from "@/lib/apiFetch";
 import { logAuth } from "@/lib/logAuth";
 
+function toUserMessage(err: unknown): string {
+  const msg = err instanceof Error ? err.message : String(err);
+  if (msg.startsWith("503")) return "Serverdienst nicht verfügbar. Bitte Administrator kontaktieren.";
+  if (msg.startsWith("401")) return "Benutzername oder Passwort ungültig.";
+  if (msg.startsWith("400")) return "Ungültige Eingabe. Bitte Benutzername und Passwort prüfen.";
+  if (
+    msg.includes("Failed to fetch") ||
+    msg.includes("NetworkError") ||
+    msg.includes("Load failed")
+  )
+    return "Server nicht erreichbar. Bitte Internetverbindung prüfen.";
+  return "Anmeldung fehlgeschlagen. Bitte erneut versuchen.";
+}
+
 export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -47,22 +61,10 @@ export default function LoginPage() {
       setMessage("Erfolgreich angemeldet.");
       window.location.assign("/patients");
     } catch (err: unknown) {
-      const raw = err instanceof Error ? err.message : String(err);
-
-      // Provide a human-readable hint for the most common production failures:
-      let hint = "";
-      if (raw.startsWith("503")) {
-        hint =
-          " — Server-Dateisystem nicht verfügbar. Wenden Sie sich an den Administrator.";
-      } else if (raw.startsWith("401")) {
-        hint = " — Benutzername oder Passwort falsch.";
-      } else if (raw.startsWith("400")) {
-        hint = " — Eingabe ungültig.";
-      } else if (raw.includes("Failed to fetch") || raw.includes("NetworkError")) {
-        hint = " — Server nicht erreichbar. Bitte Verbindung prüfen.";
-      }
-
-      setError(raw + hint);
+      logAuth("LOGIN_UI_ERROR", {
+        raw: err instanceof Error ? err.message : String(err),
+      });
+      setError(toUserMessage(err));
     } finally {
       setLoading(false);
       setPassword("");
@@ -134,8 +136,7 @@ export default function LoginPage() {
           )}
           {error && (
             <div className="mt-4 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
-              <p className="font-medium">Anmeldung fehlgeschlagen</p>
-              <p className="mt-1 font-mono text-xs break-all">{error}</p>
+              {error}
             </div>
           )}
         </div>

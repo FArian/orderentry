@@ -39,9 +39,16 @@ export async function apiFetch<T = unknown>(
   });
 
   if (!res.ok) {
-    // Surface the exact status + backend message to the caller.
-    // The caller (login page) shows this directly in the UI.
-    throw new Error(`${res.status} ${res.statusText}: ${text}`);
+    // Extract the `error` field if the body is JSON (e.g. { ok: false, error: "..." }).
+    // Fall back to the raw text if parsing fails (e.g. HTML error pages from proxies).
+    let serverMessage = text;
+    try {
+      const json = JSON.parse(text) as { error?: string };
+      if (typeof json.error === "string" && json.error) serverMessage = json.error;
+    } catch {
+      // keep raw text
+    }
+    throw new Error(`${res.status}: ${serverMessage}`);
   }
 
   try {
