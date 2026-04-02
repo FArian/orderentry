@@ -47,6 +47,7 @@ function Pagination({
   totalPages,
   loading,
   onPage,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   t,
 }: {
   page: number;

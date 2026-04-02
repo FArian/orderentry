@@ -22,6 +22,7 @@ function toHex(bytes: ArrayBuffer): string {
     .join("");
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function fromHex(hex: string): Uint8Array {
   const arr = new Uint8Array(hex.length / 2);
   for (let i = 0; i < arr.length; i++) {

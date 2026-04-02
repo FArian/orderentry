@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, use } from "react";
 import { useSearchParams } from "next/navigation";
 import OrderClient from "./OrderClient";
 
@@ -21,7 +21,8 @@ function OrderPageInner({ id }: { id: string }) {
   );
 }
 
-export default function OrderPage({ params }: { params: { id: string } }) {
+export default function OrderPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   return (
     <Suspense
       fallback={
@@ -33,7 +34,7 @@ export default function OrderPage({ params }: { params: { id: string } }) {
         </div>
       }
     >
-      <OrderPageInner id={params.id} />
+      <OrderPageInner id={id} />
     </Suspense>
   );
 }

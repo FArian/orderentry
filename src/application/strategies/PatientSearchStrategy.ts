@@ -53,7 +53,7 @@ export class PatientIdStrategy implements IPatientSearchStrategy {
  * Name strategy: default fallback — any non-ID input is treated as a name.
  */
 export class PatientNameStrategy implements IPatientSearchStrategy {
-  matches(_input: string): boolean {
+  matches(/* _input */ _: string): boolean {
     return true; // fallback — always matches
   }
 

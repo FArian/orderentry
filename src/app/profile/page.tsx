@@ -38,6 +38,7 @@ type UserData = {
 
 // ── Field definitions ─────────────────────────────────────────────────────────
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const PROFILE_FIELDS = [
   { key: "firstName",    labelKey: "profile.firstName",    layout: "half" },
   { key: "lastName",     labelKey: "profile.lastName",     layout: "half" },

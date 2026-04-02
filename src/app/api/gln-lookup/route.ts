@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
     urlObj.searchParams.set("GLN", gln);
     urlObj.searchParams.set("UUID", uuid);
     url = urlObj.toString();
-  } catch (err) {
+  } catch {
     console.error("[gln-lookup] invalid glnApiBase:", glnApiBase);
     return NextResponse.json({ error: "invalidGlnApiBase" }, { status: 500 });
   }

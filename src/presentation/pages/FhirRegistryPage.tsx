@@ -18,7 +18,6 @@ import { useRoles } from "@/presentation/hooks/useRoles";
 import { useTranslation } from "@/lib/i18n";
 import type {
   FhirOrganizationDto,
-  FhirPractitionerDto,
   CreateOrganizationRequestDto,
   CreatePractitionerRequestDto,
 } from "@/infrastructure/api/dto/FhirRegistryDto";

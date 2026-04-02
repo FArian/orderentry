@@ -27,7 +27,7 @@ export async function POST(req: Request) {
       }
       return NextResponse.json({ ok: false, error: message || "Unable to create user" }, { status: 500 });
     }
-  } catch (e) {
+  } catch {
     return NextResponse.json({ ok: false, error: "Invalid request" }, { status: 400 });
   }
 }
