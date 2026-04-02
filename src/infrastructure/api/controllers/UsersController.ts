@@ -39,19 +39,19 @@ import type { User } from "@/lib/userStore";
 
 function toDto(u: User): UserResponseDto {
   return {
-    id:                    u.id,
-    username:              u.username,
-    role:                  u.role ?? "user",
-    status:                u.status ?? "active",
-    providerType:          u.providerType ?? "local",
-    externalId:            u.externalId,
-    createdAt:             u.createdAt,
-    profile:               u.profile ?? {},
-    fhirSyncStatus:        u.fhirSyncStatus ?? "not_synced",
-    fhirSyncedAt:          u.fhirSyncedAt,
-    fhirSyncError:         u.fhirSyncError,
-    fhirPractitionerId:    u.fhirPractitionerId,
-    fhirPractitionerRoleId: u.fhirPractitionerRoleId,
+    id:             u.id,
+    username:       u.username,
+    role:           u.role ?? "user",
+    status:         u.status ?? "active",
+    providerType:   u.providerType ?? "local",
+    createdAt:      u.createdAt,
+    profile:        u.profile ?? {},
+    fhirSyncStatus: u.fhirSyncStatus ?? "not_synced",
+    ...(u.externalId            !== undefined ? { externalId:            u.externalId            } : {}),
+    ...(u.fhirSyncedAt          !== undefined ? { fhirSyncedAt:          u.fhirSyncedAt          } : {}),
+    ...(u.fhirSyncError         !== undefined ? { fhirSyncError:         u.fhirSyncError         } : {}),
+    ...(u.fhirPractitionerId    !== undefined ? { fhirPractitionerId:    u.fhirPractitionerId    } : {}),
+    ...(u.fhirPractitionerRoleId !== undefined ? { fhirPractitionerRoleId: u.fhirPractitionerRoleId } : {}),
   };
 }
 
@@ -135,9 +135,9 @@ export class UsersController {
         user = await createExternalUser({
           username:   body.username,
           externalId: body.externalId,
-          role:       body.role,
           status:     body.status ?? "pending",
-          profile:    body.profile,
+          ...(body.role    !== undefined ? { role:    body.role    } : {}),
+          ...(body.profile !== undefined ? { profile: body.profile } : {}),
         });
       } else {
         // Local user — validate credentials
@@ -145,11 +145,11 @@ export class UsersController {
         if (validationError) return { error: validationError, httpStatus: 400 };
         user = await createUser(body.username, body.password!);
         // Apply optional extras
-        if (body.role || body.status || body.profile) {
+        if (body.role !== undefined || body.status !== undefined || body.profile !== undefined) {
           user = await updateUser(user.id, {
-            role:    body.role ?? "user",
-            status:  body.status ?? "active",
-            profile: body.profile,
+            ...(body.role    !== undefined ? { role:    body.role    } : {}),
+            ...(body.status  !== undefined ? { status:  body.status  } : {}),
+            ...(body.profile !== undefined ? { profile: body.profile } : {}),
           });
         }
       }
@@ -221,23 +221,27 @@ export class UsersController {
       const result = await this.mapper.syncUser(id, profile);
 
       await updateUserFhirSync(id, {
-        fhirSyncStatus:        result.success ? "synced" : "error",
-        fhirSyncedAt:          result.success ? new Date().toISOString() : undefined,
-        fhirSyncError:         result.error,
-        fhirPractitionerId:    result.practitionerId,
-        fhirPractitionerRoleId: result.practitionerRoleId,
+        fhirSyncStatus: result.success ? "synced" : "error",
+        ...(result.success ? { fhirSyncedAt: new Date().toISOString() } : {}),
+        ...(result.error           !== undefined ? { fhirSyncError:          result.error           } : {}),
+        ...(result.practitionerId  !== undefined ? { fhirPractitionerId:     result.practitionerId  } : {}),
+        ...(result.practitionerRoleId !== undefined ? { fhirPractitionerRoleId: result.practitionerRoleId } : {}),
       });
 
       if (!result.success) {
         this.log.warn("FHIR sync failed", { id, error: result.error });
-        return { synced: false, error: result.error, httpStatus: 502 };
+        return {
+          synced: false,
+          ...(result.error !== undefined ? { error: result.error } : {}),
+          httpStatus: 502,
+        };
       }
 
       this.log.info("FHIR sync success", { id, practitionerId: result.practitionerId });
       return {
         synced: true,
-        fhirPractitionerId:    result.practitionerId,
-        fhirPractitionerRoleId: result.practitionerRoleId,
+        ...(result.practitionerId     !== undefined ? { fhirPractitionerId:     result.practitionerId     } : {}),
+        ...(result.practitionerRoleId !== undefined ? { fhirPractitionerRoleId: result.practitionerRoleId } : {}),
       };
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);

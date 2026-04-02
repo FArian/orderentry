@@ -13,6 +13,7 @@
  */
 
 import { useState, useCallback } from "react";
+import Link from "next/link";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Badge } from "@/presentation/ui/Badge";
 import { useUsers } from "@/presentation/hooks/useUsers";
@@ -334,7 +335,7 @@ export default function UsersPage() {
       {modal && (
         <UserFormModal
           mode={modal}
-          initial={editTarget ?? undefined}
+          {...(editTarget !== null ? { initial: editTarget } : {})}
           onSave={handleSave}
           onClose={closeModal}
           saving={modalSaving}
@@ -348,7 +349,7 @@ export default function UsersPage() {
 
           {/* Breadcrumb */}
           <nav className="flex items-center gap-1.5 text-[12px] text-zt-text-tertiary mb-4">
-            <a href="/" className="text-zt-primary hover:underline">{t("nav.home")}</a>
+            <Link href="/" className="text-zt-primary hover:underline">{t("nav.home")}</Link>
             <span>/</span>
             <span className="text-zt-text-primary">{t("users.title")}</span>
           </nav>
@@ -481,7 +482,10 @@ export default function UsersPage() {
                           label={syncLabel(u.fhirSyncStatus, t)}
                           variant={syncVariant(u.fhirSyncStatus)}
                           icon={syncIcon(u.fhirSyncStatus)}
-                          tooltip={u.fhirSyncError ?? (u.fhirSyncedAt ? `${t("users.syncedAt")}: ${formatDate(u.fhirSyncedAt)}` : undefined)}
+                          {...(() => {
+                            const tip = u.fhirSyncError ?? (u.fhirSyncedAt ? `${t("users.syncedAt")}: ${formatDate(u.fhirSyncedAt)}` : undefined);
+                            return tip !== undefined ? { tooltip: tip } : {};
+                          })()}
                         />
                       </td>
                       {/* Profile */}

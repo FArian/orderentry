@@ -26,13 +26,17 @@ export async function GET(request: NextRequest) {
   }
 
   const sp = request.nextUrl.searchParams;
-  const query: ListUsersQueryDto = {
-    q:        sp.get("q")        ?? undefined,
-    role:     (sp.get("role")    as ListUsersQueryDto["role"])   ?? undefined,
-    status:   (sp.get("status")  as ListUsersQueryDto["status"]) ?? undefined,
-    page:     sp.get("page")     ? Number(sp.get("page"))     : undefined,
-    pageSize: sp.get("pageSize") ? Number(sp.get("pageSize")) : undefined,
-  };
+  const query: ListUsersQueryDto = {};
+  const qVal       = sp.get("q");
+  const roleVal    = sp.get("role");
+  const statusVal  = sp.get("status");
+  const pageVal    = sp.get("page");
+  const pageSzVal  = sp.get("pageSize");
+  if (qVal      !== null) query.q        = qVal;
+  if (roleVal   !== null) query.role     = roleVal  as NonNullable<ListUsersQueryDto["role"]>;
+  if (statusVal !== null) query.status   = statusVal as NonNullable<ListUsersQueryDto["status"]>;
+  if (pageVal   !== null) query.page     = Number(pageVal);
+  if (pageSzVal !== null) query.pageSize = Number(pageSzVal);
 
   const result = await usersController.list(query);
   const { httpStatus, ...body } = result;

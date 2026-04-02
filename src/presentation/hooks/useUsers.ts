@@ -82,7 +82,7 @@ export function useUsers(
     } finally {
       setLoading(false);
     }
-  }, [filters.q, filters.role, filters.status, pageSize]);  // eslint-disable-line react-hooks/exhaustive-deps
+  }, [filters.q, filters.role, filters.status, pageSize]);
 
   useEffect(() => { load(page); }, [load, page, tick]);
 
