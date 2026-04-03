@@ -25,9 +25,16 @@ const nextConfig = {
       config.externals = [
         ...prior,
         ({ request }, callback) => {
-          if (/^(@opentelemetry|@grpc)\//.test(request)) {
-            return callback(null, `commonjs ${request}`);
-          }
+          // Exclude server-only packages that use Node.js built-ins
+          // (stream, fs, tls, net, http, path, zlib, cluster, v8, …).
+          // These must only run in the Node.js runtime — never in the browser bundle.
+          //   @opentelemetry/* — instrumentation.ts / OTLP / gRPC exporters
+          //   @grpc/*          — gRPC transport (transitive OTel dep)
+          //   prom-client      — Prometheus metrics (FhirClient → PrometheusService)
+          const serverOnly =
+            /^(@opentelemetry|@grpc)\//.test(request) ||
+            request === "prom-client";
+          if (serverOnly) return callback(null, `commonjs ${request}`);
           callback();
         },
       ];
