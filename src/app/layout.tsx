@@ -13,7 +13,7 @@ const SIMPLE_VERSION = (() => {
 })();
 
 export const metadata: Metadata = {
-  title: "ZetLab OrderEntry",
+  title: "z2Lab OrderEntry",
   description: "Auftragserfassung – ZLZ Zentrallabor AG",
 };
 

@@ -55,7 +55,7 @@ export class RolesController {
     try {
       const roles = await getRoles();
       this.log.info("Roles listed", { count: roles.length });
-      return { data: roles.map(toDto) };
+      return { data: roles.map(toDto), total: roles.length };
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       this.log.error("Role list threw", { message });

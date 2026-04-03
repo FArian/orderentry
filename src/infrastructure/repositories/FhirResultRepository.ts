@@ -5,19 +5,19 @@ import type {
 } from "@/application/interfaces/repositories/IResultRepository";
 import type { Result } from "@/domain/entities/Result";
 import { HttpClient } from "@/infrastructure/api/HttpClient";
-
-/** Shape returned by /api/diagnostic-reports */
-interface ApiResultsResponse {
-  data: Result[];
-  total: number;
-  page: number;
-  pageSize: number;
-  error?: string;
-}
+import {
+  type FhirBundle,
+  extractPaginationFromBundle,
+} from "@/infrastructure/fhir/FhirTypes";
+import {
+  DiagnosticReportMapper,
+  type FhirDiagnosticReport,
+} from "@/infrastructure/fhir/DiagnosticReportMapper";
 
 /**
  * Repository implementation that delegates to the Next.js API route
- * /api/diagnostic-reports, which proxies to the FHIR server.
+ * /api/diagnostic-reports, which returns a FHIR searchset Bundle
+ * of DiagnosticReport resources.
  *
  * Used client-side only (depends on window.location via HttpClient).
  */
@@ -26,29 +26,42 @@ export class FhirResultRepository implements IResultRepository {
 
   async search(query: ResultSearchQuery): Promise<PagedResults> {
     const params: Record<string, string | undefined> = {
-      q: query.q,
-      status: query.status,
-      patientId: query.patientId,
+      q:           query.q,
+      status:      query.status,
+      patientId:   query.patientId,
       patientName: query.patientName,
       orderNumber: query.orderNumber,
-      page: query.page !== undefined ? String(query.page) : undefined,
-      pageSize: query.pageSize !== undefined ? String(query.pageSize) : undefined,
+      page:        query.page     !== undefined ? String(query.page)     : undefined,
+      pageSize:    query.pageSize !== undefined ? String(query.pageSize) : undefined,
     };
 
-    const res = await this.http.get<ApiResultsResponse>(
+    const bundle = await this.http.get<FhirBundle<FhirDiagnosticReport>>(
       "/api/diagnostic-reports",
       params,
     );
-    if (res.error) throw new Error(res.error);
-    return { data: res.data, total: res.total, page: res.page, pageSize: res.pageSize };
+
+    const data: Result[] = (bundle.entry ?? [])
+      .map((e) => e.resource)
+      .filter((r): r is FhirDiagnosticReport =>
+        !!r && (r as { resourceType?: string }).resourceType === "DiagnosticReport" && !!(r as { id?: string }).id,
+      )
+      .map((r) => DiagnosticReportMapper.toDomain(r));
+
+    const { page, pageSize } = extractPaginationFromBundle(bundle, {
+      page:     query.page     ?? 1,
+      pageSize: query.pageSize ?? 20,
+    });
+
+    return { data, total: bundle.total ?? data.length, page, pageSize };
   }
 
   async getById(id: string): Promise<Result | null> {
     try {
-      const res = await this.http.get<ApiResultsResponse>(
+      const bundle = await this.http.get<FhirBundle<FhirDiagnosticReport>>(
         `/api/diagnostic-reports/${encodeURIComponent(id)}`,
       );
-      return res.data?.[0] ?? null;
+      const first = bundle.entry?.[0]?.resource;
+      return first ? DiagnosticReportMapper.toDomain(first) : null;
     } catch {
       return null;
     }

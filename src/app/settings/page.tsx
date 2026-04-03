@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useTranslation } from "@/lib/i18n";
+import { AppSidebar } from "@/components/AppSidebar";
+import { BackButton } from "@/components/BackButton";
 import { Card, Select, Button } from "@/presentation/ui";
-import { LogViewer } from "@/presentation/components/LogViewer";
 import {
   RuntimeConfig,
   type ClientLogLevel,
@@ -14,10 +15,7 @@ import { LOCALE_LABELS } from "@/shared/config/localesConfig";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-interface EnvVar {
-  key: string;
-  value: string;
-}
+interface EnvVar { key: string; value: string }
 
 interface ServerSettings {
   logLevel:           string;
@@ -25,60 +23,64 @@ interface ServerSettings {
   fhirBaseUrl:        string;
   appVersion:         string;
   enableTracing:      boolean;
-  zipkinUrl:          string;
-  grafanaUrl:         string;
+  tracingUrl:         string;
+  monitoringUrl:      string;
 }
 
 interface UserProfile {
-  username:    string;
-  firstName?:  string;
-  lastName?:   string;
+  username:      string;
+  firstName?:    string;
+  lastName?:     string;
   organization?: string;
-  email?:      string;
+  email?:        string;
 }
 
 // ── Option lists ──────────────────────────────────────────────────────────────
 
 const LOG_LEVEL_OPTIONS: Array<{ value: ClientLogLevel; label: string }> = [
-  { value: "debug",  label: "debug"  },
-  { value: "info",   label: "info"   },
-  { value: "warn",   label: "warn"   },
-  { value: "error",  label: "error"  },
-  { value: "silent", label: "silent" },
+  { value: "debug",  label: "Debug"  },
+  { value: "info",   label: "Info"   },
+  { value: "warn",   label: "Warn"   },
+  { value: "error",  label: "Error"  },
+  { value: "silent", label: "Silent (aus)" },
 ];
 
-// Derived from localesConfig — adding a locale there adds it here automatically
 const LANGUAGE_OPTIONS = (
   Object.entries(LOCALE_LABELS) as Array<[AppLanguage, string]>
 ).map(([value, label]) => ({ value, label }));
 
-// ── Page ──────────────────────────────────────────────────────────────────────
+// ── SettingsPage ───────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
   const { t, setLocale } = useTranslation();
 
-  // Client settings
+  // Client settings — initialized server-safe; loaded from localStorage in useEffect
   const [clientLogLevel, setClientLogLevel] = useState<ClientLogLevel>("info");
   const [language,       setLanguage]       = useState<AppLanguage>("de");
   const [debugMode,      setDebugMode]      = useState(false);
+  const [mounted,        setMounted]        = useState(false);
 
   // Server / user data
   const [server,  setServer]  = useState<ServerSettings | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
 
   // Env editor
-  const [envVars,        setEnvVars]        = useState<EnvVar[]>([]);
-  const [envSaved,       setEnvSaved]       = useState(false);
-  const [envError,       setEnvError]       = useState<string | null>(null);
-  const [envSaving,      setEnvSaving]      = useState(false);
-  const [envReadOnly,    setEnvReadOnly]    = useState(false);   // true on Vercel
+  const [envVars,     setEnvVars]     = useState<EnvVar[]>([]);
+  const [envSaved,    setEnvSaved]    = useState(false);
+  const [envError,    setEnvError]    = useState<string | null>(null);
+  const [envSaving,   setEnvSaving]   = useState(false);
+  const [envReadOnly, setEnvReadOnly] = useState(false);
 
   // Feedback
-  const [saved,       setSaved]       = useState(false);
-  const [saveError,   setSaveError]   = useState<string | null>(null);
+  const [saved,     setSaved]     = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
-  // Load from localStorage + API
+  // Download state
+  const [downloading, setDownloading] = useState(false);
+  const [dlError,     setDlError]     = useState<string | null>(null);
+
   useEffect(() => {
+    setMounted(true);
     const s = RuntimeConfig.get();
     setClientLogLevel(s.logLevel);
     setLanguage(s.language);
@@ -86,48 +88,40 @@ export default function SettingsPage() {
 
     fetch("/api/settings")
       .then((r) => (r.ok ? r.json() : null))
-      .then((data: ServerSettings | null) => { if (data) setServer(data); })
+      .then((d: ServerSettings | null) => { if (d) setServer(d); })
       .catch(() => {});
 
     fetch("/api/env")
       .then((r) => {
-        // 405 = Vercel / read-only environment — editing not supported
         if (r.status === 405) { setEnvReadOnly(true); return null; }
         return r.ok ? r.json() : null;
       })
-      .then((data: { vars?: EnvVar[] } | null) => {
-        if (data?.vars) setEnvVars(data.vars);
-      })
+      .then((d: { vars?: EnvVar[] } | null) => { if (d?.vars) setEnvVars(d.vars); })
       .catch(() => {});
 
     fetch("/api/me/profile")
       .then((r) => (r.ok ? r.json() : null))
-      .then((data: { username?: string; profile?: UserProfile } | null) => {
-        if (data) {
-          const profile = data.profile as Record<string, string> | undefined;
-          setProfile({
-            username: data.username ?? "",
-            ...(profile?.firstName    !== undefined && { firstName:    profile.firstName }),
-            ...(profile?.lastName     !== undefined && { lastName:     profile.lastName }),
-            ...(profile?.organization !== undefined && { organization: profile.organization }),
-            ...(profile?.email        !== undefined && { email:        profile.email }),
-          });
-        }
+      .then((d: { username?: string; profile?: UserProfile } | null) => {
+        if (!d) return;
+        const p = d.profile as Record<string, string> | undefined;
+        setProfile({
+          username: d.username ?? "",
+          ...(p?.firstName    !== undefined && { firstName:    p.firstName }),
+          ...(p?.lastName     !== undefined && { lastName:     p.lastName }),
+          ...(p?.organization !== undefined && { organization: p.organization }),
+          ...(p?.email        !== undefined && { email:        p.email }),
+        });
       })
       .catch(() => {});
   }, []);
 
+  // ── Handlers ──────────────────────────────────────────────────────────────────
+
   function handleSave() {
     setSaveError(null);
     const errors = RuntimeConfig.validate({ logLevel: clientLogLevel, language });
-    if (errors.length > 0) {
-      setSaveError(errors[0] ?? null);
-      return;
-    }
+    if (errors.length > 0) { setSaveError(errors[0] ?? null); return; }
     RuntimeConfig.set({ logLevel: clientLogLevel, language, debugMode });
-    // setLocale() updates the I18nContext immediately → UI re-renders in the
-    // selected language without a page reload. RuntimeConfig.set() above persists
-    // the value so it survives refresh.
     setLocale(language);
     flash();
   }
@@ -142,29 +136,20 @@ export default function SettingsPage() {
     flash();
   }
 
-  // ── Env editor handlers ────────────────────────────────────────────────────
+  function flash() {
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+  }
+
+  // ── Env editor ────────────────────────────────────────────────────────────────
 
   function handleEnvChange(index: number, field: "key" | "value", val: string) {
-    setEnvVars((prev) =>
-      prev.map((v, i) => (i === index ? { ...v, [field]: val } : v)),
-    );
-  }
-
-  function handleEnvAdd() {
-    setEnvVars((prev) => [...prev, { key: "", value: "" }]);
-  }
-
-  function handleEnvDelete(index: number) {
-    setEnvVars((prev) => prev.filter((_, i) => i !== index));
+    setEnvVars((prev) => prev.map((v, i) => (i === index ? { ...v, [field]: val } : v)));
   }
 
   async function handleEnvSave() {
     setEnvError(null);
-    const emptyKey = envVars.find((v) => !v.key.trim());
-    if (emptyKey !== undefined) {
-      setEnvError(t("settings.envEditorEmptyKey"));
-      return;
-    }
+    if (envVars.find((v) => !v.key.trim())) { setEnvError(t("settings.envEditorEmptyKey")); return; }
     setEnvSaving(true);
     try {
       const res = await fetch("/api/env", {
@@ -172,11 +157,7 @@ export default function SettingsPage() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ vars: envVars }),
       });
-      if (res.status === 405) {
-        setEnvReadOnly(true);
-        setEnvError(t("settings.envEditorUnavailable"));
-        return;
-      }
+      if (res.status === 405) { setEnvReadOnly(true); setEnvError(t("settings.envEditorUnavailable")); return; }
       const data = (await res.json()) as { ok: boolean; message?: string };
       if (!data.ok) {
         setEnvError(data.message ?? t("settings.envEditorError"));
@@ -191,306 +172,283 @@ export default function SettingsPage() {
     }
   }
 
-  function flash() {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+  // ── Download logs ─────────────────────────────────────────────────────────────
+
+  async function handleDownloadLogs() {
+    setDownloading(true);
+    setDlError(null);
+    try {
+      const res = await fetch("/api/logs?tail=10000", { cache: "no-store" });
+      if (!res.ok) { setDlError(`HTTP ${res.status}`); return; }
+      const data = (await res.json()) as { enabled?: boolean; entries?: Record<string, unknown>[] };
+      if (!data.enabled) { setDlError(t("settings.logsNotConfigured")); return; }
+      const lines = (data.entries ?? []).map((e) => JSON.stringify(e)).join("\n");
+      const blob  = new Blob([lines], { type: "application/x-ndjson" });
+      const url   = URL.createObjectURL(blob);
+      const a     = document.createElement("a");
+      a.href      = url;
+      a.download  = `zetlab-logs-${new Date().toISOString().slice(0, 10)}.ndjson`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e: unknown) {
+      setDlError(e instanceof Error ? e.message : "Download failed");
+    } finally {
+      setDownloading(false);
+    }
   }
 
-  // ── Derived display values ─────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────────────────────
 
   const fullName = [profile?.firstName, profile?.lastName].filter(Boolean).join(" ");
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-8 space-y-6">
-      <h1 className="text-2xl font-semibold text-gray-900">
-        {t("settings.title")}
-      </h1>
+    <div className="flex flex-1 min-h-0">
+      <AppSidebar />
 
-      {/* ── 1. User Profile ─────────────────────────────────────────────────── */}
-      <Card title={t("settings.profile")}>
-        {profile ? (
-          <dl className="space-y-2 text-sm">
-            <div className="grid grid-cols-[auto_1fr] gap-x-4">
-              <dt className="text-gray-500">{t("settings.profileUsername")}</dt>
-              <dd className="font-mono text-gray-800">{profile.username}</dd>
+      <div className="flex-1 overflow-y-auto bg-zt-bg-page">
+        <div className="px-8 py-7 max-w-[800px] mx-auto space-y-5">
 
-              {fullName && (
-                <>
-                  <dt className="text-gray-500">{t("settings.profileName")}</dt>
-                  <dd className="text-gray-800">{fullName}</dd>
-                </>
-              )}
+          {/* Breadcrumb */}
+          <nav className="flex items-center gap-1.5 text-[12px] text-zt-text-tertiary">
+            <BackButton />
+            <span>|</span>
+            <Link href="/" className="text-zt-primary hover:underline">{t("nav.home")}</Link>
+            <span>/</span>
+            <span className="text-zt-text-primary">{t("settings.title")}</span>
+          </nav>
 
-              {profile.organization && (
-                <>
-                  <dt className="text-gray-500">{t("settings.profileOrganization")}</dt>
-                  <dd className="text-gray-800">{profile.organization}</dd>
-                </>
-              )}
+          <h1 className="text-[20px] font-medium text-zt-text-primary">{t("settings.title")}</h1>
 
-              {profile.email && (
-                <>
-                  <dt className="text-gray-500">{t("profile.email")}</dt>
-                  <dd className="text-gray-800">{profile.email}</dd>
-                </>
-              )}
+          {/* ── 1. User Profile ─────────────────────────────────────────────── */}
+          <Card title={t("settings.profile")}>
+            {profile ? (
+              <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-[13px]">
+                <dt className="text-zt-text-tertiary">{t("settings.profileUsername")}</dt>
+                <dd className="font-mono text-zt-text-primary">{profile.username}</dd>
+                {fullName && <>
+                  <dt className="text-zt-text-tertiary">{t("settings.profileName")}</dt>
+                  <dd className="text-zt-text-primary">{fullName}</dd>
+                </>}
+                {profile.organization && <>
+                  <dt className="text-zt-text-tertiary">{t("settings.profileOrganization")}</dt>
+                  <dd className="text-zt-text-primary">{profile.organization}</dd>
+                </>}
+                {profile.email && <>
+                  <dt className="text-zt-text-tertiary">{t("profile.email")}</dt>
+                  <dd className="text-zt-text-primary">{profile.email}</dd>
+                </>}
+              </dl>
+            ) : (
+              <p className="text-[13px] text-zt-text-tertiary">{t("common.loading")}</p>
+            )}
+            <div className="mt-3 pt-3 border-t border-zt-border">
+              <Link href="/profile" className="text-[13px] text-zt-primary hover:underline">
+                {t("settings.profileEditLink")} →
+              </Link>
             </div>
-          </dl>
-        ) : (
-          <p className="text-sm text-gray-400">{t("common.loading")}</p>
-        )}
-        <div className="mt-3 pt-3 border-t">
-          <Link
-            href="/profile"
-            className="text-sm text-blue-600 hover:underline"
-          >
-            {t("settings.profileEditLink")} →
-          </Link>
-        </div>
-      </Card>
+          </Card>
 
-      {/* ── 2. Client (Browser) Settings ────────────────────────────────────── */}
-      <Card title={t("settings.clientSettings")}>
-        <div className="space-y-4">
-          {/* Log level */}
-          <Select
-            label={t("settings.logLevel")}
-            hint={t("settings.logLevelHelp")}
-            options={LOG_LEVEL_OPTIONS}
-            value={clientLogLevel}
-            onChange={(e) => setClientLogLevel(e.target.value as ClientLogLevel)}
-          />
-
-          {/* Language */}
-          <Select
-            label={t("settings.language")}
-            options={LANGUAGE_OPTIONS}
-            value={language}
-            onChange={(e) => setLanguage(e.target.value as AppLanguage)}
-          />
-
-          {/* Debug mode */}
-          <div className="flex items-start gap-3">
-            <input
-              type="checkbox"
-              id="debugMode"
-              checked={debugMode}
-              onChange={(e) => setDebugMode(e.target.checked)}
-              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
-            <div>
-              <label htmlFor="debugMode" className="text-sm font-medium text-gray-700 cursor-pointer">
-                {t("settings.debugMode")}
-              </label>
-              <p className="text-xs text-gray-500 mt-0.5">{t("settings.debugModeHelp")}</p>
-            </div>
-          </div>
-
-          {/* Feedback */}
-          {saved && (
-            <p className="text-sm font-medium text-green-600" role="status">
-              {t("settings.saved")}
-            </p>
-          )}
-          {saveError && (
-            <p className="text-sm text-red-600" role="alert">
-              {t("settings.validationError")}: {saveError}
-            </p>
-          )}
-
-          <div className="flex gap-3">
-            <Button variant="primary" onClick={handleSave}>
-              {t("settings.save")}
-            </Button>
-            <Button variant="secondary" onClick={handleReset}>
-              {t("settings.reset")}
-            </Button>
-          </div>
-        </div>
-      </Card>
-
-      {/* ── 3. Server Settings (read-only) ──────────────────────────────────── */}
-      <Card title={t("settings.serverSettings")}>
-        {server ? (
-          <dl className="space-y-3 text-sm">
-            <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2">
-              <dt className="text-gray-500 whitespace-nowrap">{t("settings.serverLogLevel")}</dt>
-              <dd className="font-mono text-gray-800">{server.logLevel}</dd>
-
-              <dt className="text-gray-500 whitespace-nowrap">{t("settings.fileLogging")}</dt>
-              <dd className="text-gray-800">
-                {server.fileLoggingEnabled
-                  ? t("settings.fileLoggingEnabled")
-                  : t("settings.fileLoggingDisabled")}
-              </dd>
-
-              <dt className="text-gray-500 whitespace-nowrap">{t("settings.fhirUrl")}</dt>
-              <dd className="font-mono text-xs text-gray-600 break-all">{server.fhirBaseUrl}</dd>
-            </div>
-          </dl>
-        ) : (
-          <p className="text-sm text-gray-400">{t("common.loading")}</p>
-        )}
-        <p className="mt-4 border-t pt-3 text-xs text-gray-400">
-          {t("settings.serverNote")}
-        </p>
-      </Card>
-
-      {/* ── 4. Observability ────────────────────────────────────────────────── */}
-      <Card title={t("settings.observability")}>
-        {server ? (
-          <dl className="space-y-3 text-sm">
-            <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2">
-              <dt className="text-gray-500 whitespace-nowrap">Tracing</dt>
-              <dd className="text-gray-800">
-                {server.enableTracing
-                  ? <span className="text-green-600">{t("settings.tracingEnabled")}</span>
-                  : <span className="text-gray-400">{t("settings.tracingDisabled")}</span>}
-              </dd>
-
-              {server.zipkinUrl && (
-                <>
-                  <dt className="text-gray-500 whitespace-nowrap">{t("settings.zipkinUrl")}</dt>
-                  <dd className="font-mono text-xs text-gray-600 break-all">{server.zipkinUrl}</dd>
-                </>
+          {/* ── 2. Browser-Einstellungen ─────────────────────────────────────── */}
+          <Card title={t("settings.clientSettings")}>
+            <div className="space-y-4">
+              {/* Log level — suppress hydration mismatch (value comes from localStorage) */}
+              {mounted && (
+                <Select
+                  label={t("settings.logLevel")}
+                  hint={t("settings.logLevelHelp")}
+                  options={LOG_LEVEL_OPTIONS}
+                  value={clientLogLevel}
+                  onChange={(e) => setClientLogLevel(e.target.value as ClientLogLevel)}
+                />
               )}
 
-              {server.grafanaUrl && (
-                <>
-                  <dt className="text-gray-500 whitespace-nowrap">{t("settings.grafanaUrl")}</dt>
-                  <dd className="font-mono text-xs text-gray-600 break-all">
-                    {server.grafanaUrl}
-                    {" "}
-                    <a
-                      href={server.grafanaUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline text-xs"
-                    >
-                      {t("settings.grafanaOpen")}
-                    </a>
-                  </dd>
-                </>
+              {/* Language */}
+              {mounted && (
+                <Select
+                  label={t("settings.language")}
+                  options={LANGUAGE_OPTIONS}
+                  value={language}
+                  onChange={(e) => setLanguage(e.target.value as AppLanguage)}
+                />
               )}
 
-              {!server.zipkinUrl && !server.grafanaUrl && (
-                <dd className="col-span-2 text-gray-400 text-xs italic">
-                  ENABLE_TRACING, ZIPKIN_URL, GRAFANA_URL — nicht konfiguriert.
-                </dd>
-              )}
-            </div>
-          </dl>
-        ) : (
-          <p className="text-sm text-gray-400">{t("common.loading")}</p>
-        )}
-      </Card>
-
-      {/* ── 5. Environment Variables Editor ─────────────────────────────────── */}
-      <Card title={t("settings.envEditor")}>
-        {/* Vercel / read-only environment — editing not supported */}
-        {envReadOnly ? (
-          <div className="flex gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800" role="note">
-            <span className="shrink-0 font-bold">ℹ</span>
-            <span>{t("settings.envEditorUnavailable")}</span>
-          </div>
-        ) : (
-          <>
-            {/* Always-visible restart warning */}
-            <div className="mb-4 flex gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800" role="note">
-              <span className="shrink-0 font-bold">⚠</span>
-              <span>{t("settings.envEditorRestartNote")}</span>
-            </div>
-
-            <p className="text-xs text-gray-500 mb-4">{t("settings.envEditorHelp")}</p>
-
-            <div className="space-y-2">
-              {/* Header row */}
-              <div className="grid grid-cols-[1fr_1fr_auto] gap-2 text-xs font-medium text-gray-500 px-1">
-                <span>{t("settings.envEditorKey")}</span>
-                <span>{t("settings.envEditorValue")}</span>
-                <span />
+              {/* Debug mode */}
+              <div className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  id="debugMode"
+                  checked={debugMode}
+                  onChange={(e) => setDebugMode(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-zt-border accent-zt-primary"
+                />
+                <div>
+                  <label htmlFor="debugMode" className="text-[13px] font-medium text-zt-text-primary cursor-pointer">
+                    {t("settings.debugMode")}
+                  </label>
+                  <p className="text-[12px] text-zt-text-tertiary mt-0.5">{t("settings.debugModeHelp")}</p>
+                </div>
               </div>
 
-              {/* Rows */}
-              {envVars.map((v, i) => (
-                <div key={i} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
-                  <input
-                    type="text"
-                    value={v.key}
-                    onChange={(e) => handleEnvChange(i, "key", e.target.value)}
-                    placeholder="VARIABLE_NAME"
-                    className="rounded border border-gray-300 px-2 py-1 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    aria-label={t("settings.envEditorKey")}
-                  />
-                  <input
-                    type="text"
-                    value={v.value}
-                    onChange={(e) => handleEnvChange(i, "value", e.target.value)}
-                    placeholder="value"
-                    className="rounded border border-gray-300 px-2 py-1 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    aria-label={t("settings.envEditorValue")}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleEnvDelete(i)}
-                    className="text-red-500 hover:text-red-700 text-xs px-1"
-                    aria-label={t("settings.envEditorDelete")}
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
+              {saved && <p className="text-[13px] font-medium text-zt-success" role="status">{t("settings.saved")}</p>}
+              {saveError && <p className="text-[13px] text-zt-danger" role="alert">{t("settings.validationError")}: {saveError}</p>}
+
+              <div className="flex gap-3">
+                <Button variant="primary"   onClick={handleSave}>{t("settings.save")}</Button>
+                <Button variant="secondary" onClick={handleReset}>{t("settings.reset")}</Button>
+              </div>
             </div>
+          </Card>
 
-            <div className="mt-3 flex items-center gap-3 flex-wrap">
-              <Button variant="ghost" size="sm" onClick={handleEnvAdd}>
-                + {t("settings.envEditorAdd")}
-              </Button>
-              <Button variant="primary" size="sm" onClick={handleEnvSave} loading={envSaving}>
-                {t("settings.envEditorSave")}
-              </Button>
-            </div>
+          {/* ── 3. Server Settings (read-only) ───────────────────────────────── */}
+          <Card title={t("settings.serverSettings")}>
+            {server ? (
+              <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-[13px]">
+                <dt className="text-zt-text-tertiary whitespace-nowrap">{t("settings.serverLogLevel")}</dt>
+                <dd className="font-mono text-zt-text-primary">{server.logLevel}</dd>
 
-            {envSaved && (
-              <p className="mt-3 text-sm font-medium text-green-600" role="status">
-                {t("settings.envEditorSaved")}
-              </p>
+                <dt className="text-zt-text-tertiary whitespace-nowrap">{t("settings.fileLogging")}</dt>
+                <dd className="text-zt-text-primary">
+                  {server.fileLoggingEnabled ? t("settings.fileLoggingEnabled") : t("settings.fileLoggingDisabled")}
+                </dd>
+
+                <dt className="text-zt-text-tertiary whitespace-nowrap">{t("settings.fhirUrl")}</dt>
+                <dd className="font-mono text-[12px] text-zt-text-secondary break-all">{server.fhirBaseUrl}</dd>
+              </dl>
+            ) : (
+              <p className="text-[13px] text-zt-text-tertiary">{t("common.loading")}</p>
             )}
-            {envError && (
-              <p className="mt-3 text-sm text-red-600" role="alert">
-                {envError}
-              </p>
-            )}
-          </>
-        )}
-      </Card>
+            <p className="mt-4 border-t border-zt-border pt-3 text-[12px] text-zt-text-tertiary">{t("settings.serverNote")}</p>
+          </Card>
 
-      {/* ── 6. Log Viewer ───────────────────────────────────────────────────── */}
-      <Card title={t("settings.logViewer")}>
-        <LogViewer />
-      </Card>
-
-      {/* ── 7. App Info ─────────────────────────────────────────────────────── */}
-      <Card title={t("settings.appInfo")}>
-        <dl className="space-y-3 text-sm">
-          <div className="grid grid-cols-[auto_1fr] gap-x-4">
-            <dt className="text-gray-500">{t("settings.version")}</dt>
-            <dd className="font-mono text-gray-800">{server?.appVersion ?? "…"}</dd>
-
-            <dt className="text-gray-500 whitespace-nowrap">{t("settings.apiDocs")}</dt>
-            <dd>
-              <a
-                href="/api/docs"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:underline"
+          {/* ── 4. Logs ─────────────────────────────────────────────────────── */}
+          <Card title={t("settings.logViewer")}>
+            <p className="text-[13px] text-zt-text-secondary mb-4">{t("settings.logsDesc")}</p>
+            <div className="flex items-center gap-3 flex-wrap">
+              <Button variant="secondary" onClick={handleDownloadLogs} loading={downloading}>
+                ↓ {t("settings.logsDownload")}
+              </Button>
+              <Link
+                href="/admin/logs"
+                className="text-[13px] px-4 py-2 rounded-lg border border-zt-border text-zt-text-primary hover:bg-zt-bg-card transition-colors"
               >
-                /api/docs
-              </a>
-            </dd>
-          </div>
-        </dl>
-      </Card>
-    </main>
+                {t("settings.logsOpen")} →
+              </Link>
+            </div>
+            {dlError && <p className="mt-3 text-[13px] text-zt-danger">{dlError}</p>}
+          </Card>
+
+          {/* ── 5. Observability ─────────────────────────────────────────────── */}
+          <Card title={t("settings.observability")}>
+            {server ? (
+              <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-[13px]">
+                <dt className="text-zt-text-tertiary whitespace-nowrap">Tracing</dt>
+                <dd>
+                  {server.enableTracing
+                    ? <span className="text-zt-success">{t("settings.tracingEnabled")}</span>
+                    : <span className="text-zt-text-tertiary">{t("settings.tracingDisabled")}</span>}
+                </dd>
+                {server.tracingUrl && <>
+                  <dt className="text-zt-text-tertiary whitespace-nowrap">{t("settings.tracingUrl")}</dt>
+                  <dd className="font-mono text-[12px] text-zt-text-secondary break-all">{server.tracingUrl}</dd>
+                </>}
+                {server.monitoringUrl && <>
+                  <dt className="text-zt-text-tertiary whitespace-nowrap">{t("settings.monitoringUrl")}</dt>
+                  <dd className="font-mono text-[12px] text-zt-text-secondary break-all">
+                    {server.monitoringUrl}{" "}
+                    <a href={server.monitoringUrl} target="_blank" rel="noopener noreferrer" className="text-zt-primary hover:underline text-[12px]">
+                      {t("settings.monitoringOpen")}
+                    </a>
+                  </dd>
+                </>}
+                {!server.tracingUrl && !server.monitoringUrl && (
+                  <dd className="col-span-2 text-[12px] text-zt-text-tertiary italic">
+                    ENABLE_TRACING, TRACING_URL, MONITORING_URL — nicht konfiguriert.
+                  </dd>
+                )}
+              </dl>
+            ) : (
+              <p className="text-[13px] text-zt-text-tertiary">{t("common.loading")}</p>
+            )}
+          </Card>
+
+          {/* ── 6. Environment Variables Editor ──────────────────────────────── */}
+          <Card title={t("settings.envEditor")}>
+            {envReadOnly ? (
+              <div className="flex gap-2 rounded-md border border-zt-info-border bg-zt-info-light px-3 py-2 text-[12px] text-zt-info" role="note">
+                <span className="shrink-0 font-bold">ℹ</span>
+                <span>{t("settings.envEditorUnavailable")}</span>
+              </div>
+            ) : (
+              <>
+                <div className="mb-4 flex gap-2 rounded-md border border-zt-warning-border bg-zt-warning-bg px-3 py-2 text-[12px] text-zt-warning-text" role="note">
+                  <span className="shrink-0 font-bold">⚠</span>
+                  <span>{t("settings.envEditorRestartNote")}</span>
+                </div>
+                <p className="text-[12px] text-zt-text-tertiary mb-4">{t("settings.envEditorHelp")}</p>
+                <div className="space-y-2">
+                  <div className="grid grid-cols-[1fr_1fr_auto] gap-2 text-[11px] font-medium text-zt-text-tertiary px-1">
+                    <span>{t("settings.envEditorKey")}</span>
+                    <span>{t("settings.envEditorValue")}</span>
+                    <span />
+                  </div>
+                  {envVars.map((v, i) => (
+                    <div key={i} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
+                      <input
+                        type="text"
+                        value={v.key}
+                        onChange={(e) => handleEnvChange(i, "key", e.target.value)}
+                        placeholder="VARIABLE_NAME"
+                        className="rounded border border-zt-border px-2 py-1 text-[12px] font-mono bg-zt-bg-page text-zt-text-primary focus:outline-none focus:border-zt-primary"
+                        aria-label={t("settings.envEditorKey")}
+                      />
+                      <input
+                        type="text"
+                        value={v.value}
+                        onChange={(e) => handleEnvChange(i, "value", e.target.value)}
+                        placeholder="value"
+                        className="rounded border border-zt-border px-2 py-1 text-[12px] font-mono bg-zt-bg-page text-zt-text-primary focus:outline-none focus:border-zt-primary"
+                        aria-label={t("settings.envEditorValue")}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setEnvVars((prev) => prev.filter((_, j) => j !== i))}
+                        className="text-zt-danger hover:text-zt-danger/80 text-[12px] px-1"
+                        aria-label={t("settings.envEditorDelete")}
+                      >✕</button>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3 flex items-center gap-3 flex-wrap">
+                  <Button variant="ghost" size="sm" onClick={() => setEnvVars((p) => [...p, { key: "", value: "" }])}>
+                    + {t("settings.envEditorAdd")}
+                  </Button>
+                  <Button variant="primary" size="sm" onClick={handleEnvSave} loading={envSaving}>
+                    {t("settings.envEditorSave")}
+                  </Button>
+                </div>
+                {envSaved && <p className="mt-3 text-[13px] font-medium text-zt-success" role="status">{t("settings.envEditorSaved")}</p>}
+                {envError && <p className="mt-3 text-[13px] text-zt-danger"      role="alert">{envError}</p>}
+              </>
+            )}
+          </Card>
+
+          {/* ── 7. App Info ───────────────────────────────────────────────────── */}
+          <Card title={t("settings.appInfo")}>
+            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-[13px]">
+              <dt className="text-zt-text-tertiary">{t("settings.version")}</dt>
+              <dd className="font-mono text-zt-text-primary">{server?.appVersion ?? "…"}</dd>
+
+              <dt className="text-zt-text-tertiary whitespace-nowrap">{t("settings.apiDocs")}</dt>
+              <dd>
+                <a href="/api/docs" target="_blank" rel="noopener noreferrer" className="text-zt-primary hover:underline">
+                  /api/docs
+                </a>
+              </dd>
+            </dl>
+          </Card>
+
+        </div>
+      </div>
+    </div>
   );
 }

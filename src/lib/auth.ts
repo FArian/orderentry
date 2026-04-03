@@ -75,6 +75,78 @@ export async function getAdminSession(): Promise<SessionPayload | null> {
   return session;
 }
 
+/**
+ * Resolve admin identity from an HTTP request.
+ * Checks session cookie first; falls back to Authorization: Bearer header (PAT or JWT).
+ * Returns a minimal session payload or null.
+ */
+/**
+ * Full admin access check with precise 401/403 distinction.
+ * Checks Bearer token first (external clients), then session cookie.
+ * Returns { authorized: true } or { authorized: false, httpStatus: 401|403 }.
+ */
+export async function checkAdminAccess(
+  req: Request,
+): Promise<{ authorized: true } | { authorized: false; httpStatus: 401 | 403 }> {
+  const authHeader = req.headers.get("authorization");
+  if (authHeader?.startsWith("Bearer ")) {
+    const { bearerAuthGuard } = await import("@/infrastructure/auth/BearerAuthGuard");
+    const bearer = await bearerAuthGuard.resolve(authHeader);
+    if (!bearer) return { authorized: false, httpStatus: 401 };
+    return bearer.role === "admin"
+      ? { authorized: true }
+      : { authorized: false, httpStatus: 403 };
+  }
+  const session = await getAdminSession();
+  if (session) return { authorized: true };
+  const cookieSession = await getSessionFromCookies();
+  return { authorized: false, httpStatus: cookieSession ? 403 : 401 };
+}
+
+export async function getAdminFromRequest(req: Request): Promise<SessionPayload | null> {
+  // 1. Cookie auth (browser / Swagger UI)
+  const cookieSession = await getAdminSession();
+  if (cookieSession) return cookieSession;
+
+  // 2. Bearer token auth (external clients)
+  const authHeader = req.headers.get("authorization");
+  if (!authHeader) return null;
+  const { bearerAuthGuard } = await import("@/infrastructure/auth/BearerAuthGuard");
+  const bearer = await bearerAuthGuard.resolve(authHeader);
+  if (!bearer || bearer.role !== "admin") return null;
+  return { sub: bearer.sub, username: bearer.username, iat: 0, exp: 0 };
+}
+
+/** Full session user including org context — used by API routes to enforce org-scoped access. */
+export type SessionUserWithOrg = {
+  sub:        string;
+  username:   string;
+  role:       string;
+  orgGln?:    string;
+  orgFhirId?: string;
+  orgName?:   string;
+};
+
+/**
+ * Reads the session cookie and enriches it with org data from the user store.
+ * Returns null if the session is missing or invalid.
+ * API routes use this to enforce org-scoped patient/order access.
+ */
+export async function getSessionUserWithOrg(): Promise<SessionUserWithOrg | null> {
+  const session = await getSessionFromCookies();
+  if (!session) return null;
+  const { getUserById } = await import("@/lib/userStore");
+  const user = await getUserById(session.sub).catch(() => null);
+  return {
+    sub:      session.sub,
+    username: session.username,
+    role:     user?.role ?? "user",
+    ...(user?.profile?.orgGln    !== undefined && { orgGln:    user.profile.orgGln }),
+    ...(user?.profile?.orgFhirId !== undefined && { orgFhirId: user.profile.orgFhirId }),
+    ...(user?.profile?.orgName   !== undefined && { orgName:   user.profile.orgName }),
+  };
+}
+
 export function cookieName() {
   return COOKIE_NAME;
 }

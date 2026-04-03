@@ -1,23 +1,20 @@
 /**
  * POST /api/users/{id}/sync — trigger FHIR synchronisation (admin only)
- *
- * Creates or updates Practitioner / PractitionerRole / Organization
- * in the FHIR server based on the user's profile data.
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { getAdminSession, getSessionFromCookies } from "@/lib/auth";
+import { checkAdminAccess } from "@/lib/auth";
 import { usersController } from "@/infrastructure/api/controllers/UsersController";
 
 type Ctx = { params: Promise<{ id: string }> };
 
-export async function POST(_req: NextRequest, ctx: Ctx) {
-  const session = await getAdminSession();
-  if (!session) {
-    const s = await getSessionFromCookies();
-    return s
-      ? NextResponse.json({ error: "Forbidden — admin role required" }, { status: 403 })
-      : NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function POST(req: NextRequest, ctx: Ctx) {
+  const auth = await checkAdminAccess(req);
+  if (!auth.authorized) {
+    return NextResponse.json(
+      { error: auth.httpStatus === 403 ? "Forbidden — admin role required" : "Unauthorized" },
+      { status: auth.httpStatus },
+    );
   }
 
   const { id } = await ctx.params;

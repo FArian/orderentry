@@ -49,6 +49,9 @@ export type User = {
   fhirSyncError?: string;
   fhirPractitionerId?: string;
   fhirPractitionerRoleId?: string;
+  // API access token (PAT — stored as SHA-256 hash)
+  apiTokenHash?: string;
+  apiTokenCreatedAt?: string;
 };
 
 // On Vercel the app directory is read-only; write to /tmp instead.
@@ -97,7 +100,7 @@ function hashPassword(password: string, salt: string): Promise<string> {
   });
 }
 
-export async function createUser(username: string, password: string): Promise<User> {
+export async function createUser(username: string, password: string, profile?: UserProfile): Promise<User> {
   await ensureDataFile();
   const existing = await findUser(username);
   if (existing) {
@@ -111,6 +114,7 @@ export async function createUser(username: string, password: string): Promise<Us
     salt,
     passwordHash,
     createdAt: new Date().toISOString(),
+    ...(profile && { profile }),
   };
   const users = await getUsers();
   users.push(user);
@@ -279,6 +283,21 @@ export async function ensureBootstrapAdmin(): Promise<void> {
     `║  Change this password immediately after login!    ║\n` +
     `╚${line}╝\n`,
   );
+}
+
+/** Store a hashed PAT on the user record.  Replaces any existing token. */
+export async function setApiToken(userId: string, hash: string): Promise<void> {
+  await updateUser(userId, { apiTokenHash: hash, apiTokenCreatedAt: new Date().toISOString() });
+}
+
+/** Remove the PAT from the user record (revoke). */
+export async function clearApiToken(userId: string): Promise<void> {
+  const users = await getUsers();
+  const idx = users.findIndex((u) => u.id === userId);
+  if (idx === -1) throw new Error("User not found");
+  const { apiTokenHash: _h, apiTokenCreatedAt: _c, ...rest } = users[idx]!;
+  users[idx] = rest as User;
+  await fs.writeFile(usersFile, JSON.stringify({ users }, null, 2), "utf8");
 }
 
 export async function verifyUser(username: string, password: string): Promise<User | null> {

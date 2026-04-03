@@ -14,8 +14,8 @@ const WADL = `<?xml version="1.0" encoding="UTF-8"?>
 <application xmlns="http://wadl.dev.java.net/2009/02"
              xmlns:xsd="http://www.w3.org/2001/XMLSchema">
 
-  <doc xml:lang="de" title="ZetLab OrderEntry API">
-    REST API for the ZetLab laboratory order entry system (ZLZ Zentrallabor AG).
+  <doc xml:lang="de" title="z2Lab OrderEntry API">
+    REST API for the z2Lab laboratory order entry system (ZLZ Zentrallabor AG &amp; ZetLab AG).
     Authentication uses HMAC-SHA256 signed session cookies.
     All data access is proxied through a FHIR R4 server.
   </doc>
@@ -50,6 +50,29 @@ const WADL = `<?xml version="1.0" encoding="UTF-8"?>
         <doc>Return the currently authenticated user.</doc>
         <response status="200"><doc>Current user object.</doc></response>
         <response status="401"><doc>Not authenticated.</doc></response>
+      </method>
+    </resource>
+
+    <!-- ── Orchestra / Launch ───────────────────────────────────────── -->
+
+    <resource path="/launch">
+      <method name="POST" id="launch">
+        <doc>
+          Orchestra context launch — creates a session and returns a redirect URL.
+          Requires a signed HS256 JWT (iss=orchestra, max 5 min, secret=ORCHESTRA_JWT_SECRET).
+          Error responses follow RFC 7807 Problem Details.
+        </doc>
+        <request>
+          <representation mediaType="application/json">
+            <param name="patientId"      style="plain" type="xsd:string" required="true"/>
+            <param name="practitionerId" style="plain" type="xsd:string" required="true"/>
+            <param name="organizationId" style="plain" type="xsd:string" required="true"/>
+            <param name="token"          style="plain" type="xsd:string" required="true"/>
+          </representation>
+        </request>
+        <response status="200"><doc>Session created — { redirectUrl: "/order/new?patientId=..." }</doc></response>
+        <response status="400"><doc>Missing or malformed request body (Problem Details).</doc></response>
+        <response status="401"><doc>JWT invalid, expired, or missing claims (Problem Details).</doc></response>
       </method>
     </resource>
 
@@ -144,6 +167,137 @@ const WADL = `<?xml version="1.0" encoding="UTF-8"?>
           </method>
         </resource>
       </resource>
+    </resource>
+
+    <!-- ── Deep Linking (KIS/PIS integration) ──────────────────────── -->
+
+    <resource path="/deeplink/order-entry">
+      <method name="GET" id="deepLinkOrderEntry">
+        <doc>
+          Deep-link entry point for KIS/PIS systems.
+          Validates a signed token (JWT or HMAC-SHA256), verifies the FHIR Patient,
+          and issues a 302 redirect to the order-entry workflow.
+          Requires DEEPLINK_ENABLED=true. Every request is audit-logged.
+          On error: redirects to /deeplink/error?code=CODE.
+        </doc>
+        <request>
+          <param name="token"       style="query" type="xsd:string"  required="false" description="HS256 JWT (auth_type=jwt)"/>
+          <param name="patientId"   style="query" type="xsd:string"  required="false" description="FHIR Patient ID (auth_type=hmac)"/>
+          <param name="ts"          style="query" type="xsd:integer" required="false" description="Unix timestamp (auth_type=hmac)"/>
+          <param name="nonce"       style="query" type="xsd:string"  required="false" description="Unique nonce (auth_type=hmac)"/>
+          <param name="source"      style="query" type="xsd:string"  required="false" description="Source system ID (auth_type=hmac)"/>
+          <param name="sig"         style="query" type="xsd:string"  required="false" description="HMAC-SHA256 hex digest (auth_type=hmac)"/>
+          <param name="context"     style="query" type="xsd:string"  required="false" description="order-entry | patient | results"/>
+          <param name="encounterId" style="query" type="xsd:string"  required="false" description="FHIR Encounter ID (optional)"/>
+        </request>
+        <response status="302"><doc>Redirect to order workflow or /deeplink/error page.</doc></response>
+      </method>
+    </resource>
+
+    <!-- ── Mail ─────────────────────────────────────────────────────── -->
+
+    <resource path="/mail/test">
+      <method name="POST" id="testMail">
+        <doc>
+          Tests the configured mail server connection (MAIL_PROVIDER + MAIL_AUTH_TYPE).
+          Optionally sends a real test email. Always returns HTTP 200;
+          use the "ok" field to determine success. Admin role required.
+          Body (optional): { sendEmail?: boolean; to?: string }
+        </doc>
+        <request>
+          <representation mediaType="application/json">
+            <param name="sendEmail" style="plain" type="xsd:boolean" required="false"/>
+            <param name="to"        style="plain" type="xsd:string"  required="false"/>
+          </representation>
+        </request>
+        <response status="200"><doc>{ ok: boolean, message: string, provider?: string, from?: string }</doc></response>
+        <response status="401"><doc>Not authenticated.</doc></response>
+        <response status="403"><doc>Admin role required.</doc></response>
+      </method>
+    </resource>
+
+    <!-- ── Settings & FHIR health (Admin) ──────────────────────────── -->
+
+    <resource path="/settings">
+      <method name="GET" id="getSettings">
+        <doc>
+          Returns non-secret application settings for the browser: FHIR base URL,
+          active FHIR auth type, monitoring/tracing dashboard URLs and labels.
+          Used by the sidebar navigation and the /account/system status page.
+        </doc>
+        <response status="200"><doc>Settings object (fhirBaseUrl, fhirAuthType, monitoringUrl, monitoringLabel, tracingUrl, tracingLabel).</doc></response>
+        <response status="401"><doc>Not authenticated.</doc></response>
+      </method>
+    </resource>
+
+    <resource path="/fhir-health">
+      <method name="GET" id="fhirHealthCheck">
+        <doc>
+          Tests the FHIR server connection using the currently configured FHIR_AUTH_TYPE.
+          Calls GET /metadata (CapabilityStatement). Always returns HTTP 200;
+          use the "ok" field to determine success. Admin role required.
+        </doc>
+        <response status="200"><doc>{ ok: boolean, message: string, fhirVersion?: string, server?: string }</doc></response>
+        <response status="401"><doc>Not authenticated.</doc></response>
+        <response status="403"><doc>Admin role required.</doc></response>
+      </method>
+    </resource>
+
+    <!-- ── Admin — Config ────────────────────────────────────────────── -->
+
+    <resource path="/env/schema">
+      <method name="GET" id="getEnvSchema">
+        <doc>Complete catalog of all ENV variables with descriptions, defaults, and group. Admin only.</doc>
+        <response status="200"><doc>Array of ENV schema entries.</doc></response>
+        <response status="401"><doc>Not authenticated.</doc></response>
+        <response status="403"><doc>Admin role required.</doc></response>
+      </method>
+    </resource>
+
+    <resource path="/env">
+      <method name="GET" id="getEnv">
+        <doc>Returns current values of whitelisted ENV variables (secrets masked). Admin only.</doc>
+        <response status="200"><doc>Array of { key, value } pairs.</doc></response>
+        <response status="401"><doc>Not authenticated.</doc></response>
+        <response status="403"><doc>Admin role required.</doc></response>
+      </method>
+      <method name="POST" id="setEnv">
+        <doc>Writes changes to .env.local (Docker/local only). Returns 405 on Vercel. Admin only.</doc>
+        <request><representation mediaType="application/json"/></request>
+        <response status="200"><doc>Save result.</doc></response>
+        <response status="405"><doc>Not available in this environment (Vercel).</doc></response>
+        <response status="401"><doc>Not authenticated.</doc></response>
+        <response status="403"><doc>Admin role required.</doc></response>
+      </method>
+    </resource>
+
+    <resource path="/config">
+      <method name="GET" id="getConfig">
+        <doc>Returns all config entries with source metadata (env / override / default). Admin only.</doc>
+        <response status="200"><doc>Config entries array.</doc></response>
+        <response status="401"><doc>Not authenticated.</doc></response>
+        <response status="403"><doc>Admin role required.</doc></response>
+      </method>
+      <method name="POST" id="setConfig">
+        <doc>Saves runtime overrides to data/config.json. Takes effect immediately, no restart needed. Returns 405 on Vercel.</doc>
+        <request><representation mediaType="application/json"/></request>
+        <response status="200"><doc>Save result.</doc></response>
+        <response status="405"><doc>Not available in this environment (Vercel).</doc></response>
+        <response status="401"><doc>Not authenticated.</doc></response>
+        <response status="403"><doc>Admin role required.</doc></response>
+      </method>
+    </resource>
+
+    <resource path="/metrics">
+      <method name="GET" id="getMetrics">
+        <doc>
+          Prometheus text exposition metrics. Auth: Bearer METRICS_TOKEN if set,
+          otherwise admin session. Used by Prometheus scrapers.
+        </doc>
+        <response status="200"><doc>Prometheus text format (text/plain).</doc></response>
+        <response status="401"><doc>Not authenticated.</doc></response>
+        <response status="403"><doc>Admin role required.</doc></response>
+      </method>
     </resource>
 
     <!-- ── Users (Admin) ─────────────────────────────────────────────── -->

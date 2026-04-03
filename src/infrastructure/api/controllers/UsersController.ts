@@ -20,7 +20,10 @@ import {
   deleteUser,
   updateUserFhirSync,
   validateCredentials,
+  setApiToken,
+  clearApiToken,
 } from "@/lib/userStore";
+import { apiTokenService } from "@/infrastructure/auth/ApiTokenService";
 import { createLogger, type Logger } from "@/infrastructure/logging/Logger";
 import { practitionerMapper, PractitionerMapper } from "@/infrastructure/fhir/PractitionerMapper";
 import type {
@@ -247,6 +250,44 @@ export class UsersController {
       const message = err instanceof Error ? err.message : String(err);
       this.log.error("syncToFhir threw", { id, message });
       return { synced: false, error: message, httpStatus: 500 };
+    }
+  }
+
+  // ── API token management (PAT) ─────────────────────────────────────────────
+
+  async generateToken(id: string): Promise<
+    { token: string; createdAt: string } | { error: string; httpStatus: number }
+  > {
+    try {
+      const user = await getUserById(id);
+      if (!user) return { error: "User not found", httpStatus: 404 };
+      if (user.role !== "admin") return { error: "Only admin users may hold API tokens", httpStatus: 403 };
+      const plaintext = apiTokenService.generate();
+      const hash      = apiTokenService.hash(plaintext);
+      const createdAt = new Date().toISOString();
+      await setApiToken(id, hash);
+      this.log.info("API token generated", { id });
+      return { token: plaintext, createdAt };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.log.error("generateToken threw", { id, message });
+      return { error: message, httpStatus: 500 };
+    }
+  }
+
+  async revokeToken(id: string): Promise<
+    { revoked: boolean } | { error: string; httpStatus: number }
+  > {
+    try {
+      const user = await getUserById(id);
+      if (!user) return { error: "User not found", httpStatus: 404 };
+      await clearApiToken(id);
+      this.log.info("API token revoked", { id });
+      return { revoked: true };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.log.error("revokeToken threw", { id, message });
+      return { error: message, httpStatus: 500 };
     }
   }
 }

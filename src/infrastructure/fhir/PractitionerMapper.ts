@@ -18,7 +18,7 @@ import type { ManagedUserProfile } from "@/domain/entities/ManagedUser";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const GLN_SYSTEM      = "urn:oid:2.51.1.3";
+const GLN_SYSTEM      = "https://www.gs1.org/gln";
 const LOCAL_ID_SYSTEM = "https://www.zetlab.ch/fhir/identifier/local-id";
 const ROLE_SYSTEM     = "urn:oid:2.51.1.3.roleType";
 
@@ -116,12 +116,15 @@ export class PractitionerMapper {
       }));
     }
 
+    // Only reference Organization if one was resolved / included in the bundle.
+    // Without orgGln the orgId is a placeholder that does not exist in FHIR —
+    // referencing it would cause a 400 "resource not found" from HAPI.
     const practitionerRole: Record<string, unknown> = {
       resourceType: "PractitionerRole",
       id: roleId,
       active: true,
       practitioner: { reference: `Practitioner/${practId}` },
-      organization:  { reference: `Organization/${orgId}` },
+      ...(p.orgGln && { organization: { reference: `Organization/${orgId}` } }),
     };
     // Resolve role codes: prefer roleTypes[] (multi-role), fall back to single roleType.
     const roleCodes: string[] = p.roleTypes?.length

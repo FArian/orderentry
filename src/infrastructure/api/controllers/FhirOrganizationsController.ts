@@ -7,44 +7,33 @@
  *
  * Uses deterministic FHIR IDs (org-{gln}) so PUT is idempotent upsert.
  * Constructor-injectable fetchFn for testability.
+ *
+ * List returns a FHIR searchset Bundle<Organization>.
+ * Create/Update return the Organization resource directly.
+ * Delete returns a FHIR OperationOutcome.
+ * All errors return a FHIR OperationOutcome.
  */
 
 import { FHIR_BASE } from "@/infrastructure/fhir/FhirClient";
-import { getAdminSession } from "@/lib/auth";
-import type {
-  CreateOrganizationRequestDto,
-  FhirOrganizationDto,
-  FhirRegistryErrorDto,
-  ListOrganizationsResponseDto,
-} from "../dto/FhirRegistryDto";
+import { getAdminSession, getAdminFromRequest } from "@/lib/auth";
+import {
+  buildOperationOutcome,
+  buildSearchBundle,
+  type FhirBundle,
+  type FhirOperationOutcome,
+} from "@/infrastructure/fhir/FhirTypes";
 
 const GLN_SYSTEM = "urn:oid:2.51.1.3";
 
-// ── FHIR types (minimal) ───────────────────────────────────────────────────────
+// ── FHIR Organization type ────────────────────────────────────────────────────
 
-interface FhirIdentifier { system?: string; value?: string }
-interface FhirOrg {
-  id?:         string;
-  name?:       string;
-  identifier?: FhirIdentifier[];
-}
-interface FhirBundle { entry?: { resource?: FhirOrg }[]; total?: number }
-
-// ── Helper ─────────────────────────────────────────────────────────────────────
-
-function extractGln(org: FhirOrg): string {
-  return (
-    org.identifier?.find((i) => i.system === GLN_SYSTEM)?.value ?? ""
-  );
-}
-
-function toDto(org: FhirOrg): FhirOrganizationDto | null {
-  if (!org.id) return null;
-  return {
-    id:   org.id,
-    name: org.name ?? "",
-    gln:  extractGln(org),
-  };
+export interface FhirOrganization {
+  resourceType: "Organization";
+  id?:          string;
+  name?:        string;
+  active?:      boolean;
+  identifier?:  Array<{ system?: string; value?: string }>;
+  partOf?:      { reference?: string };
 }
 
 // ── Controller ─────────────────────────────────────────────────────────────────
@@ -55,7 +44,7 @@ export class FhirOrganizationsController {
     private readonly fetchFn: typeof globalThis.fetch = globalThis.fetch,
   ) {}
 
-  async list(): Promise<ListOrganizationsResponseDto | FhirRegistryErrorDto> {
+  async list(): Promise<FhirBundle<FhirOrganization> | FhirOperationOutcome> {
     try {
       const url = `${this.fhirBase}/Organization?_count=200&_sort=name`;
       const res = await this.fetchFn(url, {
@@ -63,57 +52,105 @@ export class FhirOrganizationsController {
         cache: "no-store",
       });
       if (!res.ok) {
-        return { error: `FHIR ${res.status}`, httpStatus: 502 };
+        return buildOperationOutcome("error", "exception", `FHIR ${res.status}`, 502);
       }
-      const bundle = (await res.json()) as FhirBundle;
-      const organizations = (bundle.entry ?? [])
-        .map((e) => (e.resource ? toDto(e.resource) : null))
-        .filter((x): x is FhirOrganizationDto => x !== null);
-      return { organizations, total: organizations.length };
+      const bundle = (await res.json()) as FhirBundle<FhirOrganization>;
+      const orgs = (bundle.entry ?? [])
+        .map((e) => e.resource)
+        .filter((r): r is FhirOrganization => !!r && !!r.id);
+
+      return buildSearchBundle(orgs, orgs.length);
     } catch (err: unknown) {
-      return { error: err instanceof Error ? err.message : "List failed", httpStatus: 500 };
+      return buildOperationOutcome("error", "exception", err instanceof Error ? err.message : "List failed", 500);
     }
   }
 
   async create(
-    dto: CreateOrganizationRequestDto,
-  ): Promise<FhirOrganizationDto | FhirRegistryErrorDto> {
-    const { name, gln } = dto;
-    if (!gln?.trim())  return { error: "GLN is required",  httpStatus: 400 };
-    if (!name?.trim()) return { error: "Name is required", httpStatus: 400 };
+    dto: { name: string; gln: string; parentId?: string },
+  ): Promise<FhirOrganization | FhirOperationOutcome> {
+    const { name, gln, parentId } = dto;
+    if (!gln?.trim())  return buildOperationOutcome("error", "required",   "GLN is required",  400);
+    if (!name?.trim()) return buildOperationOutcome("error", "required",   "Name is required", 400);
 
-    // GLN uniqueness check
     const existing = await this.findByGln(gln.trim());
     if (existing) {
-      return { error: "GLN already registered", httpStatus: 409 };
+      return buildOperationOutcome("error", "duplicate", "GLN already registered", 409);
     }
 
-    const id  = `org-${gln.trim().replace(/[^a-zA-Z0-9]/g, "-")}`;
-    const org = {
+    const id: string  = `org-${gln.trim().replace(/[^a-zA-Z0-9]/g, "-")}`;
+    const org: FhirOrganization = {
       resourceType: "Organization",
       id,
       identifier: [{ system: GLN_SYSTEM, value: gln.trim() }],
       name: name.trim(),
       active: true,
+      ...(parentId?.trim() ? { partOf: { reference: `Organization/${parentId.trim()}` } } : {}),
     };
 
     try {
       const res = await this.fetchFn(`${this.fhirBase}/Organization/${id}`, {
         method: "PUT",
-        headers: {
-          "content-type": "application/fhir+json",
-          accept: "application/fhir+json",
-        },
+        headers: { "content-type": "application/fhir+json", accept: "application/fhir+json" },
         body: JSON.stringify(org),
         cache: "no-store",
       });
       if (!res.ok) {
         const text = await res.text().catch(() => "");
-        return { error: `FHIR ${res.status}: ${text.slice(0, 200)}`, httpStatus: 502 };
+        return buildOperationOutcome("error", "exception", `FHIR ${res.status}: ${text.slice(0, 200)}`, 502);
       }
-      return { id, name: name.trim(), gln: gln.trim() };
+      return org;
     } catch (err: unknown) {
-      return { error: err instanceof Error ? err.message : "Create failed", httpStatus: 500 };
+      return buildOperationOutcome("error", "exception", err instanceof Error ? err.message : "Create failed", 500);
+    }
+  }
+
+  async update(
+    id: string,
+    dto: { name: string; gln: string; parentId?: string },
+  ): Promise<FhirOrganization | FhirOperationOutcome> {
+    if (!dto.name?.trim()) return buildOperationOutcome("error", "required", "Name is required", 400);
+    const org: FhirOrganization = {
+      resourceType: "Organization",
+      id,
+      identifier: [{ system: GLN_SYSTEM, value: dto.gln.trim() }],
+      name: dto.name.trim(),
+      active: true,
+      ...(dto.parentId?.trim() ? { partOf: { reference: `Organization/${dto.parentId.trim()}` } } : {}),
+    };
+    try {
+      const res = await this.fetchFn(`${this.fhirBase}/Organization/${id}`, {
+        method: "PUT",
+        headers: { "content-type": "application/fhir+json", accept: "application/fhir+json" },
+        body: JSON.stringify(org),
+        cache: "no-store",
+      });
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        return buildOperationOutcome("error", "exception", `FHIR ${res.status}: ${text.slice(0, 200)}`, 502);
+      }
+      return org;
+    } catch (err: unknown) {
+      return buildOperationOutcome("error", "exception", err instanceof Error ? err.message : "Update failed", 500);
+    }
+  }
+
+  async delete(id: string): Promise<FhirOperationOutcome> {
+    try {
+      const res = await this.fetchFn(`${this.fhirBase}/Organization/${id}`, {
+        method: "DELETE",
+        headers: { accept: "application/fhir+json" },
+        cache: "no-store",
+      });
+      if (res.status === 404) {
+        return buildOperationOutcome("error", "not-found", "Organization not found", 404);
+      }
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        return buildOperationOutcome("error", "exception", `FHIR ${res.status}: ${text.slice(0, 200)}`, 502);
+      }
+      return buildOperationOutcome("information", "informational", `Organization/${id} deleted`, 200);
+    } catch (err: unknown) {
+      return buildOperationOutcome("error", "exception", err instanceof Error ? err.message : "Delete failed", 500);
     }
   }
 
@@ -125,7 +162,7 @@ export class FhirOrganizationsController {
         cache: "no-store",
       });
       if (!res.ok) return null;
-      const bundle = (await res.json()) as FhirBundle;
+      const bundle = (await res.json()) as FhirBundle<FhirOrganization>;
       return bundle.entry?.[0]?.resource?.id ?? null;
     } catch {
       return null;
@@ -137,8 +174,17 @@ export const fhirOrganizationsController = new FhirOrganizationsController();
 
 // ── Route auth helper (admin required) ────────────────────────────────────────
 
-export async function requireAdmin(): Promise<{ error: string; httpStatus: number } | null> {
-  const session = await getAdminSession();
+/**
+ * Auth guard for admin-only routes.
+ * Checks session cookie first; falls back to Authorization: Bearer (PAT or JWT).
+ * Pass the incoming Request to enable Bearer token auth from external clients.
+ */
+export async function requireAdmin(
+  req?: Request,
+): Promise<{ error: string; httpStatus: number } | null> {
+  const session = req
+    ? await getAdminFromRequest(req)
+    : await getAdminSession();
   if (!session) return { error: "Unauthorized", httpStatus: 401 };
   return null;
 }

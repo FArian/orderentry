@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import type { SelectHTMLAttributes } from "react";
 
 // ── Props ─────────────────────────────────────────────────────────────────────
@@ -66,7 +67,8 @@ export function Select({
   disabled,
   ...rest
 }: SelectProps) {
-  const selectId = id ?? `select-${Math.random().toString(36).slice(2, 7)}`;
+  const generatedId = useId();
+  const selectId    = id ?? `select-${generatedId}`;
   const hasError = !!error;
 
   const borderClass = hasError

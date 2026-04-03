@@ -22,6 +22,7 @@ import fs from "fs";
 import path from "path";
 import { NextRequest, NextResponse } from "next/server";
 import { EnvConfig } from "@/infrastructure/config/EnvConfig";
+import { getAdminSession } from "@/lib/auth";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -62,6 +63,14 @@ function parseEntry(raw: string): LogEntry | null {
 // ── Route handler ──────────────────────────────────────────────────────────────
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
+  const admin = await getAdminSession();
+  if (!admin) {
+    return NextResponse.json(
+      { type: "about:blank", title: "Forbidden", status: 403, detail: "Admin access required", instance: "/api/logs" },
+      { status: 403 },
+    );
+  }
+
   const { logFile } = EnvConfig;
 
   if (!logFile) {

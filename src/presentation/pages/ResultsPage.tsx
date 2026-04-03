@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef } from "react";
 import Link from "next/link";
+import { BackButton } from "@/components/BackButton";
 import { useResults } from "@/presentation/hooks/useResults";
 import { ResultList } from "@/presentation/components/ResultList";
 import { SearchBar } from "@/presentation/components/SearchBar";
@@ -13,6 +14,19 @@ import type { ModalState } from "@/presentation/components/PreviewModal";
 import { AppSidebar } from "@/components/AppSidebar";
 
 // ── Status filter options (all FHIR DiagnosticReport statuses) ────────────────
+
+function statusChipActiveClass(status: string): string {
+  switch (status) {
+    case "final":
+    case "corrected":  return "bg-zt-success-light text-zt-success border-zt-success-border font-medium";
+    case "amended":    return "bg-zt-amended-light text-zt-amended border-zt-amended-border font-medium";
+    case "cancelled":  return "bg-zt-danger-light text-zt-danger border-zt-danger-border font-medium";
+    case "partial":
+    case "preliminary":
+    case "registered": return "bg-zt-info-light text-zt-info border-zt-info-border font-medium";
+    default:           return "bg-zt-primary-light text-zt-primary border-zt-primary-border font-medium";
+  }
+}
 
 const STATUS_OPTIONS = [
   "registered",
@@ -187,6 +201,8 @@ export default function ResultsPage() {
 
           {/* Breadcrumb */}
           <nav className="mb-4 flex items-center gap-1.5 text-[12px] text-zt-text-tertiary" aria-label="Brotkrumen">
+            <BackButton />
+            <span className="text-zt-text-tertiary">|</span>
             <Link href="/" className="text-zt-primary hover:underline">{t("nav.home")}</Link>
             <span>/</span>
             <span className="text-zt-text-primary">{t("results.title")}</span>
@@ -239,7 +255,7 @@ export default function ResultsPage() {
                 onClick={() => handleStatusChange(s)}
                 className={`text-xs px-3 py-1.5 rounded-full border transition-colors whitespace-nowrap ${
                   statusFilter === s
-                    ? "bg-zt-primary-light text-zt-primary border-zt-primary-border font-medium"
+                    ? statusChipActiveClass(s)
                     : "bg-zt-bg-card text-zt-text-secondary border-zt-border hover:bg-zt-bg-page"
                 }`}
               >

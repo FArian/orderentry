@@ -1,27 +1,34 @@
 /**
- * GET  /api/config  — returns all config entries with source metadata
- * POST /api/config  — saves runtime overrides to data/config.json
+ * GET  /api/config  — returns all config entries with source metadata (admin only)
+ * POST /api/config  — saves runtime overrides to data/config.json  (admin only)
  */
 
 import { NextResponse } from "next/server";
+import { checkAdminAccess } from "@/lib/auth";
 import { configController } from "@/infrastructure/api/controllers/ConfigController";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(): Promise<NextResponse> {
+export async function GET(req: Request): Promise<NextResponse> {
+  const auth = await checkAdminAccess(req);
+  if (!auth.authorized) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: auth.httpStatus });
+  }
   const result = await configController.get();
   return NextResponse.json(result);
 }
 
-export async function POST(request: Request): Promise<NextResponse> {
+export async function POST(req: Request): Promise<NextResponse> {
+  const auth = await checkAdminAccess(req);
+  if (!auth.authorized) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: auth.httpStatus });
+  }
+
   let body: unknown;
   try {
-    body = await request.json();
+    body = await req.json();
   } catch {
-    return NextResponse.json(
-      { ok: false, message: "Invalid JSON body" },
-      { status: 400 },
-    );
+    return NextResponse.json({ ok: false, message: "Invalid JSON body" }, { status: 400 });
   }
 
   if (

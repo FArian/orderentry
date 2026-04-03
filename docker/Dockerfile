@@ -21,6 +21,7 @@ COPY . .
 #     --build-arg GIT_COMMIT=$(git rev-parse --short HEAD) \
 #     --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) \
 #     --build-arg GIT_COUNT=$(git rev-list --count HEAD) \
+#     --build-arg NEXT_PUBLIC_LAB_ORG_ID=zlz \
 #     ...
 ARG GIT_COMMIT=
 ARG GIT_BRANCH=
@@ -34,6 +35,11 @@ RUN if [ -n "$GIT_COMMIT" ]; then \
       printf "NEXT_PUBLIC_APP_VERSION=v%s+%s-%s%s (%s)\n" \
         "$PKG_VER" "$COUNT_PART" "$GIT_COMMIT" "$BRANCH_PART" "$TS" > .env.local; \
     fi
+
+# NEXT_PUBLIC_* vars must be baked into the client bundle at build time.
+# Runtime docker-compose env vars are ignored for these by the browser bundle.
+ARG NEXT_PUBLIC_LAB_ORG_ID=zlz
+RUN printf "NEXT_PUBLIC_LAB_ORG_ID=%s\n" "$NEXT_PUBLIC_LAB_ORG_ID" >> .env.local
 
 # write-version.mjs runs as prebuild hook; skips git gracefully if .git is absent.
 # If .env.local was pre-written above, prebuild updates it in-place (same key).

@@ -37,8 +37,9 @@ export interface UpdateRoleRequestDto {
 // ── Response DTOs ─────────────────────────────────────────────────────────────
 
 export interface ListRolesResponseDto {
-  data:       RoleCatalogEntryDto[];
-  error?:     string;
+  data:        RoleCatalogEntryDto[];
+  total?:      number;
+  error?:      string;
   httpStatus?: number;
 }
 

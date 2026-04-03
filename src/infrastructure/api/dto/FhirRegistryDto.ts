@@ -10,14 +10,17 @@
 // ── Organization ───────────────────────────────────────────────────────────────
 
 export interface FhirOrganizationDto {
-  id:   string;
-  name: string;
-  gln:  string;
+  id:          string;
+  name:        string;
+  gln:         string;
+  parentId?:   string;
+  parentName?: string;
 }
 
 export interface CreateOrganizationRequestDto {
-  name: string;
-  gln:  string;
+  name:      string;
+  gln:       string;
+  parentId?: string;
 }
 
 export interface ListOrganizationsResponseDto {
@@ -45,6 +48,12 @@ export interface CreatePractitionerRequestDto {
   gln:            string;
   organizationId: string;
   roleCode:       string;
+}
+
+export interface UpdatePractitionerRequestDto {
+  roleCode:       string;
+  organizationId: string;
+  gln?:           string;
 }
 
 export interface ListPractitionersResponseDto {

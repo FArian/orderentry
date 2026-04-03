@@ -1,8 +1,25 @@
 import { NextResponse } from "next/server";
 import { ordersController } from "@/infrastructure/api/controllers/OrdersController";
+import { getSessionUserWithOrg } from "@/lib/auth";
+import { buildOperationOutcome } from "@/infrastructure/fhir/FhirTypes";
+
+const FHIR_CONTENT_TYPE = "application/fhir+json";
 
 export async function GET() {
-  const result = await ordersController.list();
-  const { httpStatus, ...body } = result;
-  return NextResponse.json(body, { status: httpStatus ?? 200 });
+  const sessionUser = await getSessionUserWithOrg();
+  if (!sessionUser) {
+    return NextResponse.json(
+      buildOperationOutcome("error", "security", "Not authenticated", 401),
+      { status: 401, headers: { "content-type": FHIR_CONTENT_TYPE } },
+    );
+  }
+
+  const result = await ordersController.list({
+    ...(sessionUser.orgFhirId !== undefined && { orgFhirId: sessionUser.orgFhirId }),
+    ...(sessionUser.orgGln    !== undefined && { orgGln:    sessionUser.orgGln }),
+  });
+
+  const httpStatus = (result as { httpStatus?: number }).httpStatus ?? 200;
+  const { httpStatus: _, ...body } = result as unknown as Record<string, unknown>;
+  return NextResponse.json(body, { status: httpStatus, headers: { "content-type": FHIR_CONTENT_TYPE } });
 }

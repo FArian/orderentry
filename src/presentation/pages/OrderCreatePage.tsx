@@ -16,6 +16,7 @@ import { useOrderDocuments } from "@/presentation/hooks/useOrderDocuments";
 import { OrderFormView } from "@/presentation/pages/OrderFormView";
 import { FHIR_SYSTEMS } from "@/lib/fhir";
 import type { SpecimenChoice } from "@/lib/fhir";
+import { AppConfig } from "@/shared/config/AppConfig";
 
 interface OrderCreatePageProps {
   id: string;
@@ -28,7 +29,7 @@ export default function OrderCreatePage({ id, srId }: OrderCreatePageProps) {
 
   // ── Hooks ─────────────────────────────────────────────────────────────────────
 
-  const catalog = useOrderCatalog();
+  const catalog = useOrderCatalog(AppConfig.labOrgId);
   const form = useOrderForm(
     id,
     srId,

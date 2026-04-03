@@ -14,6 +14,7 @@
 import { useState, useCallback } from "react";
 import Link from "next/link";
 import { AppSidebar } from "@/components/AppSidebar";
+import { BackButton } from "@/components/BackButton";
 import { useRoles } from "@/presentation/hooks/useRoles";
 import { useTranslation } from "@/lib/i18n";
 import { formatDate } from "@/shared/utils/formatDate";
@@ -180,6 +181,8 @@ export default function RolesPage() {
 
           {/* Breadcrumb */}
           <nav className="flex items-center gap-1.5 text-[12px] text-zt-text-tertiary mb-4">
+            <BackButton />
+            <span className="text-zt-text-tertiary">|</span>
             <Link href="/" className="text-zt-primary hover:underline">{t("nav.home")}</Link>
             <span>/</span>
             <span className="text-zt-text-primary">{t("roles.title")}</span>

@@ -2,69 +2,39 @@
  * OrdersController — handles GET /api/service-requests and
  * DELETE /api/service-requests/{id}.
  *
+ * The list() method returns a FHIR searchset Bundle (pass-through from HAPI).
  * The soft-delete fallback logic (409 → entered-in-error) lives here so it
  * is testable independently of the Next.js route machinery.
+ * Error responses are FHIR OperationOutcome.
  */
 
 import { FHIR_BASE } from "@/infrastructure/fhir/FhirClient";
 import { createLogger, type Logger } from "@/infrastructure/logging/Logger";
 import { FHIR_SYSTEMS } from "@/lib/fhir";
 import { OrderStatus } from "@/domain/entities/Order";
+import {
+  buildOperationOutcome,
+  type FhirBundle,
+  type FhirOperationOutcome,
+} from "@/infrastructure/fhir/FhirTypes";
 import type {
   DeleteOrderResponseDto,
-  ListOrdersResponseDto,
-  OrderResponseDto,
+  ListOrdersQueryDto,
 } from "../dto/OrderDto";
 
-// ── Minimal FHIR types ────────────────────────────────────────────────────────
-interface FhirIdentifier { system?: string; value?: string }
-interface FhirCodeableConcept {
-  text?: string;
-  coding?: Array<{ system?: string; code?: string; display?: string }>;
-}
+// ── Minimal FHIR type scoped to this controller ───────────────────────────────
 interface FhirServiceRequest {
   resourceType: "ServiceRequest";
   id?: string;
   status?: string;
-  intent?: string;
-  code?: FhirCodeableConcept;
-  authoredOn?: string;
-  identifier?: FhirIdentifier[];
-  specimen?: Array<{ reference?: string }>;
-  subject?: { reference?: string };
-  meta?: { lastUpdated?: string };
+  [key: string]: unknown;
 }
-interface FhirBundle<T = unknown> {
-  resourceType: "Bundle";
-  total?: number;
-  entry?: Array<{ resource?: T }>;
-}
+
+export type OrdersBundleResponse =
+  | (FhirBundle<FhirServiceRequest> & { httpStatus?: number })
+  | FhirOperationOutcome;
+
 // ─────────────────────────────────────────────────────────────────────────────
-
-function extractOrderNumber(ids?: FhirIdentifier[]): string {
-  if (!ids) return "";
-  const preferred = ids.find((i) => i.system === FHIR_SYSTEMS.orderNumbers);
-  if (preferred?.value) return preferred.value;
-  return ids.find((i) => i.value)?.value ?? "";
-}
-
-function extractPatientId(subject?: { reference?: string }): string {
-  const ref = subject?.reference ?? "";
-  return ref.startsWith("Patient/") ? ref.slice("Patient/".length) : "";
-}
-
-function mapServiceRequest(sr: FhirServiceRequest): OrderResponseDto {
-  return {
-    id: sr.id as string,
-    status: sr.status ?? "",
-    intent: sr.intent ?? "",
-    codeText: sr.code?.text ?? sr.code?.coding?.[0]?.display ?? "",
-    authoredOn: sr.authoredOn ?? sr.meta?.lastUpdated ?? "",
-    orderNumber: extractOrderNumber(sr.identifier),
-    specimenCount: Array.isArray(sr.specimen) ? sr.specimen.length : 0,
-    patientId: extractPatientId(sr.subject),
-  };
-}
 
 export class OrdersController {
   private readonly log: Logger;
@@ -77,10 +47,27 @@ export class OrdersController {
     this.log = logger ?? createLogger("OrdersController");
   }
 
-  async list(): Promise<ListOrdersResponseDto> {
-    this.log.debug("list ServiceRequests");
+  async list(query: ListOrdersQueryDto = {}): Promise<OrdersBundleResponse> {
+    const { orgFhirId, orgGln } = query;
+
+    // Org access is required — no org means no order data.
+    if (!orgFhirId && !orgGln) {
+      return buildOperationOutcome(
+        "error",
+        "forbidden",
+        "Kein Organisationszugang. Bitte Organisations-GLN im Profil hinterlegen.",
+        403,
+      );
+    }
+
+    this.log.debug("list ServiceRequests", { orgFhirId, orgGln });
     try {
       const url = new URL(`${this.fhirBase}/ServiceRequest`);
+      if (orgFhirId) {
+        url.searchParams.set("subject:Patient.organization", `Organization/${orgFhirId}`);
+      } else if (orgGln) {
+        url.searchParams.set("subject:Patient.organization:identifier", `https://www.gs1.org/gln|${orgGln}`);
+      }
       url.searchParams.set("_sort", "-_lastUpdated");
       url.searchParams.set("_count", "50");
 
@@ -91,29 +78,16 @@ export class OrdersController {
 
       if (!res.ok) {
         this.log.error("FHIR ServiceRequest list failed", { status: res.status });
-        return {
-          data: [],
-          total: 0,
-          error: `FHIR error: ${res.status}`,
-          httpStatus: res.status,
-        };
+        return buildOperationOutcome("error", "exception", `FHIR error: ${res.status}`, res.status);
       }
 
       const bundle = (await res.json()) as FhirBundle<FhirServiceRequest>;
-      const data = (bundle.entry ?? [])
-        .map((e) => e.resource)
-        .filter(
-          (r): r is FhirServiceRequest =>
-            !!r && r.resourceType === "ServiceRequest" && !!r.id,
-        )
-        .map(mapServiceRequest);
-
-      this.log.info("ServiceRequests fetched", { count: data.length });
-      return { data, total: bundle.total ?? data.length };
+      this.log.info("ServiceRequests fetched", { count: bundle.entry?.length ?? 0, total: bundle.total });
+      return { ...bundle, type: "searchset" as const };
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       this.log.error("ServiceRequest list threw", { message });
-      return { data: [], total: 0, error: message || "Network error", httpStatus: 500 };
+      return buildOperationOutcome("error", "exception", message || "Network error", 500);
     }
   }
 
@@ -140,11 +114,7 @@ export class OrdersController {
         );
         if (!getRes.ok) {
           this.log.error("ServiceRequest GET for soft-delete failed", { id, status: getRes.status });
-          return {
-            deleted: false,
-            error: `FHIR error: ${getRes.status}`,
-            httpStatus: getRes.status,
-          };
+          return { deleted: false, error: `FHIR error: ${getRes.status}`, httpStatus: getRes.status };
         }
 
         const sr = (await getRes.json()) as Record<string, unknown>;
@@ -153,21 +123,14 @@ export class OrdersController {
           `${this.fhirBase}/ServiceRequest/${id}`,
           {
             method: "PUT",
-            headers: {
-              accept: "application/fhir+json",
-              "content-type": "application/fhir+json",
-            },
+            headers: { accept: "application/fhir+json", "content-type": "application/fhir+json" },
             body: JSON.stringify(updated),
           },
         );
 
         if (!putRes.ok) {
           this.log.error("ServiceRequest soft-delete PUT failed", { id, status: putRes.status });
-          return {
-            deleted: false,
-            error: `FHIR error: ${putRes.status}`,
-            httpStatus: putRes.status,
-          };
+          return { deleted: false, error: `FHIR error: ${putRes.status}`, httpStatus: putRes.status };
         }
 
         this.log.info("ServiceRequest soft-deleted (entered-in-error)", { id });
@@ -175,11 +138,7 @@ export class OrdersController {
       }
 
       this.log.error("ServiceRequest delete failed", { id, status: res.status });
-      return {
-        deleted: false,
-        error: `FHIR error: ${res.status}`,
-        httpStatus: res.status,
-      };
+      return { deleted: false, error: `FHIR error: ${res.status}`, httpStatus: res.status };
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       this.log.error("ServiceRequest delete threw", { id, message });
@@ -190,3 +149,12 @@ export class OrdersController {
 
 /** Production singleton — routes import this directly. */
 export const ordersController = new OrdersController();
+
+// ── Helpers re-exported for FhirOrderRepository ───────────────────────────────
+
+export function extractOrderNumber(ids?: Array<{ system?: string; value?: string }>): string {
+  if (!ids) return "";
+  const preferred = ids.find((i) => i.system === FHIR_SYSTEMS.orderNumbers);
+  if (preferred?.value) return preferred.value;
+  return ids.find((i) => i.value)?.value ?? "";
+}

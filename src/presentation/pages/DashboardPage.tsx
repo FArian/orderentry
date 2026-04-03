@@ -20,6 +20,7 @@ import { formatDate } from "@/shared/utils/formatDate";
 import { AppSidebar } from "@/components/AppSidebar";
 import type { OrderResponseDto } from "@/infrastructure/api/dto/OrderDto";
 import type { PatientResponseDto } from "@/infrastructure/api/dto/PatientDto";
+import { FHIR_SYSTEMS } from "@/lib/fhir";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -29,6 +30,53 @@ interface DashboardStats {
   drafts: number;
   results: number;
   sentToday: number;
+}
+
+// ── FHIR Bundle parsing helpers ────────────────────────────────────────────────
+
+interface FhirHumanName { text?: string; given?: string[]; family?: string }
+interface FhirPatientRes { id?: string; name?: FhirHumanName[]; meta?: { lastUpdated?: string } }
+interface FhirSrIdentifier { system?: string; value?: string }
+interface FhirServiceRequestRes {
+  id?:          string;
+  status?:      string;
+  intent?:      string;
+  code?:        { text?: string; coding?: Array<{ display?: string }> };
+  authoredOn?:  string;
+  identifier?:  FhirSrIdentifier[];
+  specimen?:    unknown[];
+  subject?:     { reference?: string };
+  meta?:        { lastUpdated?: string };
+}
+interface FhirSearchBundle<T> { total?: number; entry?: Array<{ resource?: T }> }
+
+function fhirNameToString(n?: FhirHumanName[]): string {
+  if (!n || n.length === 0) return "Unknown";
+  const first = n[0];
+  if (!first) return "Unknown";
+  if (first.text?.trim()) return first.text.trim();
+  return [...(first.given ?? []), first.family ?? ""].filter(Boolean).join(" ") || "Unknown";
+}
+
+function mapFhirPatient(r: FhirPatientRes): PatientResponseDto {
+  return { id: r.id ?? "", name: fhirNameToString(r.name), address: "", createdAt: r.meta?.lastUpdated ?? "" };
+}
+
+function mapFhirServiceRequest(sr: FhirServiceRequestRes): OrderResponseDto {
+  const patRef   = sr.subject?.reference ?? "";
+  const patientId = patRef.startsWith("Patient/") ? patRef.slice("Patient/".length) : "";
+  const preferred = sr.identifier?.find((i) => i.system === FHIR_SYSTEMS.orderNumbers);
+  const orderNumber = preferred?.value ?? sr.identifier?.find((i) => i.value)?.value ?? "";
+  return {
+    id:            sr.id ?? "",
+    status:        sr.status ?? "",
+    intent:        sr.intent ?? "",
+    codeText:      sr.code?.text ?? sr.code?.coding?.[0]?.display ?? "",
+    authoredOn:    sr.authoredOn ?? sr.meta?.lastUpdated ?? "",
+    orderNumber,
+    specimenCount: Array.isArray(sr.specimen) ? sr.specimen.length : 0,
+    patientId,
+  };
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -52,8 +100,8 @@ function isToday(dateStr: string): boolean {
 }
 
 function orderStatusPill(status: string): string {
-  if (status === "draft")     return "bg-[#FAEEDA] text-[#854F0B]";
-  if (status === "active")    return "bg-zt-primary-light text-zt-primary";
+  if (status === "draft")     return "bg-zt-warning-bg text-zt-warning-text";
+  if (status === "active")    return "bg-zt-info-light text-zt-info";
   if (status === "completed") return "bg-zt-success-light text-zt-success";
   return "bg-zt-bg-page text-zt-text-secondary";
 }
@@ -92,8 +140,8 @@ function StatCard({
   subVariant?: "default" | "up" | "warn";
 }) {
   const subColor =
-    subVariant === "up"   ? "text-zt-success" :
-    subVariant === "warn" ? "text-[#854F0B]"  :
+    subVariant === "up"   ? "text-zt-success"      :
+    subVariant === "warn" ? "text-zt-warning-text"  :
     "text-zt-text-tertiary";
 
   return (
@@ -117,9 +165,9 @@ function AlertItem({
   time: string;
 }) {
   const styles = {
-    warn:    { wrap: "bg-[#FAEEDA] border-l-[3px] border-l-[#854F0B]", dot: "bg-[#854F0B]" },
-    info:    { wrap: "bg-zt-primary-light border-l-[3px] border-l-zt-primary", dot: "bg-zt-primary" },
-    success: { wrap: "bg-zt-success-light border-l-[3px] border-l-zt-success", dot: "bg-zt-success" },
+    warn:    { wrap: "bg-zt-warning-bg   border-l-[3px] border-l-zt-warning-text", dot: "bg-zt-warning-text" },
+    info:    { wrap: "bg-zt-info-light   border-l-[3px] border-l-zt-info",         dot: "bg-zt-info" },
+    success: { wrap: "bg-zt-success-light border-l-[3px] border-l-zt-success",     dot: "bg-zt-success" },
   }[variant];
 
   return (
@@ -173,18 +221,29 @@ export default function DashboardPage() {
           setUsername(meRes.value.user.username as string);
         }
 
-        // Patients
-        const patientsData =
-          patientsRes.status === "fulfilled" ? patientsRes.value : null;
-        const patientsTotal: number = patientsData?.total ?? 0;
-        const recentPats: PatientResponseDto[] = patientsData?.data?.slice(0, 3) ?? [];
+        // Patients — API returns FHIR Bundle<Patient>
+        const patientsBundle =
+          patientsRes.status === "fulfilled"
+            ? (patientsRes.value as FhirSearchBundle<FhirPatientRes>)
+            : null;
+        const patientsTotal: number = patientsBundle?.total ?? 0;
+        const recentPats: PatientResponseDto[] = (patientsBundle?.entry ?? [])
+          .map((e) => e.resource)
+          .filter((r): r is FhirPatientRes => !!r && !!r.id)
+          .map(mapFhirPatient)
+          .slice(0, 3);
         setRecentPatients(recentPats);
 
-        // Orders
-        const ordersData =
-          ordersRes.status === "fulfilled" ? ordersRes.value : null;
-        const ordersTotal: number = ordersData?.total ?? 0;
-        const allOrders: OrderResponseDto[] = ordersData?.data ?? [];
+        // Orders — API returns FHIR Bundle<ServiceRequest>
+        const ordersBundle =
+          ordersRes.status === "fulfilled"
+            ? (ordersRes.value as FhirSearchBundle<FhirServiceRequestRes>)
+            : null;
+        const ordersTotal: number = ordersBundle?.total ?? 0;
+        const allOrders: OrderResponseDto[] = (ordersBundle?.entry ?? [])
+          .map((e) => e.resource)
+          .filter((r): r is FhirServiceRequestRes => !!r && !!r.id)
+          .map(mapFhirServiceRequest);
         const draftsCount = allOrders.filter((o) => o.status === "draft").length;
         const sentTodayCount = allOrders.filter(
           (o) => o.status === "active" && isToday(o.authoredOn)

@@ -1,14 +1,18 @@
-import { ResultsController } from "@/infrastructure/api/controllers/ResultsController";
+import {
+  ResultsController,
+  type ResultsBundleResponse,
+} from "@/infrastructure/api/controllers/ResultsController";
+import type { FhirBundle } from "@/infrastructure/fhir/FhirTypes";
 
 /**
  * Integration tests for ResultsController.
  *
- * The controller is constructed with an injected fetch mock so no real
- * FHIR server is needed. These tests verify the full controller logic:
- * URL building, response mapping, error handling, and pagination.
+ * Tests cover: FHIR Bundle pass-through, URL building (filters, pagination),
+ * org-access guard, and OperationOutcome error handling.
+ *
+ * Field mapping (DiagnosticReport → domain Result) is tested in FhirResultRepository tests.
  */
 
-// ── FHIR fixture helpers ──────────────────────────────────────────────────────
 function makeDiagnosticReport(overrides: Record<string, unknown> = {}) {
   return {
     resourceType: "DiagnosticReport",
@@ -34,52 +38,68 @@ function makeBundle(resources: unknown[], total = resources.length) {
 function makeFetch(
   dataBundle: unknown,
   countBundle: unknown = { resourceType: "Bundle", total: 1 },
-  status = 200,
 ) {
   let callCount = 0;
   return jest.fn().mockImplementation(() => {
     callCount++;
     const body = callCount === 1 ? dataBundle : countBundle;
-    return Promise.resolve({
-      ok: status >= 200 && status < 300,
-      status,
-      json: () => Promise.resolve(body),
-    });
+    return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(body) });
   });
 }
-// ─────────────────────────────────────────────────────────────────────────────
+
+const FHIR_BASE = "http://fhir-test:8080/fhir";
+const ORG_QUERY = { orgFhirId: "org-test" };
+
+function asBundle(result: ResultsBundleResponse) {
+  return result as FhirBundle<{ id?: string; status?: string; resourceType?: string }>;
+}
 
 describe("ResultsController.list()", () => {
-  const FHIR_BASE = "http://fhir-test:8080/fhir";
+  it("returns 403 OperationOutcome when no org is provided", async () => {
+    const mockFetch = makeFetch(makeBundle([]));
+    const controller = new ResultsController(FHIR_BASE, mockFetch as typeof fetch);
 
-  it("returns mapped results from a successful FHIR response", async () => {
+    const result = await controller.list({});
+
+    expect((result as { resourceType: string }).resourceType).toBe("OperationOutcome");
+    const outcome = result as { issue: Array<{ details?: { text?: string } }>; httpStatus?: number };
+    expect(outcome.httpStatus).toBe(403);
+    expect(outcome.issue[0]?.details?.text).toMatch(/Organisationszugang/);
+  });
+
+  it("returns FHIR Bundle with DiagnosticReport entries from a successful response", async () => {
     const mockFetch = makeFetch(makeBundle([makeDiagnosticReport()]));
     const controller = new ResultsController(FHIR_BASE, mockFetch as typeof fetch);
 
-    const result = await controller.list({ page: 1, pageSize: 20 });
+    const result = await controller.list({ ...ORG_QUERY, page: 1, pageSize: 20 });
 
-    expect(result.data).toHaveLength(1);
-    expect(result.data[0]!.id).toBe("dr-001");
-    expect(result.data[0]!.status).toBe("final");
-    expect(result.data[0]!.codeText).toBe("Blutbild");
-    expect(result.data[0]!.patientId).toBe("p-123");
-    expect(result.data[0]!.patientDisplay).toBe("Müller Hans");
-    expect(result.data[0]!.resultCount).toBe(2);
-    expect(result.data[0]!.basedOn).toEqual(["ServiceRequest/sr-001"]);
-    expect(result.total).toBe(1);
-    expect(result.page).toBe(1);
-    expect(result.pageSize).toBe(20);
-    expect(result.error).toBeUndefined();
+    const bundle = asBundle(result);
+    expect(bundle.resourceType).toBe("Bundle");
+    expect(bundle.entry).toHaveLength(1);
+    expect(bundle.entry?.[0]?.resource?.id).toBe("dr-001");
+    expect(bundle.entry?.[0]?.resource?.status).toBe("final");
+    expect(bundle.total).toBe(1);
+  });
+
+  it("uses count bundle total when available", async () => {
+    const mockFetch = makeFetch(
+      makeBundle([makeDiagnosticReport()], 1),
+      { resourceType: "Bundle", total: 42 },
+    );
+    const controller = new ResultsController(FHIR_BASE, mockFetch as typeof fetch);
+
+    const result = await controller.list({ ...ORG_QUERY });
+
+    expect(asBundle(result).total).toBe(42);
   });
 
   it("builds the FHIR URL with patientId filter", async () => {
     const mockFetch = makeFetch(makeBundle([]));
     const controller = new ResultsController(FHIR_BASE, mockFetch as typeof fetch);
 
-    await controller.list({ patientId: "p-123" });
+    await controller.list({ ...ORG_QUERY, patientId: "p-123" });
 
-    const [firstCall] = (mockFetch as jest.Mock).mock.calls;
-    const url = firstCall[0] as string;
+    const url = (mockFetch as jest.Mock).mock.calls[0][0] as string;
     expect(url).toContain("subject=Patient%2Fp-123");
   });
 
@@ -87,7 +107,7 @@ describe("ResultsController.list()", () => {
     const mockFetch = makeFetch(makeBundle([]));
     const controller = new ResultsController(FHIR_BASE, mockFetch as typeof fetch);
 
-    await controller.list({ patientId: "p-123", patientName: "Müller" });
+    await controller.list({ ...ORG_QUERY, patientId: "p-123", patientName: "Müller" });
 
     const url = (mockFetch as jest.Mock).mock.calls[0][0] as string;
     expect(url).toContain("subject=Patient%2Fp-123");
@@ -98,7 +118,7 @@ describe("ResultsController.list()", () => {
     const mockFetch = makeFetch(makeBundle([]));
     const controller = new ResultsController(FHIR_BASE, mockFetch as typeof fetch);
 
-    await controller.list({ patientName: "Müller" });
+    await controller.list({ ...ORG_QUERY, patientName: "Müller" });
 
     const url = (mockFetch as jest.Mock).mock.calls[0][0] as string;
     expect(url).toContain("subject%3APatient.name=M%C3%BCller");
@@ -108,7 +128,7 @@ describe("ResultsController.list()", () => {
     const mockFetch = makeFetch(makeBundle([]));
     const controller = new ResultsController(FHIR_BASE, mockFetch as typeof fetch);
 
-    await controller.list({ orderNumber: "ZLZ-001" });
+    await controller.list({ ...ORG_QUERY, orderNumber: "ZLZ-001" });
 
     const url = (mockFetch as jest.Mock).mock.calls[0][0] as string;
     expect(url).toContain("ZLZ-001");
@@ -118,76 +138,34 @@ describe("ResultsController.list()", () => {
     const mockFetch = makeFetch(makeBundle([]));
     const controller = new ResultsController(FHIR_BASE, mockFetch as typeof fetch);
 
-    await controller.list({ page: 3, pageSize: 10 });
+    await controller.list({ ...ORG_QUERY, page: 3, pageSize: 10 });
 
     const url = (mockFetch as jest.Mock).mock.calls[0][0] as string;
     expect(url).toContain("_getpagesoffset=20");
     expect(url).toContain("_count=10");
   });
 
-  it("extracts pdfData and hl7Data from presentedForm", async () => {
-    const dr = makeDiagnosticReport({
-      presentedForm: [
-        { contentType: "application/pdf", data: "base64pdf==", title: "Befund.pdf" },
-        { contentType: "text/hl7v2+er7", data: "base64hl7==", title: "ORU.hl7" },
-      ],
-    });
-    const mockFetch = makeFetch(makeBundle([dr]));
-    const controller = new ResultsController(FHIR_BASE, mockFetch as typeof fetch);
-
-    const result = await controller.list({});
-
-    expect(result.data[0]!.pdfData).toBe("base64pdf==");
-    expect(result.data[0]!.pdfTitle).toBe("Befund.pdf");
-    expect(result.data[0]!.hl7Data).toBe("base64hl7==");
-    expect(result.data[0]!.hl7Title).toBe("ORU.hl7");
-  });
-
-  it("returns error DTO with httpStatus when FHIR returns non-200", async () => {
+  it("returns OperationOutcome when FHIR returns non-200", async () => {
     const failFetch = jest.fn().mockResolvedValue({ ok: false, status: 503 });
     const controller = new ResultsController(FHIR_BASE, failFetch as typeof fetch);
 
-    const result = await controller.list({});
+    const result = await controller.list({ ...ORG_QUERY });
 
-    expect(result.data).toEqual([]);
-    expect(result.total).toBe(0);
-    expect(result.error).toMatch(/503/);
-    expect(result.httpStatus).toBe(503);
+    expect((result as { resourceType: string }).resourceType).toBe("OperationOutcome");
+    const outcome = result as { issue: Array<{ details?: { text?: string } }>; httpStatus?: number };
+    expect(outcome.issue[0]?.details?.text).toMatch(/503/);
+    expect(outcome.httpStatus).toBe(503);
   });
 
-  it("returns 500 error DTO when fetch throws a network error", async () => {
+  it("returns 500 OperationOutcome when fetch throws a network error", async () => {
     const errorFetch = jest.fn().mockRejectedValue(new Error("Connection refused"));
     const controller = new ResultsController(FHIR_BASE, errorFetch as typeof fetch);
 
-    const result = await controller.list({});
+    const result = await controller.list({ ...ORG_QUERY });
 
-    expect(result.error).toBe("Connection refused");
-    expect(result.httpStatus).toBe(500);
-  });
-
-  it("filters out entries without an id", async () => {
-    const bundle = makeBundle([
-      makeDiagnosticReport({ id: "dr-good" }),
-      { resourceType: "DiagnosticReport" }, // no id — should be filtered
-    ]);
-    const mockFetch = makeFetch(bundle, { resourceType: "Bundle", total: 2 });
-    const controller = new ResultsController(FHIR_BASE, mockFetch as typeof fetch);
-
-    const result = await controller.list({});
-
-    expect(result.data).toHaveLength(1);
-    expect(result.data[0]!.id).toBe("dr-good");
-  });
-
-  it("uses count bundle total when available", async () => {
-    const mockFetch = makeFetch(
-      makeBundle([makeDiagnosticReport()], 1),
-      { resourceType: "Bundle", total: 42 },
-    );
-    const controller = new ResultsController(FHIR_BASE, mockFetch as typeof fetch);
-
-    const result = await controller.list({});
-
-    expect(result.total).toBe(42);
+    expect((result as { resourceType: string }).resourceType).toBe("OperationOutcome");
+    const outcome = result as { issue: Array<{ details?: { text?: string } }>; httpStatus?: number };
+    expect(outcome.issue[0]?.details?.text).toBe("Connection refused");
+    expect(outcome.httpStatus).toBe(500);
   });
 });

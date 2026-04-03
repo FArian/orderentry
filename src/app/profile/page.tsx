@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useTranslation } from "@/lib/i18n";
 import { glnEnabled } from "@/config";
 import { AppSidebar } from "@/components/AppSidebar";
+import { BackButton } from "@/components/BackButton";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -352,6 +353,16 @@ export default function ProfilePage() {
     setConfirmPwd("");
   }
 
+  // ── Copy user ID ──────────────────────────────────────────────────────────
+  const [copied, setCopied] = useState(false);
+  const handleCopyId = useCallback(() => {
+    if (!user?.id) return;
+    navigator.clipboard.writeText(user.id).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => undefined);
+  }, [user?.id]);
+
   // ── Derived ───────────────────────────────────────────────────────────────
   const showOrgGlnBlock = !!glnPtype;
   const orgGlnLabel = glnPtype === "NAT" ? t("profile.orgGlnNat") : t("profile.orgGlnJur");
@@ -383,6 +394,8 @@ export default function ProfilePage() {
 
           {/* Breadcrumb */}
           <nav className="flex items-center gap-1.5 text-[12px] text-zt-text-tertiary mb-4" aria-label="Brotkrumen">
+            <BackButton />
+            <span className="text-zt-text-tertiary">|</span>
             <Link href="/" className="text-zt-primary hover:underline">{t("nav.home")}</Link>
             <span>/</span>
             <span className="text-zt-text-primary">{t("profile.title")}</span>
@@ -447,9 +460,38 @@ export default function ProfilePage() {
                   <span className="text-[13px] text-zt-text-secondary">{t("profile.username")}</span>
                   <span className="text-[13px] font-medium text-zt-text-primary font-mono">{user?.username ?? "—"}</span>
                 </div>
-                <div className="flex justify-between items-center py-2.5">
+                <div className="flex justify-between items-center py-2.5 border-b border-zt-border/50">
                   <span className="text-[13px] text-zt-text-secondary">{t("profile.membersince")}</span>
                   <span className="text-[13px] font-medium text-zt-text-primary">{formatDate(user?.createdAt)}</span>
+                </div>
+                {/* User ID — read-only, copy-to-clipboard */}
+                <div className="flex justify-between items-center py-2.5 gap-3">
+                  <span className="text-[13px] text-zt-text-secondary shrink-0">{t("profile.userId")}</span>
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-[11px] font-mono text-zt-text-tertiary truncate" title={user?.id ?? ""}>
+                      {user?.id ?? "—"}
+                    </span>
+                    {user?.id && (
+                      <button
+                        type="button"
+                        onClick={handleCopyId}
+                        title={copied ? t("profile.copied") : t("profile.copyId")}
+                        className="shrink-0 p-1 rounded hover:bg-zt-bg-muted transition-colors text-zt-text-tertiary hover:text-zt-primary"
+                        aria-label={t("profile.copyId")}
+                      >
+                        {copied ? (
+                          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+                            <path d="M2 7l3 3 6-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-zt-success"/>
+                          </svg>
+                        ) : (
+                          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+                            <rect x="4" y="4" width="8" height="8" rx="1" stroke="currentColor" strokeWidth="1"/>
+                            <path d="M3 9H2a1 1 0 01-1-1V2a1 1 0 011-1h6a1 1 0 011 1v1" stroke="currentColor" strokeWidth="1"/>
+                          </svg>
+                        )}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
               <div>

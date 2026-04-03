@@ -25,9 +25,13 @@ import { usePathname } from "next/navigation";
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export type SessionUser = {
-  id:       string;
-  username: string;
-  role:     "admin" | "user";
+  id:           string;
+  username:     string;
+  role:         "admin" | "user";
+  orgGln?:      string;
+  orgFhirId?:   string;
+  orgName?:     string;
+  hasOrgAccess: boolean;
 };
 
 export type SessionStatus = "loading" | "authenticated" | "unauthenticated";
@@ -67,15 +71,22 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       }
       const data = await res.json() as {
         authenticated: boolean;
-        user?: { id: string; username: string; role: string };
+        user?: {
+          id: string; username: string; role: string;
+          orgGln?: string; orgFhirId?: string; orgName?: string; hasOrgAccess?: boolean;
+        };
       };
       if (data.authenticated && data.user) {
         setState({
           status: "authenticated",
           user: {
-            id:       data.user.id,
-            username: data.user.username,
-            role:     data.user.role === "admin" ? "admin" : "user",
+            id:           data.user.id,
+            username:     data.user.username,
+            role:         data.user.role === "admin" ? "admin" : "user",
+            hasOrgAccess: data.user.hasOrgAccess ?? false,
+            ...(data.user.orgGln    !== undefined && { orgGln:    data.user.orgGln }),
+            ...(data.user.orgFhirId !== undefined && { orgFhirId: data.user.orgFhirId }),
+            ...(data.user.orgName   !== undefined && { orgName:   data.user.orgName }),
           },
         });
       } else {

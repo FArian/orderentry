@@ -10,6 +10,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useRefresh } from "@/lib/refresh";
 import type {
   RoleCatalogEntryDto,
   CreateRoleRequestDto,
@@ -27,6 +28,7 @@ interface UseRolesReturn {
 }
 
 export function useRoles(): UseRolesReturn {
+  const { refreshCount } = useRefresh();
   const [roles,   setRoles]   = useState<RoleCatalogEntryDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState<string | null>(null);
@@ -60,7 +62,7 @@ export function useRoles(): UseRolesReturn {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load, tick]);
+  useEffect(() => { load(); }, [load, tick, refreshCount]);
 
   const reload = useCallback(() => setTick((t) => t + 1), []);
 

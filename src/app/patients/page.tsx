@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useTranslation } from "@/lib/i18n";
 import { formatDate } from "@/shared/utils/formatDate";
 import { AppSidebar } from "@/components/AppSidebar";
+import { BackButton } from "@/components/BackButton";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -15,6 +16,43 @@ interface Patient {
   name: string;
   address: string;
   createdAt: string;
+}
+
+// ── FHIR Patient parsing helpers ──────────────────────────────────────────────
+
+interface FhirHumanName { text?: string; given?: string[]; family?: string }
+interface FhirAddress   { text?: string; line?: string[]; city?: string; postalCode?: string; country?: string }
+interface FhirPatientResource {
+  resourceType: "Patient";
+  id?: string;
+  name?: FhirHumanName[];
+  address?: FhirAddress[];
+  meta?: { lastUpdated?: string };
+}
+
+function fhirNameToString(n?: FhirHumanName[]): string {
+  if (!n || n.length === 0) return "Unknown";
+  const first = n[0];
+  if (!first) return "Unknown";
+  if (first.text?.trim()) return first.text.trim();
+  return [...(first.given ?? []), first.family ?? ""].filter(Boolean).join(" ") || "Unknown";
+}
+
+function fhirAddressToString(a?: FhirAddress[]): string {
+  if (!a || a.length === 0) return "";
+  const first = a[0];
+  if (!first) return "";
+  if (first.text?.trim()) return first.text.trim();
+  return [...(first.line ?? []), first.city, first.postalCode, first.country].filter(Boolean).join(", ");
+}
+
+function mapFhirPatient(r: FhirPatientResource): Patient {
+  return {
+    id:        r.id ?? "",
+    name:      fhirNameToString(r.name),
+    address:   fhirAddressToString(r.address),
+    createdAt: r.meta?.lastUpdated ?? "",
+  };
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -154,9 +192,13 @@ function PatientPageContent() {
       if (inactive) params.set("showInactive", "true");
       const res = await fetch(`/api/patients?${params.toString()}`);
       if (!res.ok) throw new Error(`Request failed: ${res.status}`);
-      const data = await res.json() as { data: Patient[]; total: number; page: number; pageSize: number };
-      setItems(data.data);
-      setTotal(data.total);
+      const bundle = await res.json() as { total?: number; entry?: Array<{ resource?: FhirPatientResource }> };
+      const patients = (bundle.entry ?? [])
+        .map((e) => e.resource)
+        .filter((r): r is FhirPatientResource => !!r && !!r.id)
+        .map(mapFhirPatient);
+      setItems(patients);
+      setTotal(bundle.total ?? patients.length);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : t("patient.loadError"));
       setItems([]);
@@ -266,6 +308,8 @@ function PatientPageContent() {
 
         {/* Breadcrumb */}
         <nav className="mb-3.5 flex items-center gap-1.5 text-xs text-zt-text-tertiary" aria-label="Brotkrumen">
+          <BackButton />
+          <span className="text-zt-text-tertiary">|</span>
           <Link href="/" className="text-zt-primary hover:underline">{t("nav.home")}</Link>
           <span>/</span>
           <span className="text-zt-text-primary">{t("patient.title")}</span>

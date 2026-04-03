@@ -22,9 +22,6 @@
  * (no async overhead, no lost lines on crash).
  */
 
-import fs from "fs";
-import path from "path";
-
 // ── Log level ordering ────────────────────────────────────────────────────────
 
 export type LogLevel = "debug" | "info" | "warn" | "error" | "silent";
@@ -50,18 +47,27 @@ const _configuredLevel: LogLevel = parseLevel(
 const _logFile: string | null = process.env.LOG_FILE?.trim() || null;
 
 /**
- * Tracing integration point (ENABLE_TRACING=true).
+ * Tracing integration — reads the active OpenTelemetry span when available.
  *
- * When tracing is enabled, a traceId should be injected per-request using
- * AsyncLocalStorage or an OpenTelemetry context manager. For now the value
- * can be supplied explicitly via Logger.withTraceId() or the `meta` parameter.
- *
- * Wire to opentelemetry-sdk-node when ready:
- *   import { trace } from "@opentelemetry/api";
- *   const traceId = trace.getActiveSpan()?.spanContext().traceId;
+ * Uses lazy require() to avoid bundling @opentelemetry/api into the browser
+ * bundle (FhirClient → ServiceFactory → useResults is a client-side import
+ * chain). The guard  typeof window !== "undefined"  short-circuits on the
+ * browser before any require() call is reached.
  */
 const _tracingEnabled: boolean =
   (process.env.ENABLE_TRACING ?? "").trim().toLowerCase() === "true";
+
+function getActiveTraceId(): string | undefined {
+  if (!_tracingEnabled) return undefined;
+  if (typeof window !== "undefined") return undefined; // browser — no OTel
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { trace } = require("@opentelemetry/api") as typeof import("@opentelemetry/api");
+    return trace.getActiveSpan()?.spanContext().traceId;
+  } catch {
+    return undefined;
+  }
+}
 
 // ── Formatter ─────────────────────────────────────────────────────────────────
 
@@ -72,14 +78,15 @@ function format(
   meta?: Record<string, unknown>,
   traceId?: string,
 ): string {
+  // Prefer the explicitly supplied traceId (withTraceId()), then fall back
+  // to the active OpenTelemetry span context (automatic propagation).
+  const resolvedTraceId = traceId ?? getActiveTraceId();
   const entry: Record<string, unknown> = {
     time: new Date().toISOString(),
     level,
     ctx,
     msg: message,
-    // Include traceId when tracing is enabled and a value is available.
-    // Future: replace with opentelemetry context propagation.
-    ...(_tracingEnabled && traceId ? { traceId } : {}),
+    ...(_tracingEnabled && resolvedTraceId ? { traceId: resolvedTraceId } : {}),
     ...meta,
   };
   return JSON.stringify(entry);
@@ -89,8 +96,13 @@ function format(
 
 function appendToFile(line: string): void {
   if (!_logFile) return;
+  if (typeof window !== "undefined") return; // browser — no file I/O
   try {
-    const dir = path.dirname(_logFile);
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const fs   = require("fs")   as typeof import("fs");
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const path = require("path") as typeof import("path");
+    const dir  = path.dirname(_logFile);
     if (dir && dir !== ".") fs.mkdirSync(dir, { recursive: true });
     fs.appendFileSync(_logFile, line + "\n", "utf8");
   } catch {
@@ -112,12 +124,14 @@ export class Logger {
   }
 
   /**
-   * Returns a new Logger instance bound to the given traceId.
-   * Use this in request handlers to propagate the trace context:
+   * Returns a new Logger instance bound to an explicit traceId.
+   * Useful when you have the traceId from an incoming header and want to
+   * pin it to all log lines in a request handler before OTel context is set:
    *
    *   const log = createLogger("MyController").withTraceId(req.headers["x-trace-id"]);
    *
-   * Future: replace with OpenTelemetry context propagation (ENABLE_TRACING=true).
+   * When ENABLE_TRACING=true the active OpenTelemetry span is read automatically
+   * via getActiveTraceId() — withTraceId() is only needed for manual overrides.
    */
   withTraceId(traceId: string): Logger {
     return new Logger(this.ctx, _configuredLevel, traceId);

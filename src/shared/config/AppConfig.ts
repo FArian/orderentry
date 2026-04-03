@@ -37,6 +37,27 @@ export const AppConfig = {
 
   /** Debounce delay (ms) for search inputs. */
   searchDebounceMs: 350,
+
+  // ── Identifier regex overrides (optional, ENV-configurable) ──────────────
+  /**
+   * Override default validation regex for Swiss identifiers.
+   * Set these in docker-compose or .env.local to adjust format rules.
+   * Values are full regex strings (without slashes), e.g. "^\\d{13}$".
+   */
+  regexGln:  process.env.NEXT_PUBLIC_REGEX_GLN  ?? "",
+  regexAhv:  process.env.NEXT_PUBLIC_REGEX_AHV  ?? "",
+  regexVeka: process.env.NEXT_PUBLIC_REGEX_VEKA ?? "",
+  regexUid:  process.env.NEXT_PUBLIC_REGEX_UID  ?? "",
+  regexZsr:  process.env.NEXT_PUBLIC_REGEX_ZSR  ?? "",
+  regexBur:  process.env.NEXT_PUBLIC_REGEX_BUR  ?? "",
+
+  // ── Lab context ───────────────────────────────────────────────────────────
+  /**
+   * FHIR Organization ID of the laboratory whose test catalog the app loads.
+   * Used to filter ActivityDefinitions by useContext.
+   * Set via NEXT_PUBLIC_LAB_ORG_ID env var; defaults to "zlz".
+   */
+  labOrgId: process.env.NEXT_PUBLIC_LAB_ORG_ID ?? "zlz",
 } as const;
 
 export type AppConfigType = typeof AppConfig;

@@ -21,6 +21,10 @@ export interface ListResultsQueryDto {
   page?: number;
   /** Results per page (default: 20) */
   pageSize?: number;
+  /** FHIR Organization ID — restricts results to patients of this org */
+  orgFhirId?: string;
+  /** Organization GLN — fallback when orgFhirId not yet resolved */
+  orgGln?: string;
 }
 
 /** A single DiagnosticReport as returned by the API */

@@ -6,6 +6,10 @@ import { useTranslation } from "@/lib/i18n";
 import { useRefresh } from "@/lib/refresh";
 import { sasísEnabled } from "@/config";
 import { formatDate } from "@/shared/utils/formatDate";
+import {
+  validateAhv, sanitizeAhv,
+  validateVeka, sanitizeVeka, detectVekaCountry, VEKA_COUNTRIES,
+} from "@/shared/utils/swissValidators";
 import { b64toDataUrl, decodeB64Utf8 } from "@/shared/utils/base64";
 import { AppSidebar } from "@/components/AppSidebar";
 
@@ -774,14 +778,12 @@ export default function PatientDetailClient({ id }: { id: string }) {
                           {tr("insurance.noSasis")}
                         </div>
                       )}
-                      {(["insurerName", "ik", "vnr", "veka", "ahv"] as const).map((field) => (
+                      {(["insurerName", "ik", "vnr"] as const).map((field) => (
                         <div key={field}>
                           <label className="text-[11px] text-zt-text-tertiary">
                             {field === "insurerName" ? tr("insurance.name")
                               : field === "ik" ? tr("insurance.ik")
-                              : field === "vnr" ? tr("insurance.vnr")
-                              : field === "veka" ? tr("insurance.veka")
-                              : tr("insurance.ahv")}
+                              : tr("insurance.vnr")}
                           </label>
                           <input
                             type="text"
@@ -791,6 +793,68 @@ export default function PatientDetailClient({ id }: { id: string }) {
                           />
                         </div>
                       ))}
+
+                      {/* VEKA — with auto country detection */}
+                      <div>
+                        <label className="text-[11px] text-zt-text-tertiary">{tr("insurance.veka")}</label>
+                        <input
+                          type="text"
+                          value={editFields.veka}
+                          onChange={(e) => {
+                            const s = sanitizeVeka(e.target.value);
+                            setEditFields((prev) => ({ ...prev, veka: s }));
+                          }}
+                          placeholder="80756…"
+                          maxLength={20}
+                          className={`mt-0.5 w-full rounded-lg border px-2.5 py-1.5 text-[12px] text-zt-text-primary bg-zt-bg-card outline-none focus:border-zt-primary ${
+                            editFields.veka && !validateVeka(editFields.veka).valid
+                              ? "border-zt-danger"
+                              : editFields.veka.length === 20 && validateVeka(editFields.veka).valid
+                              ? "border-zt-success"
+                              : "border-zt-border"
+                          }`}
+                        />
+                        {(() => {
+                          if (!editFields.veka) return null;
+                          const v = validateVeka(editFields.veka);
+                          const country = detectVekaCountry(editFields.veka);
+                          if (!v.valid && editFields.veka.length >= 5)
+                            return <p className="mt-0.5 text-[10px] text-zt-danger">{v.error}</p>;
+                          if (country && VEKA_COUNTRIES[country])
+                            return <p className="mt-0.5 text-[10px] text-zt-success">✓ Land erkannt: {VEKA_COUNTRIES[country]}</p>;
+                          return null;
+                        })()}
+                        <p className="mt-0.5 text-[10px] text-zt-text-tertiary">20 Stellen · CH: 80756… · LI: 80438… · DE: 80276…</p>
+                      </div>
+
+                      {/* AHV — with format auto-insert */}
+                      <div>
+                        <label className="text-[11px] text-zt-text-tertiary">{tr("insurance.ahv")}</label>
+                        <input
+                          type="text"
+                          value={editFields.ahv}
+                          onChange={(e) => {
+                            const s = sanitizeAhv(e.target.value);
+                            setEditFields((prev) => ({ ...prev, ahv: s }));
+                          }}
+                          placeholder="756.XXXX.XXXX.XX"
+                          maxLength={16}
+                          className={`mt-0.5 w-full rounded-lg border px-2.5 py-1.5 text-[12px] font-mono text-zt-text-primary bg-zt-bg-card outline-none focus:border-zt-primary ${
+                            editFields.ahv && !validateAhv(editFields.ahv).valid
+                              ? "border-zt-danger"
+                              : editFields.ahv && validateAhv(editFields.ahv).valid
+                              ? "border-zt-success"
+                              : "border-zt-border"
+                          }`}
+                        />
+                        {(() => {
+                          if (!editFields.ahv) return null;
+                          const v = validateAhv(editFields.ahv);
+                          if (!v.valid) return <p className="mt-0.5 text-[10px] text-zt-danger">{v.error}</p>;
+                          return <p className="mt-0.5 text-[10px] text-zt-success">✓ {v.hint}</p>;
+                        })()}
+                        <p className="mt-0.5 text-[10px] text-zt-text-tertiary">Format: 756.XXXX.XXXX.XX · Beginnt immer mit 756</p>
+                      </div>
                       <div className="flex gap-2 mt-1">
                         <button
                           onClick={saveInsurance}

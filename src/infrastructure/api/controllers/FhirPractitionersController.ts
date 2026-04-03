@@ -9,54 +9,48 @@
  *
  * Writes a transaction bundle: Practitioner + PractitionerRole (linked to org).
  * Uses deterministic IDs so repeated creates are safe idempotent upserts.
+ *
+ * List returns the raw FHIR Bundle from HAPI (PractitionerRole + _include resources).
+ * Create/Update return the PractitionerRole resource.
+ * All errors return a FHIR OperationOutcome.
  */
 
 import { FHIR_BASE } from "@/infrastructure/fhir/FhirClient";
+import {
+  buildOperationOutcome,
+  type FhirBundle,
+  type FhirBundleEntry,
+  type FhirOperationOutcome,
+} from "@/infrastructure/fhir/FhirTypes";
 import type {
   CreatePractitionerRequestDto,
-  FhirPractitionerDto,
-  FhirRegistryErrorDto,
-  ListPractitionersResponseDto,
+  UpdatePractitionerRequestDto,
 } from "../dto/FhirRegistryDto";
 
 const GLN_SYSTEM  = "urn:oid:2.51.1.3";
 const ROLE_SYSTEM = "urn:oid:2.51.1.3.roleType";
 
-// ── FHIR minimal types ─────────────────────────────────────────────────────────
+// ── FHIR resource types ────────────────────────────────────────────────────────
 
-interface FhirIdentifier  { system?: string; value?: string }
-interface FhirHumanName   { family?: string; given?: string[] }
-interface FhirReference   { reference?: string }
-interface FhirCoding      { system?: string; code?: string }
-interface FhirCodeableConcept { coding?: FhirCoding[]; text?: string }
-
-interface FhirPractitioner {
+export interface FhirPractitioner {
+  resourceType: "Practitioner";
   id?:         string;
-  identifier?: FhirIdentifier[];
-  name?:       FhirHumanName[];
+  identifier?: Array<{ system?: string; value?: string }>;
+  name?:       Array<{ use?: string; family?: string; given?: string[] }>;
+  [key: string]: unknown;
 }
-interface FhirPractitionerRole {
+
+export interface FhirPractitionerRole {
+  resourceType:  "PractitionerRole";
   id?:           string;
-  practitioner?: FhirReference;
-  organization?: FhirReference;
-  code?:         FhirCodeableConcept[];
-}
-interface FhirBundleEntry {
-  resource?: FhirPractitioner | FhirPractitionerRole | { id?: string; name?: string };
-}
-interface FhirBundle { entry?: FhirBundleEntry[]; total?: number }
-
-// ── Helpers ────────────────────────────────────────────────────────────────────
-
-function extractId(ref?: string): string {
-  if (!ref) return "";
-  const parts = ref.split("/");
-  return parts[parts.length - 1] ?? "";
+  active?:       boolean;
+  practitioner?: { reference?: string };
+  organization?: { reference?: string };
+  code?:         Array<{ coding?: Array<{ system?: string; code?: string }>; text?: string }>;
+  [key: string]: unknown;
 }
 
-function extractGln(identifiers?: FhirIdentifier[]): string {
-  return identifiers?.find((i) => i.system === GLN_SYSTEM)?.value ?? "";
-}
+type BundleResource = FhirPractitioner | FhirPractitionerRole | { resourceType: string; id?: string; name?: string };
 
 // ── Controller ─────────────────────────────────────────────────────────────────
 
@@ -66,111 +60,65 @@ export class FhirPractitionersController {
     private readonly fetchFn: typeof globalThis.fetch = globalThis.fetch,
   ) {}
 
-  async list(): Promise<ListPractitionersResponseDto | FhirRegistryErrorDto> {
+  /** Returns the raw FHIR Bundle from HAPI (PractitionerRole + included Practitioner + Organization). */
+  async list(): Promise<FhirBundle<BundleResource> | FhirOperationOutcome> {
     try {
-      // Fetch PractitionerRole resources with included Practitioner + Organization
       const url = `${this.fhirBase}/PractitionerRole?_count=200&_include=PractitionerRole:practitioner&_include=PractitionerRole:organization`;
       const res = await this.fetchFn(url, {
         headers: { accept: "application/fhir+json" },
         cache: "no-store",
       });
       if (!res.ok) {
-        return { error: `FHIR ${res.status}`, httpStatus: 502 };
+        return buildOperationOutcome("error", "exception", `FHIR ${res.status}`, 502);
       }
-      const bundle = (await res.json()) as FhirBundle;
-
-      // Separate entries by resourceType
-      const orgsById    = new Map<string, { id: string; name: string }>();
-      const practsById  = new Map<string, FhirPractitioner>();
-      const roles: FhirPractitionerRole[] = [];
-
-      for (const entry of bundle.entry ?? []) {
-        const r = entry.resource as Record<string, unknown> | undefined;
-        if (!r) continue;
-        if (r.resourceType === "Organization") {
-          const org = r as { id?: string; name?: string };
-          if (org.id) orgsById.set(org.id, { id: org.id, name: org.name ?? "" });
-        } else if (r.resourceType === "Practitioner") {
-          const p = r as FhirPractitioner;
-          if (p.id) practsById.set(p.id, p);
-        } else if (r.resourceType === "PractitionerRole") {
-          roles.push(r as FhirPractitionerRole);
-        }
-      }
-
-      const practitioners: FhirPractitionerDto[] = [];
-      for (const role of roles) {
-        const practId = extractId(role.practitioner?.reference);
-        const orgId   = extractId(role.organization?.reference);
-        const pract   = practsById.get(practId);
-        const org     = orgsById.get(orgId);
-        if (!pract || !role.id) continue;
-
-        const name = pract.name?.[0];
-        practitioners.push({
-          id:                 pract.id ?? practId,
-          firstName:          name?.given?.[0] ?? "",
-          lastName:           name?.family ?? "",
-          gln:                extractGln(pract.identifier),
-          organizationId:     orgId,
-          organizationName:   org?.name ?? orgId,
-          roleCode:           role.code?.[0]?.coding?.[0]?.code ?? "",
-          practitionerRoleId: role.id,
-        });
-      }
-
-      return { practitioners, total: practitioners.length };
+      const bundle = (await res.json()) as FhirBundle<BundleResource>;
+      return { ...bundle, type: "searchset" as const };
     } catch (err: unknown) {
-      return { error: err instanceof Error ? err.message : "List failed", httpStatus: 500 };
+      return buildOperationOutcome("error", "exception", err instanceof Error ? err.message : "List failed", 500);
     }
   }
 
   async create(
     dto: CreatePractitionerRequestDto,
-  ): Promise<FhirPractitionerDto | FhirRegistryErrorDto> {
+  ): Promise<FhirPractitionerRole | FhirOperationOutcome> {
     const { firstName, lastName, gln, organizationId, roleCode } = dto;
 
-    if (!gln?.trim())            return { error: "GLN is required",          httpStatus: 400 };
-    if (!firstName?.trim())      return { error: "First name is required",   httpStatus: 400 };
-    if (!lastName?.trim())       return { error: "Last name is required",    httpStatus: 400 };
-    if (!organizationId?.trim()) return { error: "Organization is required", httpStatus: 400 };
-    if (!roleCode?.trim())       return { error: "Role is required",         httpStatus: 400 };
+    if (!gln?.trim())            return buildOperationOutcome("error", "required", "GLN is required",          400);
+    if (!firstName?.trim())      return buildOperationOutcome("error", "required", "First name is required",   400);
+    if (!lastName?.trim())       return buildOperationOutcome("error", "required", "Last name is required",    400);
+    if (!organizationId?.trim()) return buildOperationOutcome("error", "required", "Organization is required", 400);
+    if (!roleCode?.trim())       return buildOperationOutcome("error", "required", "Role is required",         400);
 
-    // GLN uniqueness check
     const existing = await this.findByGln(gln.trim());
     if (existing) {
-      return { error: "GLN already registered", httpStatus: 409 };
+      return buildOperationOutcome("error", "duplicate", "GLN already registered", 409);
     }
 
-    const safeGln   = gln.trim().replace(/[^a-zA-Z0-9]/g, "-");
-    const practId   = `pract-${safeGln}`;
-    const roleId    = `role-${safeGln}`;
+    const safeGln = gln.trim().replace(/[^a-zA-Z0-9]/g, "-");
+    const practId = `pract-${safeGln}`;
+    const roleId  = `role-${safeGln}`;
 
-    const practitioner = {
+    const practitioner: FhirPractitioner = {
       resourceType: "Practitioner",
       id:           practId,
       identifier:   [{ system: GLN_SYSTEM, value: gln.trim() }],
-      name: [{
-        use:    "official",
-        family: lastName.trim(),
-        given:  [firstName.trim()],
-      }],
+      name: [{ use: "official", family: lastName.trim(), given: [firstName.trim()] }],
       active: true,
     };
 
-    const practitionerRole = {
-      resourceType:  "PractitionerRole",
-      id:            roleId,
-      active:        true,
-      practitioner:  { reference: `Practitioner/${practId}` },
-      organization:  { reference: `Organization/${organizationId.trim()}` },
+    const practitionerRole: FhirPractitionerRole = {
+      resourceType: "PractitionerRole",
+      id:           roleId,
+      active:       true,
+      practitioner: { reference: `Practitioner/${practId}` },
+      organization: { reference: `Organization/${organizationId.trim()}` },
       code: [{
         coding: [{ system: ROLE_SYSTEM, code: roleCode.trim() }],
         text:   roleCode.trim(),
       }],
     };
 
-    const bundle = {
+    const transactionBundle = {
       resourceType: "Bundle",
       type:         "transaction",
       entry: [
@@ -184,35 +132,89 @@ export class FhirPractitionersController {
           resource: practitionerRole,
           request:  { method: "PUT", url: `PractitionerRole/${roleId}` },
         },
-      ],
+      ] as FhirBundleEntry<FhirPractitioner | FhirPractitionerRole>[],
     };
 
     try {
       const res = await this.fetchFn(`${this.fhirBase}/`, {
-        method: "POST",
-        headers: {
-          "content-type": "application/fhir+json",
-          accept: "application/fhir+json",
-        },
-        body: JSON.stringify(bundle),
-        cache: "no-store",
+        method:  "POST",
+        headers: { "content-type": "application/fhir+json", accept: "application/fhir+json" },
+        body:    JSON.stringify(transactionBundle),
+        cache:   "no-store",
       });
       if (!res.ok) {
         const text = await res.text().catch(() => "");
-        return { error: `FHIR ${res.status}: ${text.slice(0, 200)}`, httpStatus: 502 };
+        return buildOperationOutcome("error", "exception", `FHIR ${res.status}: ${text.slice(0, 200)}`, 502);
       }
-      return {
-        id:                 practId,
-        firstName:          firstName.trim(),
-        lastName:           lastName.trim(),
-        gln:                gln.trim(),
-        organizationId:     organizationId.trim(),
-        organizationName:   "",   // resolved by list on next fetch
-        roleCode:           roleCode.trim(),
-        practitionerRoleId: roleId,
-      };
+      return practitionerRole;
     } catch (err: unknown) {
-      return { error: err instanceof Error ? err.message : "Create failed", httpStatus: 500 };
+      return buildOperationOutcome("error", "exception", err instanceof Error ? err.message : "Create failed", 500);
+    }
+  }
+
+  async update(
+    practitionerRoleId: string,
+    dto: UpdatePractitionerRequestDto,
+  ): Promise<FhirPractitionerRole | FhirOperationOutcome> {
+    const { roleCode, organizationId, gln } = dto;
+    if (!practitionerRoleId?.trim()) return buildOperationOutcome("error", "required", "PractitionerRole ID is required", 400);
+    if (!roleCode?.trim())           return buildOperationOutcome("error", "required", "Role is required",                 400);
+    if (!organizationId?.trim())     return buildOperationOutcome("error", "required", "Organization is required",         400);
+
+    try {
+      const getRes = await this.fetchFn(`${this.fhirBase}/PractitionerRole/${practitionerRoleId}`, {
+        headers: { accept: "application/fhir+json" },
+        cache: "no-store",
+      });
+      if (!getRes.ok) return buildOperationOutcome("error", "exception", `FHIR ${getRes.status}`, 502);
+
+      const existing = (await getRes.json()) as FhirPractitionerRole;
+      const updated: FhirPractitionerRole = {
+        ...existing,
+        organization: { reference: `Organization/${organizationId.trim()}` },
+        code: [{
+          coding: [{ system: ROLE_SYSTEM, code: roleCode.trim() }],
+          text:   roleCode.trim(),
+        }],
+      };
+
+      const putRes = await this.fetchFn(`${this.fhirBase}/PractitionerRole/${practitionerRoleId}`, {
+        method:  "PUT",
+        headers: { "content-type": "application/fhir+json", accept: "application/fhir+json" },
+        body:    JSON.stringify(updated),
+        cache:   "no-store",
+      });
+      if (!putRes.ok) {
+        const text = await putRes.text().catch(() => "");
+        return buildOperationOutcome("error", "exception", `FHIR ${putRes.status}: ${text.slice(0, 200)}`, 502);
+      }
+
+      // If a new GLN is provided, also update the Practitioner resource
+      if (gln?.trim()) {
+        const practRef = existing.practitioner?.reference ?? "";
+        const practId  = practRef.split("/").at(-1) ?? "";
+        if (practId) {
+          const practRes = await this.fetchFn(`${this.fhirBase}/Practitioner/${practId}`, {
+            headers: { accept: "application/fhir+json" },
+            cache: "no-store",
+          });
+          if (practRes.ok) {
+            const practResource = (await practRes.json()) as FhirPractitioner;
+            const others = (practResource.identifier ?? []).filter((i) => i.system !== GLN_SYSTEM);
+            practResource.identifier = [...others, { system: GLN_SYSTEM, value: gln.trim() }];
+            await this.fetchFn(`${this.fhirBase}/Practitioner/${practId}`, {
+              method:  "PUT",
+              headers: { "content-type": "application/fhir+json", accept: "application/fhir+json" },
+              body:    JSON.stringify(practResource),
+              cache:   "no-store",
+            });
+          }
+        }
+      }
+
+      return { ...updated, id: practitionerRoleId };
+    } catch (err: unknown) {
+      return buildOperationOutcome("error", "exception", err instanceof Error ? err.message : "Update failed", 500);
     }
   }
 
@@ -224,9 +226,8 @@ export class FhirPractitionersController {
         cache: "no-store",
       });
       if (!res.ok) return null;
-      const bundle = (await res.json()) as FhirBundle;
-      const entry = bundle.entry?.[0]?.resource as { id?: string } | undefined;
-      return entry?.id ?? null;
+      const bundle = (await res.json()) as FhirBundle<FhirPractitioner>;
+      return bundle.entry?.[0]?.resource?.id ?? null;
     } catch {
       return null;
     }

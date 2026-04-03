@@ -15,6 +15,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
+import { BackButton } from "@/components/BackButton";
 import { useTranslation } from "@/lib/i18n";
 
 // ── Small layout helpers ───────────────────────────────────────────────────────
@@ -116,6 +117,8 @@ export function ApiDocsPage() {
 
           {/* Breadcrumb */}
           <nav className="flex items-center gap-1.5 text-[12px] text-zt-text-tertiary mb-4">
+            <BackButton />
+            <span className="text-zt-text-tertiary">|</span>
             <Link href="/" className="text-zt-primary hover:underline">{t("nav.home")}</Link>
             <span>/</span>
             <span className="text-zt-text-primary">{t("apiPage.title")}</span>

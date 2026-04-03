@@ -62,17 +62,146 @@ export const EnvConfig = {
   enableTracing: bool(process.env.ENABLE_TRACING),
 
   /**
-   * Zipkin-compatible collector URL (e.g. http://zipkin:9411).
+   * Tracing collector URL (e.g. http://zipkin:9411 or OTLP endpoint).
    * Only used when ENABLE_TRACING=true.
-   * Placeholder — connect to opentelemetry-exporter-zipkin when ready.
    */
-  zipkinUrl: str(process.env.ZIPKIN_URL, ""),
+  tracingUrl: str(process.env.TRACING_URL, ""),
 
   /**
-   * Grafana instance base URL for log/metrics dashboards.
+   * Monitoring/dashboard base URL (e.g. Grafana instance).
    * Displayed in the Settings page as a quick-access link.
    */
-  grafanaUrl: str(process.env.GRAFANA_URL, ""),
+  monitoringUrl: str(process.env.MONITORING_URL, ""),
+
+  /**
+   * Display label for the monitoring system (e.g. "Grafana", "Prometheus").
+   * Empty = UI falls back to the default i18n label "Monitoring".
+   */
+  monitoringLabel: str(process.env.MONITORING_LABEL, ""),
+
+  /**
+   * Display label for the tracing system (e.g. "Jaeger", "Zipkin", "Tempo").
+   * Empty = UI falls back to the default i18n label "Tracing".
+   */
+  tracingLabel: str(process.env.TRACING_LABEL, ""),
+
+  /**
+   * Optional static Bearer token for the Prometheus scraper (GET /api/metrics).
+   * When set, only requests with  Authorization: Bearer <token>  are accepted.
+   * When not set, standard admin session / JWT / PAT auth is used instead.
+   * Never expose via the env editor — matches BLOCKED_PATTERNS (TOKEN).
+   */
+  metricsToken: str(process.env.METRICS_TOKEN, ""),
+
+  // ── FHIR outbound auth ────────────────────────────────────────────────────
+  // Controls how FhirClient authenticates outbound requests to HAPI FHIR.
+  // Default: "none" (HAPI runs on a trusted internal Docker network).
+
+  /** Auth type for outbound FHIR requests. One of: none, bearer, basic, apiKey, oauth2, digest. */
+  fhirAuthType: str(process.env.FHIR_AUTH_TYPE, "none"),
+
+  /** Bearer token — used when FHIR_AUTH_TYPE=bearer. */
+  fhirAuthToken: str(process.env.FHIR_AUTH_TOKEN, ""),
+
+  /** Username — used when FHIR_AUTH_TYPE=basic or digest. */
+  fhirAuthUser: str(process.env.FHIR_AUTH_USER, ""),
+
+  /** Password — used when FHIR_AUTH_TYPE=basic or digest. */
+  fhirAuthPassword: str(process.env.FHIR_AUTH_PASSWORD, ""),
+
+  /** API key header/param name — used when FHIR_AUTH_TYPE=apiKey. */
+  fhirAuthApiKeyName: str(process.env.FHIR_AUTH_API_KEY_NAME, ""),
+
+  /** API key value — used when FHIR_AUTH_TYPE=apiKey. */
+  fhirAuthApiKeyValue: str(process.env.FHIR_AUTH_API_KEY_VALUE, ""),
+
+  /** API key location: "header" or "query" — used when FHIR_AUTH_TYPE=apiKey. */
+  fhirAuthApiKeyLocation: str(process.env.FHIR_AUTH_API_KEY_LOCATION, "header") as "header" | "query",
+
+  /** OAuth2 client ID — used when FHIR_AUTH_TYPE=oauth2. */
+  fhirAuthClientId: str(process.env.FHIR_AUTH_CLIENT_ID, ""),
+
+  /** OAuth2 client secret — used when FHIR_AUTH_TYPE=oauth2. */
+  fhirAuthClientSecret: str(process.env.FHIR_AUTH_CLIENT_SECRET, ""),
+
+  /** OAuth2 token endpoint URL — used when FHIR_AUTH_TYPE=oauth2. */
+  fhirAuthTokenUrl: str(process.env.FHIR_AUTH_TOKEN_URL, ""),
+
+  /** OAuth2 scopes, space-separated — used when FHIR_AUTH_TYPE=oauth2. Optional. */
+  fhirAuthScopes: str(process.env.FHIR_AUTH_SCOPES, ""),
+
+  // ── Outbound mail (nodemailer) ────────────────────────────────────────────
+  // Controls how OrderEntry sends emails (notifications, test emails, etc.)
+  // Set MAIL_PROVIDER to enable; leave unset to disable mail entirely.
+
+  /** Mail provider. One of: smtp | gmail | smtp_oauth2 | google_workspace_relay. Empty = disabled. */
+  mailProvider: str(process.env.MAIL_PROVIDER, ""),
+
+  /** Auth method. One of: APP_PASSWORD | OAUTH2 | NONE. Default: APP_PASSWORD. */
+  mailAuthType: str(process.env.MAIL_AUTH_TYPE, "APP_PASSWORD"),
+
+  /** SMTP server hostname (required for smtp, smtp_oauth2, google_workspace_relay). */
+  mailHost: str(process.env.MAIL_HOST, ""),
+
+  /** SMTP port number as string (default: 587). */
+  mailPort: str(process.env.MAIL_PORT, "587"),
+
+  /** Use TLS on connect (true = implicit TLS port 465; false = STARTTLS port 587). */
+  mailSecure: bool(process.env.MAIL_SECURE),
+
+  /** Sender email address / username. */
+  mailUser: str(process.env.MAIL_USER, ""),
+
+  /** SMTP password or Gmail App Password — secret, never returned by API. */
+  mailPassword: str(process.env.MAIL_PASSWORD, ""),
+
+  /** Default From address, e.g. "OrderEntry <noreply@example.com>". */
+  mailFrom: str(process.env.MAIL_FROM, ""),
+
+  /** Reply-To / alias address (optional). */
+  mailAlias: str(process.env.MAIL_ALIAS, ""),
+
+  /** OAuth2 client ID — used when MAIL_AUTH_TYPE=OAUTH2. */
+  mailOauthClientId: str(process.env.MAIL_OAUTH_CLIENT_ID, ""),
+
+  /** OAuth2 client secret — secret, never returned by API. */
+  mailOauthClientSecret: str(process.env.MAIL_OAUTH_CLIENT_SECRET, ""),
+
+  /** OAuth2 long-lived refresh token — secret, never returned by API. */
+  mailOauthRefreshToken: str(process.env.MAIL_OAUTH_REFRESH_TOKEN, ""),
+
+  /** Google Workspace domain for relay (optional, e.g. "example.com"). */
+  mailDomain: str(process.env.MAIL_DOMAIN, ""),
+
+  // ── Deep linking (KIS/PIS → OrderEntry) ──────────────────────────────────────
+  // Allows external hospital information systems to deep-link directly into
+  // the order-entry workflow via a signed token (JWT or HMAC-SHA256).
+
+  /** Set true to activate the GET /api/deeplink/order-entry endpoint. */
+  deepLinkEnabled: bool(process.env.DEEPLINK_ENABLED),
+
+  /** Auth strategy for deep-link tokens: "jwt" (default) or "hmac". */
+  deepLinkAuthType: str(process.env.DEEPLINK_AUTH_TYPE, "jwt"),
+
+  /**
+   * HS256 secret used by external systems to sign JWT deep-link tokens.
+   * Must be ≥32 chars. Separate from AUTH_SECRET.
+   * Never exposed via env editor (matches BLOCKED_PATTERNS: SECRET).
+   */
+  deepLinkJwtSecret: str(process.env.DEEPLINK_JWT_SECRET, ""),
+
+  /**
+   * HMAC-SHA256 secret used by external systems to sign canonical deep-link URLs.
+   * Only used when DEEPLINK_AUTH_TYPE=hmac.
+   * Never exposed via env editor (matches BLOCKED_PATTERNS: SECRET).
+   */
+  deepLinkHmacSecret: str(process.env.DEEPLINK_HMAC_SECRET, ""),
+
+  /** Maximum age of deep-link tokens in seconds (default: 300 = 5 minutes). */
+  deepLinkTokenMaxAge: str(process.env.DEEPLINK_TOKEN_MAX_AGE_SECONDS, "300"),
+
+  /** Comma-separated list of allowed source system identifiers. Empty = accept all. */
+  deepLinkAllowedSystems: str(process.env.DEEPLINK_ALLOWED_SYSTEMS, ""),
 } as const;
 
 export type EnvConfigType = typeof EnvConfig;

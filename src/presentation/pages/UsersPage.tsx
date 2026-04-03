@@ -12,15 +12,18 @@
  *   - Stats row: Total / Admins / Pending sync / Errors
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { AppSidebar } from "@/components/AppSidebar";
+import { BackButton } from "@/components/BackButton";
+import type { FhirOrganizationDto } from "@/infrastructure/api/dto/FhirRegistryDto";
 import { Badge } from "@/presentation/ui/Badge";
 import { RoleTagInput } from "@/presentation/ui/RoleTagInput";
 import { useUsers } from "@/presentation/hooks/useUsers";
 import { useRoles } from "@/presentation/hooks/useRoles";
 import { useTranslation } from "@/lib/i18n";
 import { formatDate } from "@/shared/utils/formatDate";
+import { validateGln, sanitizeGln } from "@/shared/utils/swissValidators";
 import type { UserResponseDto, CreateUserRequestDto, UpdateUserRequestDto } from "@/infrastructure/api/dto/UserDto";
 import type { RoleCatalogEntryDto } from "@/infrastructure/api/dto/RoleDto";
 import type { BadgeVariant } from "@/presentation/ui/Badge";
@@ -87,14 +90,38 @@ function UserFormModal({ mode, initial, catalog, onSave, onClose, saving, error,
   const [ptype,        setPtype]        = useState(initial?.profile?.ptype       ?? "");
   const [roleTypes,    setRoleTypes]    = useState<string[]>(initial?.profile?.roleTypes ?? []);
   const [glnError,     setGlnError]     = useState<string | null>(null);
+  const [orgFhirId,    setOrgFhirId]    = useState(initial?.profile?.orgFhirId  ?? "");
+  const [orgGln,       setOrgGln]       = useState(initial?.profile?.orgGln     ?? "");
+  const [orgName,      setOrgName]      = useState(initial?.profile?.orgName    ?? "");
+  const [orgs,         setOrgs]         = useState<FhirOrganizationDto[]>([]);
+
+  useEffect(() => {
+    fetch("/api/fhir/organizations", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d: { organizations?: FhirOrganizationDto[] }) => setOrgs(d.organizations ?? []))
+      .catch(() => { /* silently ignore — org select is optional */ });
+  }, []);
+
+  function handleOrgSelect(id: string) {
+    if (!id) {
+      setOrgFhirId(""); setOrgGln(""); setOrgName("");
+      return;
+    }
+    const org = orgs.find((o) => o.id === id);
+    if (org) { setOrgFhirId(org.id); setOrgGln(org.gln); setOrgName(org.name); }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    // GLN is required for NAT (Practitioner) type
+    // GLN is required for NAT (Practitioner) type and must be valid if provided
     if (ptype === "NAT" && !gln.trim()) {
       setGlnError(t("roles.glnRequired"));
       return;
+    }
+    if (gln.trim()) {
+      const v = validateGln(gln);
+      if (!v.valid) { setGlnError(v.error ?? "GLN ungültig"); return; }
     }
     setGlnError(null);
 
@@ -105,6 +132,9 @@ function UserFormModal({ mode, initial, catalog, onSave, onClose, saving, error,
       ...(gln                  && { gln }),
       ...(ptype                && { ptype }),
       ...(roleTypes.length > 0 && { roleTypes }),
+      ...(orgFhirId            && { orgFhirId }),
+      ...(orgGln               && { orgGln }),
+      ...(orgName              && { orgName }),
     };
     if (mode === "create") {
       await onSave({
@@ -219,11 +249,18 @@ function UserFormModal({ mode, initial, catalog, onSave, onClose, saving, error,
                 <input
                   className={`${fieldCls}${glnError ? " border-zt-danger" : ""}`}
                   value={gln}
-                  onChange={(e) => { setGln(e.target.value.replace(/\D/g, "").slice(0, 13)); setGlnError(null); }}
+                  onChange={(e) => {
+                  const s = sanitizeGln(e.target.value);
+                  setGln(s);
+                  if (s.length === 13) { const v = validateGln(s); setGlnError(v.error ?? null); }
+                  else setGlnError(null);
+                }}
                   placeholder="7601002145985"
                   maxLength={13}
                 />
                 {glnError && <p className="mt-1 text-[11px] text-zt-danger">{glnError}</p>}
+                {!glnError && gln.length === 13 && <p className="mt-1 text-[11px] text-zt-success">✓ Gültige GLN</p>}
+                <p className="mt-0.5 text-[10px] text-zt-text-tertiary">13 Stellen · EAN-13 · z.B. 7601002145985</p>
               </div>
               <div>
                 <label className={labelCls}>{t("users.ptype")}</label>
@@ -244,6 +281,30 @@ function UserFormModal({ mode, initial, catalog, onSave, onClose, saving, error,
                 catalog={catalog}
               />
             </div>
+          </div>
+
+          {/* Organisation section */}
+          <div className="border-t border-zt-border pt-3">
+            <p className="text-[11px] font-medium text-zt-text-tertiary uppercase tracking-wide mb-3">{t("orgs.selectLabel")}</p>
+            <div>
+              <label className={labelCls}>{t("orgs.title")}</label>
+              <select
+                className={selectCls}
+                value={orgFhirId}
+                onChange={(e) => handleOrgSelect(e.target.value)}
+              >
+                <option value="">{t("orgs.selectNone")}</option>
+                {orgs.map((o) => (
+                  <option key={o.id} value={o.id}>{o.name} — GLN {o.gln}</option>
+                ))}
+              </select>
+            </div>
+            {orgFhirId && (
+              <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] text-zt-text-tertiary bg-zt-bg-page border border-zt-border rounded-lg px-3 py-2">
+                <span>FHIR ID: <span className="font-mono text-zt-text-secondary">{orgFhirId}</span></span>
+                <span>GLN: <span className="font-mono text-zt-text-secondary">{orgGln}</span></span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -385,6 +446,8 @@ export default function UsersPage() {
 
           {/* Breadcrumb */}
           <nav className="flex items-center gap-1.5 text-[12px] text-zt-text-tertiary mb-4">
+            <BackButton />
+            <span className="text-zt-text-tertiary">|</span>
             <Link href="/" className="text-zt-primary hover:underline">{t("nav.home")}</Link>
             <span>/</span>
             <span className="text-zt-text-primary">{t("users.title")}</span>

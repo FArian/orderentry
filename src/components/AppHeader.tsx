@@ -20,18 +20,18 @@ export default function AppHeader({ version }: { version: string }) {
         <Link
           href="/"
           aria-label="Startseite"
-          title={`ZetLab ${version}`}
+          title={`z2Lab ${version}`}
           className="flex items-center gap-2 shrink-0"
         >
           <Image
             src="/logo.svg"
-            alt="ZetLab logo"
+            alt="z2Lab logo"
             width={28}
             height={28}
             className="h-7 w-auto select-none"
           />
           <span className="hidden sm:inline font-semibold text-zt-text-primary text-sm tracking-tight">
-            ZetLab
+            z2Lab
           </span>
         </Link>
 

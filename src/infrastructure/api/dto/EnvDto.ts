@@ -30,6 +30,24 @@ export interface UpdateEnvRequestDto {
   vars: EnvVarDto[];
 }
 
+/** A single ENV var entry in the schema catalog. */
+export interface EnvSchemaEntryDto {
+  key:             string;
+  description:     string;
+  default:         string;
+  currentValue:    string; // masked as "••••••••" for secrets
+  required:        boolean;
+  writable:        boolean; // can be changed via POST /api/env
+  restartRequired: boolean;
+  secret:          boolean;
+  group:           string;
+}
+
+/** Response body for GET /api/env/schema */
+export interface EnvSchemaResponseDto {
+  entries: EnvSchemaEntryDto[];
+}
+
 /** Response body for POST /api/env */
 export interface UpdateEnvResponseDto {
   ok: boolean;

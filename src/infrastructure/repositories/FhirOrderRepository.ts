@@ -3,21 +3,45 @@ import type {
   OrderSearchQuery,
   PagedOrders,
 } from "@/application/interfaces/repositories/IOrderRepository";
-import type { Order } from "@/domain/entities/Order";
+import type { Order, OrderStatus } from "@/domain/entities/Order";
+import { OrderFactory } from "@/domain/factories/OrderFactory";
 import { HttpClient } from "@/infrastructure/api/HttpClient";
+import { type FhirBundle } from "@/infrastructure/fhir/FhirTypes";
+import { extractOrderNumber } from "@/infrastructure/api/controllers/OrdersController";
 
-/** Shape returned by /api/service-requests */
-interface ApiOrdersResponse {
-  data: Order[];
-  total?: number;
-  page?: number;
-  pageSize?: number;
-  error?: string;
+// ── Minimal FHIR type for ServiceRequest ─────────────────────────────────────
+interface FhirIdentifier { system?: string; value?: string }
+interface FhirServiceRequest {
+  resourceType: "ServiceRequest";
+  id?:          string;
+  status?:      string;
+  intent?:      string;
+  code?:        { text?: string; coding?: Array<{ display?: string }> };
+  authoredOn?:  string;
+  identifier?:  FhirIdentifier[];
+  specimen?:    Array<{ reference?: string }>;
+  subject?:     { reference?: string };
+  meta?:        { lastUpdated?: string };
+}
+
+function mapToOrder(sr: FhirServiceRequest): Order {
+  const patientRef = sr.subject?.reference ?? "";
+  const patientId  = patientRef.startsWith("Patient/") ? patientRef.slice("Patient/".length) : "";
+  return OrderFactory.create({
+    id:            sr.id ?? "",
+    ...(sr.status !== undefined && { status: sr.status as OrderStatus }),
+    intent:        sr.intent ?? "",
+    codeText:      sr.code?.text ?? sr.code?.coding?.[0]?.display ?? "",
+    authoredOn:    sr.authoredOn ?? sr.meta?.lastUpdated ?? "",
+    orderNumber:   extractOrderNumber(sr.identifier),
+    specimenCount: Array.isArray(sr.specimen) ? sr.specimen.length : 0,
+    patientId,
+  });
 }
 
 /**
  * Repository implementation that delegates to the Next.js API route
- * /api/service-requests, which proxies to the FHIR server.
+ * /api/service-requests, which returns a FHIR searchset Bundle.
  *
  * Used client-side only.
  */
@@ -26,18 +50,27 @@ export class FhirOrderRepository implements IOrderRepository {
 
   async search(query: OrderSearchQuery): Promise<PagedOrders> {
     const params: Record<string, string | undefined> = {
-      status: query.status,
+      status:    query.status,
       patientId: query.patientId,
-      page: query.page !== undefined ? String(query.page) : undefined,
-      pageSize: query.pageSize !== undefined ? String(query.pageSize) : undefined,
+      page:      query.page     !== undefined ? String(query.page)     : undefined,
+      pageSize:  query.pageSize !== undefined ? String(query.pageSize) : undefined,
     };
-    const res = await this.http.get<ApiOrdersResponse>("/api/service-requests", params);
-    if (res.error) throw new Error(res.error);
-    const data = Array.isArray(res.data) ? res.data : [];
+    const bundle = await this.http.get<FhirBundle<FhirServiceRequest>>(
+      "/api/service-requests",
+      params,
+    );
+
+    const data = (bundle.entry ?? [])
+      .map((e) => e.resource)
+      .filter((r): r is FhirServiceRequest =>
+        !!r && (r as { resourceType?: string }).resourceType === "ServiceRequest" && !!(r as { id?: string }).id,
+      )
+      .map(mapToOrder);
+
     return {
       data,
-      total: res.total ?? data.length,
-      page: query.page ?? 1,
+      total:    bundle.total ?? data.length,
+      page:     query.page     ?? 1,
       pageSize: query.pageSize ?? 20,
     };
   }

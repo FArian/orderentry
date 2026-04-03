@@ -13,6 +13,7 @@
 import { useMemo, useState, useCallback } from "react";
 import Link from "next/link";
 import { AppSidebar } from "@/components/AppSidebar";
+import { BackButton } from "@/components/BackButton";
 import { Badge } from "@/presentation/ui/Badge";
 import type { BadgeVariant } from "@/presentation/ui/Badge";
 import { useOrders } from "@/presentation/hooks/useOrders";
@@ -233,6 +234,8 @@ export default function OrdersPage() {
 
           {/* Breadcrumb */}
           <nav className="flex items-center gap-1.5 text-[12px] text-zt-text-tertiary mb-4" aria-label="Brotkrumen">
+            <BackButton />
+            <span className="text-zt-text-tertiary">|</span>
             <Link href="/" className="text-zt-primary hover:underline">{t("nav.home")}</Link>
             <span>/</span>
             <span className="text-zt-text-primary">{t("orders.title")}</span>

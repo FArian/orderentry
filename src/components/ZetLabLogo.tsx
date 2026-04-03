@@ -29,8 +29,8 @@ const DEFAULTS = {
 export default function ZetLabLogo({
   height = 80,
   className,
-  ariaLabel = "ZetLab logo",
-  title = "ZetLab logo",
+  ariaLabel = "z2Lab logo",
+  title = "z2Lab logo",
   iconOnly = false,
   colors = {},
 }: ZetLabLogoProps) {

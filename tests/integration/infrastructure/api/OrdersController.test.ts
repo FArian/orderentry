@@ -1,9 +1,13 @@
-import { OrdersController } from "@/infrastructure/api/controllers/OrdersController";
+import {
+  OrdersController,
+  type OrdersBundleResponse,
+} from "@/infrastructure/api/controllers/OrdersController";
+import type { FhirBundle } from "@/infrastructure/fhir/FhirTypes";
 
 /**
  * Integration tests for OrdersController.
  *
- * Tests cover: list mapping, hard delete, soft-delete fallback (409),
+ * Tests cover: list (FHIR Bundle), hard delete, soft-delete fallback (409),
  * and error handling for both operations.
  */
 
@@ -36,9 +40,14 @@ function makeBundle(resources: unknown[]) {
 }
 
 const FHIR_BASE = "http://fhir-test:8080/fhir";
+const ORG_QUERY = { orgFhirId: "org-test" };
+
+function asBundle(result: OrdersBundleResponse) {
+  return result as FhirBundle<{ id?: string; status?: string; code?: { text?: string }; identifier?: Array<{ system?: string; value?: string }>; specimen?: unknown[]; subject?: { reference?: string } }>;
+}
 
 describe("OrdersController.list()", () => {
-  it("returns mapped orders from a successful FHIR response", async () => {
+  it("returns FHIR Bundle with ServiceRequests from a successful FHIR response", async () => {
     const mockFetch = jest.fn().mockResolvedValue({
       ok: true,
       status: 200,
@@ -46,38 +55,39 @@ describe("OrdersController.list()", () => {
     });
     const controller = new OrdersController(FHIR_BASE, mockFetch as typeof fetch);
 
-    const result = await controller.list();
+    const result = await controller.list(ORG_QUERY);
 
-    expect(result.data).toHaveLength(1);
-    expect(result.data[0]!.id).toBe("sr-001");
-    expect(result.data[0]!.status).toBe("active");
-    expect(result.data[0]!.codeText).toBe("Grosses Blutbild");
-    expect(result.data[0]!.orderNumber).toBe("ZLZ-2024-001");
-    expect(result.data[0]!.specimenCount).toBe(1);
-    expect(result.data[0]!.patientId).toBe("p-123");
-    expect(result.total).toBe(1);
-    expect(result.error).toBeUndefined();
+    const bundle = asBundle(result);
+    expect(bundle.entry).toHaveLength(1);
+    expect(bundle.entry?.[0]?.resource?.id).toBe("sr-001");
+    expect(bundle.entry?.[0]?.resource?.status).toBe("active");
+    expect(bundle.entry?.[0]?.resource?.code?.text).toBe("Grosses Blutbild");
+    expect(bundle.total).toBe(1);
+    expect(bundle.resourceType).toBe("Bundle");
   });
 
-  it("returns error DTO when FHIR list fails", async () => {
+  it("returns OperationOutcome when FHIR list fails", async () => {
     const mockFetch = jest.fn().mockResolvedValue({ ok: false, status: 502 });
     const controller = new OrdersController(FHIR_BASE, mockFetch as typeof fetch);
 
-    const result = await controller.list();
+    const result = await controller.list(ORG_QUERY);
 
-    expect(result.data).toEqual([]);
-    expect(result.error).toMatch(/502/);
-    expect(result.httpStatus).toBe(502);
+    expect((result as { resourceType: string }).resourceType).toBe("OperationOutcome");
+    const outcome = result as { issue: Array<{ details?: { text?: string } }>; httpStatus?: number };
+    expect(outcome.issue[0]?.details?.text).toMatch(/502/);
+    expect(outcome.httpStatus).toBe(502);
   });
 
-  it("returns 500 error DTO when fetch throws", async () => {
+  it("returns 500 OperationOutcome when fetch throws", async () => {
     const mockFetch = jest.fn().mockRejectedValue(new Error("Timeout"));
     const controller = new OrdersController(FHIR_BASE, mockFetch as typeof fetch);
 
-    const result = await controller.list();
+    const result = await controller.list(ORG_QUERY);
 
-    expect(result.error).toBe("Timeout");
-    expect(result.httpStatus).toBe(500);
+    expect((result as { resourceType: string }).resourceType).toBe("OperationOutcome");
+    const outcome = result as { issue: Array<{ details?: { text?: string } }>; httpStatus?: number };
+    expect(outcome.issue[0]?.details?.text).toBe("Timeout");
+    expect(outcome.httpStatus).toBe(500);
   });
 
   it("falls back to entry count when bundle.total is absent", async () => {
@@ -89,9 +99,10 @@ describe("OrdersController.list()", () => {
     });
     const controller = new OrdersController(FHIR_BASE, mockFetch as typeof fetch);
 
-    const result = await controller.list();
+    const result = await controller.list(ORG_QUERY);
 
-    expect(result.total).toBe(1);
+    expect(asBundle(result).total).toBeUndefined(); // no total in source bundle
+    expect(asBundle(result).entry).toHaveLength(1);
   });
 });
 

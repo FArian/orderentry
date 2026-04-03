@@ -142,6 +142,93 @@ tail -f backend/docker/logs/zetlab.log
 | `NEXT_PUBLIC_FORCE_LOCAL_AUTH` | Client | `false` | Force browser-only auth |
 | `NEXT_PUBLIC_SASIS_ENABLED` | Client | `false` | Show SASIS/VeKa card lookup UI |
 | `NEXT_PUBLIC_GLN_ENABLED` | Client | `false` | Show GLN lookup UI |
+| `NEXT_PUBLIC_REGEX_GLN` | Client | _(built-in)_ | Override GLN validation regex (e.g. `^\d{13}$`) |
+| `NEXT_PUBLIC_REGEX_AHV` | Client | _(built-in)_ | Override AHV validation regex (e.g. `^756\d{10}$`) |
+| `NEXT_PUBLIC_REGEX_VEKA` | Client | _(built-in)_ | Override VEKA validation regex (e.g. `^80\d{18}$`) |
+| `NEXT_PUBLIC_REGEX_UID` | Client | _(built-in)_ | Override UID validation regex (e.g. `^CHE-\d{3}\.\d{3}\.\d{3}$`) |
+| `NEXT_PUBLIC_REGEX_ZSR` | Client | _(built-in)_ | Override ZSR validation regex (e.g. `^[A-Z]\d{6}$`) |
+| `NEXT_PUBLIC_REGEX_BUR` | Client | _(built-in)_ | Override BUR validation regex (e.g. `^\d{8}$`) |
+
+> **Note:** `NEXT_PUBLIC_*` variables are baked into the client bundle at build time.
+> Pass them as `--build-arg` in Docker builds (see Docker section).
+> Regex values use standard JavaScript regex syntax without slashes.
+
+---
+
+## Swiss Identifier Validation
+
+All identifier validation lives in `src/shared/utils/swissValidators.ts`.
+The logic is centralised — never inline in components.
+
+### Supported identifiers
+
+| Identifier | Description | Format | Example |
+|---|---|---|---|
+| **GLN** | Global Location Number (EAN-13) | 13 digits, check-digit validated | `7601002145985` |
+| **AHV** | Sozialversicherungsnummer (NAVS13) | 13 digits starting with `756`, dots optional | `756.1234.5678.90` |
+| **VEKA** | Europäische Krankenversicherungskarte | 20 digits starting with `80` + ISO country code | `80756000080102360798` |
+| **UID** | Unternehmens-Identifikationsnummer | `CHE-XXX.XXX.XXX` | `CHE-123.456.789` |
+| **ZSR** | Zahlstellenregisternummer (TARMED/TARDOC) | 1 letter + 6 digits | `Z123456` |
+| **BUR** | Betriebs- und Unternehmensregister | 8 digits | `12345678` |
+
+### AHV details
+
+- Always starts with `756` (Swiss country code)
+- Can be entered with or without dots: `7561234567890` or `756.1234.5678.90`
+- Dots are auto-inserted as the user types
+- Liechtenstein patients do **not** have an AHV — use their national identifier instead
+
+### VEKA / European Health Insurance Card
+
+The card number encodes the country of insurance in digits 3–5 (ISO 3166-1 numeric):
+
+| Prefix | Country |
+|---|---|
+| `80756…` | Schweiz (CH) |
+| `80438…` | Liechtenstein (LI) |
+| `80276…` | Deutschland (DE) |
+| `80040…` | Österreich (AT) |
+| `80250…` | Frankreich (FR) |
+| `80380…` | Italien (IT) |
+| `80528…` | Niederlande (NL) |
+| `80724…` | Spanien (ES) |
+| _(+ all other EU/EEA members)_ | |
+
+The country is auto-detected from the number as the user types.
+Liechtenstein patients (prefix `80438`) are explicitly supported alongside Swiss cards.
+
+### FHIR OID systems
+
+These are the canonical FHIR identifier systems used when writing identifiers to HAPI:
+
+```json
+{
+  "AHV":  "urn:oid:2.16.756.5.32",
+  "GLN":  "urn:oid:2.51.1.3",
+  "UID":  "urn:oid:2.16.756.5.35",
+  "ZSR":  "urn:oid:2.16.756.5.30.1.123.100.2.1.1",
+  "BUR":  "urn:oid:2.16.756.5.45",
+  "VEKA": "urn:oid:2.16.756.5.30.1.123.100.1.1"
+}
+```
+
+### Overriding regex via environment (Docker / .env.local)
+
+All validation patterns can be overridden without code changes:
+
+```env
+# .env.local or docker-compose environment / --build-arg
+NEXT_PUBLIC_REGEX_GLN=^\d{13}$
+NEXT_PUBLIC_REGEX_AHV=^756\d{10}$
+NEXT_PUBLIC_REGEX_VEKA=^80\d{18}$
+NEXT_PUBLIC_REGEX_UID=^CHE-\d{3}\.\d{3}\.\d{3}$
+NEXT_PUBLIC_REGEX_ZSR=^[A-Z]\d{6}$
+NEXT_PUBLIC_REGEX_BUR=^\d{8}$
+```
+
+> These are `NEXT_PUBLIC_*` variables — they must be passed as `--build-arg` in Docker builds
+> to be included in the client-side bundle. Setting them only in `docker-compose environment:`
+> has no effect for browser code.
 
 ---
 

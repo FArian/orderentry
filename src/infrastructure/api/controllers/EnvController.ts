@@ -19,6 +19,7 @@ import type {
   GetEnvResponseDto,
   UpdateEnvRequestDto,
   UpdateEnvResponseDto,
+  EnvSchemaResponseDto,
 } from "../dto/EnvDto";
 
 // ── Whitelist ─────────────────────────────────────────────────────────────────
@@ -37,8 +38,8 @@ const ALLOWED_SERVER_KEYS = new Set([
   "LOG_LEVEL",
   "LOG_FILE",
   "ENABLE_TRACING",
-  "ZIPKIN_URL",
-  "GRAFANA_URL",
+  "TRACING_URL",
+  "MONITORING_URL",
   "SASIS_API_BASE",
   "GLN_API_BASE",
   "ALLOW_LOCAL_AUTH",
@@ -57,6 +58,210 @@ function isVercel(): boolean {
   return !!process.env.VERCEL;
 }
 
+// ── Static schema — all ENV vars the app understands ─────────────────────────
+
+/**
+ * Complete catalog of every environment variable the application supports.
+ * This is the authoritative reference — update whenever a new var is added.
+ *
+ * Fields:
+ *   key             — exact env var name
+ *   description     — what it controls
+ *   default         — value used when the var is not set
+ *   required        — true if the app degrades significantly without it
+ *   writable        — can be edited via POST /api/env
+ *   restartRequired — process restart needed for the change to take effect
+ *   secret          — value is masked in the API response (matches BLOCKED_PATTERNS)
+ *   group           — logical category
+ */
+const ENV_SCHEMA: ReadonlyArray<{
+  key:             string;
+  description:     string;
+  default:         string;
+  required:        boolean;
+  writable:        boolean;
+  restartRequired: boolean;
+  secret:          boolean;
+  group:           string;
+}> = [
+  // ── FHIR ───────────────────────────────────────────────────────────────────
+  {
+    key:             "FHIR_BASE_URL",
+    description:     "Base URL of the HAPI FHIR R4 server. Used by all FHIR proxy routes.",
+    default:         "http://localhost:8080/fhir",
+    required:        true,
+    writable:        true,
+    restartRequired: true,
+    secret:          false,
+    group:           "FHIR",
+  },
+  // ── Authentication ─────────────────────────────────────────────────────────
+  {
+    key:             "AUTH_SECRET",
+    description:     "HMAC-SHA256 signing secret for session cookies. Must be ≥32 chars in production.",
+    default:         "dev-secret-change-me",
+    required:        true,
+    writable:        false,
+    restartRequired: true,
+    secret:          true,
+    group:           "Authentication",
+  },
+  {
+    key:             "ALLOW_LOCAL_AUTH",
+    description:     "Set true to allow the unsigned localSession cookie (browser-only auth fallback).",
+    default:         "false",
+    required:        false,
+    writable:        true,
+    restartRequired: true,
+    secret:          false,
+    group:           "Authentication",
+  },
+  {
+    key:             "ORCHESTRA_JWT_SECRET",
+    description:     "Shared HS256 secret for /api/launch JWT validation from Orchestra. Generate: openssl rand -hex 32",
+    default:         "",
+    required:        false,
+    writable:        false,
+    restartRequired: true,
+    secret:          true,
+    group:           "Authentication",
+  },
+  // ── Logging ────────────────────────────────────────────────────────────────
+  {
+    key:             "LOG_LEVEL",
+    description:     "Minimum log level. Accepted values: debug | info | warn | error | silent",
+    default:         "info",
+    required:        false,
+    writable:        true,
+    restartRequired: true,
+    secret:          false,
+    group:           "Logging",
+  },
+  {
+    key:             "LOG_FILE",
+    description:     "Absolute path to append structured JSON log lines. Empty = file logging disabled.",
+    default:         "",
+    required:        false,
+    writable:        true,
+    restartRequired: true,
+    secret:          false,
+    group:           "Logging",
+  },
+  // ── Observability ──────────────────────────────────────────────────────────
+  {
+    key:             "ENABLE_TRACING",
+    description:     "Set true to activate OpenTelemetry distributed tracing. Requires TRACING_URL.",
+    default:         "false",
+    required:        false,
+    writable:        true,
+    restartRequired: true,
+    secret:          false,
+    group:           "Observability",
+  },
+  {
+    key:             "TRACING_URL",
+    description:     "OTLP/HTTP collector base URL for distributed tracing (e.g. http://jaeger:4318 or http://tempo:4318). Active only when ENABLE_TRACING=true.",
+    default:         "",
+    required:        false,
+    writable:        true,
+    restartRequired: true,
+    secret:          false,
+    group:           "Observability",
+  },
+  {
+    key:             "MONITORING_URL",
+    description:     "Monitoring dashboard base URL displayed in the Settings page (e.g. http://grafana:3000). Display-only link.",
+    default:         "",
+    required:        false,
+    writable:        true,
+    restartRequired: true,
+    secret:          false,
+    group:           "Observability",
+  },
+  {
+    key:             "METRICS_TOKEN",
+    description:     "Static Bearer token for the Prometheus scraper (GET /api/metrics). If not set, standard admin auth is used. Generate: openssl rand -hex 32",
+    default:         "",
+    required:        false,
+    writable:        false,
+    restartRequired: true,
+    secret:          true,
+    group:           "Observability",
+  },
+  // ── External APIs ──────────────────────────────────────────────────────────
+  {
+    key:             "SASIS_API_BASE",
+    description:     "SASIS/OFAC VeKa card lookup API base URL (via Orchestra middleware). Empty = feature disabled.",
+    default:         "",
+    required:        false,
+    writable:        true,
+    restartRequired: true,
+    secret:          false,
+    group:           "External APIs",
+  },
+  {
+    key:             "GLN_API_BASE",
+    description:     "GLN/Refdata partner lookup API base URL (via Orchestra middleware).",
+    default:         "http://orchestra:8019/middleware/gln/api/versionVal/refdata/partner/",
+    required:        false,
+    writable:        true,
+    restartRequired: true,
+    secret:          false,
+    group:           "External APIs",
+  },
+  // ── Build-time (NEXT_PUBLIC_*) ─────────────────────────────────────────────
+  {
+    key:             "NEXT_PUBLIC_APP_VERSION",
+    description:     "Application version string (auto-generated by write-version.mjs from git metadata).",
+    default:         "0.0.0-dev",
+    required:        false,
+    writable:        false,
+    restartRequired: false,
+    secret:          false,
+    group:           "Build-time",
+  },
+  {
+    key:             "NEXT_PUBLIC_FORCE_LOCAL_AUTH",
+    description:     "Set true to force browser-only localStorage auth (ignores session cookies).",
+    default:         "false",
+    required:        false,
+    writable:        false,
+    restartRequired: false,
+    secret:          false,
+    group:           "Build-time",
+  },
+  {
+    key:             "NEXT_PUBLIC_SASIS_ENABLED",
+    description:     "Set true to show the VeKa card lookup UI. Baked at build time.",
+    default:         "false",
+    required:        false,
+    writable:        false,
+    restartRequired: false,
+    secret:          false,
+    group:           "Build-time",
+  },
+  {
+    key:             "NEXT_PUBLIC_GLN_ENABLED",
+    description:     "Set true to show the GLN lookup UI. Baked at build time.",
+    default:         "false",
+    required:        false,
+    writable:        false,
+    restartRequired: false,
+    secret:          false,
+    group:           "Build-time",
+  },
+  {
+    key:             "NEXT_PUBLIC_LAB_ORG_ID",
+    description:     "FHIR Organization ID of the laboratory used to filter the test catalog. Baked at build time — pass as Docker --build-arg.",
+    default:         "zlz",
+    required:        false,
+    writable:        false,
+    restartRequired: false,
+    secret:          false,
+    group:           "Build-time",
+  },
+] as const;
+
 // ── Controller ────────────────────────────────────────────────────────────────
 
 export class EnvController {
@@ -64,6 +269,23 @@ export class EnvController {
 
   constructor(cwd: string = process.cwd()) {
     this.envPath = path.join(cwd, ".env.local");
+  }
+
+  // ── GET /api/env/schema ────────────────────────────────────────────────────
+
+  /**
+   * Returns the complete catalog of all ENV vars the app supports.
+   * Current values are included; secret values are masked as "••••••••".
+   */
+  getSchema(): EnvSchemaResponseDto {
+    const entries = ENV_SCHEMA.map((entry) => {
+      const rawValue = process.env[entry.key] ?? "";
+      const currentValue = entry.secret && rawValue
+        ? "••••••••"
+        : rawValue;
+      return { ...entry, currentValue };
+    });
+    return { entries };
   }
 
   // ── GET /api/env ────────────────────────────────────────────────────────────

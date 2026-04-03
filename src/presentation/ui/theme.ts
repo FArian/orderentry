@@ -1,5 +1,5 @@
 /**
- * ZetLab TypeScript token reference.
+ * z2Lab TypeScript token reference.
  *
  * Use these values only when you need a color string at runtime
  * (e.g. inline Canvas/SVG drawing). For all normal JSX styling,

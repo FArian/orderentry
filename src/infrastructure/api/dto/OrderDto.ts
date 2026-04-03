@@ -2,6 +2,14 @@
  * Data Transfer Objects for the /api/service-requests endpoint.
  */
 
+/** Query parameters accepted by GET /api/service-requests */
+export interface ListOrdersQueryDto {
+  /** FHIR Organization ID — restricts results to patients of this org */
+  orgFhirId?: string;
+  /** Organization GLN — fallback when orgFhirId not yet resolved */
+  orgGln?: string;
+}
+
 /** A single ServiceRequest (order) as returned by the API */
 export interface OrderResponseDto {
   id: string;

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Einstellungen – ZetLab",
+  title: "Einstellungen – z2Lab",
 };
 
 export default function SettingsLayout({

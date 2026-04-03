@@ -34,6 +34,10 @@ export type ActivityDefinition = {
   location?: { identifier?: { system?: string; value?: string } };
   observationResultRequirement?: Array<{ reference?: string; display?: string }>;
   contained?: unknown[];
+  useContext?: Array<{
+    code?: { system?: string; code?: string };
+    valueReference?: { reference?: string };
+  }>;
 };
 
 export type ObservationDefinition = {

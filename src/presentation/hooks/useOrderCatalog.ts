@@ -56,7 +56,14 @@ type VolumeItem = { specimenRef: string; num?: number; unit?: string; label: str
 
 // ── Hook ──────────────────────────────────────────────────────────────────────
 
-export function useOrderCatalog() {
+/**
+ * @param labOrgId  FHIR Organization ID of the lab (e.g. "zlz").
+ *                  When set, only ActivityDefinitions whose useContext contains
+ *                  a reference to Organisation/{labOrgId} are shown.
+ *                  Pass undefined to load all (useful for single-lab setups
+ *                  where ADs have no useContext yet).
+ */
+export function useOrderCatalog(labOrgId?: string) {
   const [topTabs, setTopTabs] = useState<string[]>([]);
   const [selectedTopTab, setSelectedTopTab] = useState<string | null>(null);
   const [allAds, setAllAds] = useState<ActivityDefinition[]>([]);
@@ -109,15 +116,25 @@ export function useOrderCatalog() {
     async function load() {
       try {
         setPageLoading(true);
-        const bundle = (await fhirGet("/ActivityDefinition")) as ActivityDefinitionSearchBundle;
+        const bundle = (await fhirGet("/ActivityDefinition?_count=5000")) as ActivityDefinitionSearchBundle;
         const entries = Array.isArray(bundle.entry) ? bundle.entry : [];
-        const rawAds = entries
+        const allLoaded = entries
           .map((e) => e.resource)
           .filter(
             (r): r is ActivityDefinition =>
               isObject(r) &&
               (r as { resourceType?: unknown }).resourceType === "ActivityDefinition"
           );
+
+        // Filter by lab organisation if labOrgId is provided
+        const rawAds = labOrgId
+          ? allLoaded.filter((ad) => {
+              if (!Array.isArray(ad.useContext) || ad.useContext.length === 0) return true;
+              return ad.useContext.some(
+                (ctx) => ctx.valueReference?.reference === `Organization/${labOrgId}`
+              );
+            })
+          : allLoaded;
         const seen = new Set<string>();
         const ads: ActivityDefinition[] = [];
         for (const a of rawAds) {
@@ -165,7 +182,7 @@ export function useOrderCatalog() {
 
     load();
     return () => { cancelled = true; };
-  }, [getTopicDisplay]);
+  }, [getTopicDisplay, labOrgId]);
 
   // Auto-select default top tab (prefer MIBI/Mikrobiologie)
   useEffect(() => {

@@ -50,7 +50,7 @@ export function PreviewButtons({
               title: pdfTitle ?? "PDF",
             })
           }
-          className="inline-flex items-center gap-1 rounded border border-rose-300 bg-rose-50 px-2 py-0.5 text-xs text-rose-700 hover:bg-rose-100 cursor-pointer"
+          className="inline-flex items-center gap-1 rounded border border-zt-danger-border bg-zt-danger-light px-2 py-0.5 text-xs text-zt-danger hover:bg-zt-danger-light/70 cursor-pointer"
         >
           📄 PDF
         </button>
@@ -64,7 +64,7 @@ export function PreviewButtons({
               title: hl7Title ?? "HL7",
             })
           }
-          className="inline-flex items-center gap-1 rounded border border-indigo-300 bg-indigo-50 px-2 py-0.5 text-xs text-indigo-700 hover:bg-indigo-100 cursor-pointer"
+          className="inline-flex items-center gap-1 rounded border border-zt-info-border bg-zt-info-light px-2 py-0.5 text-xs text-zt-info hover:bg-zt-info-light/70 cursor-pointer"
         >
           🔬 HL7
         </button>
@@ -105,13 +105,13 @@ export function PreviewModal({ modal, onClose }: PreviewModalProps) {
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-lg shadow-2xl flex flex-col"
+        className="bg-zt-bg-card rounded-lg shadow-2xl flex flex-col"
         style={{ width: "900px", maxWidth: "96vw", height: "88vh" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b px-4 py-3 shrink-0">
-          <span className="font-semibold text-gray-800 flex items-center gap-2">
+        <div className="flex items-center justify-between border-b border-zt-border px-4 py-3 shrink-0">
+          <span className="font-semibold text-zt-text-primary flex items-center gap-2">
             {modal.type === "pdf" ? "📄" : "🔬"}
             {modal.title}
           </span>
@@ -120,7 +120,7 @@ export function PreviewModal({ modal, onClose }: PreviewModalProps) {
               <a
                 href={(modal as Extract<ModalState, { type: "pdf" }>).data}
                 download={`${modal.title}.pdf`}
-                className="rounded border border-gray-300 bg-white px-3 py-1 text-sm text-gray-600 hover:bg-gray-50"
+                className="rounded border border-zt-border bg-zt-bg-card px-3 py-1 text-sm text-zt-text-secondary hover:bg-zt-bg-page"
               >
                 ⬇️ Download
               </a>
@@ -130,8 +130,8 @@ export function PreviewModal({ modal, onClose }: PreviewModalProps) {
                 onClick={copyHl7}
                 className={`px-3 py-1 rounded text-sm border ${
                   copied
-                    ? "bg-green-100 border-green-400 text-green-700"
-                    : "bg-white border-gray-300 text-gray-600 hover:bg-gray-50"
+                    ? "bg-zt-success-light border-zt-success-border text-zt-success"
+                    : "bg-zt-bg-card border-zt-border text-zt-text-secondary hover:bg-zt-bg-page"
                 }`}
               >
                 {copied ? "✓ Kopiert" : "📋 Kopieren"}
@@ -139,7 +139,7 @@ export function PreviewModal({ modal, onClose }: PreviewModalProps) {
             )}
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-700 text-xl px-1"
+              className="text-zt-text-tertiary hover:text-zt-text-primary text-xl px-1"
               aria-label="Schliessen"
             >
               ×

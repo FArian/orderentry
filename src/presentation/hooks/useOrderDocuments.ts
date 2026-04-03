@@ -208,7 +208,7 @@ ${materialRows ? `
   </table>
 </div>` : ""}
 
-<div class="footer">${tr("bs.printedAt")} ${printedAt} · ZetLab OrderEntry · ${FHIR_BASE.replace(/^https?:\/\//, "")}</div>
+<div class="footer">${tr("bs.printedAt")} ${printedAt} · z2Lab OrderEntry · ${FHIR_BASE.replace(/^https?:\/\//, "")}</div>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <script>window.addEventListener('load',function(){try{${barcodeInits.join("")}}catch(e){console.warn('Barcode error:',e);}});</script>
 </body>

@@ -41,7 +41,7 @@ export function SearchBar({
 
   return (
     <div className={`relative flex items-center ${className}`}>
-      <span className="pointer-events-none absolute left-2.5 text-gray-400 select-none">
+      <span className="pointer-events-none absolute left-2.5 text-zt-text-tertiary select-none">
         {icon}
       </span>
       <input
@@ -49,7 +49,7 @@ export function SearchBar({
         value={local}
         onChange={handleChange}
         placeholder={placeholder}
-        className="w-full rounded border border-gray-300 bg-white py-1.5 pl-8 pr-3 text-sm text-gray-800 placeholder-gray-400 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-300"
+        className="w-full rounded border border-zt-border bg-zt-bg-card py-1.5 pl-8 pr-3 text-sm text-zt-text-primary placeholder:text-zt-text-tertiary focus:border-zt-primary focus:outline-none focus:ring-1 focus:ring-zt-primary/20"
       />
     </div>
   );
