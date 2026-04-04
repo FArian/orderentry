@@ -14,8 +14,12 @@ export async function register(): Promise<void> {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
 
   // ── 1. DB migrations ────────────────────────────────────────────────────────
+  // webpackIgnore: true — prevents the Edge bundler from statically including
+  // this Node.js-only module in the middleware/Edge bundle.
   try {
-    const { runMigrations } = await import("@/infrastructure/db/runMigrations");
+    const { runMigrations } = await import(
+      /* webpackIgnore: true */ "@/infrastructure/db/runMigrations"
+    );
     await runMigrations();
   } catch (err) {
     console.error("[db] Migration failed — server will not start:", err);
@@ -23,6 +27,9 @@ export async function register(): Promise<void> {
   }
 
   // ── 2. OpenTelemetry tracing (opt-in) ───────────────────────────────────────
-  const { register: registerOtel } = await import("./instrumentation.node");
+  // webpackIgnore: true — same reason: keeps OTel out of the Edge bundle.
+  const { register: registerOtel } = await import(
+    /* webpackIgnore: true */ "./instrumentation.node"
+  );
   await registerOtel();
 }
