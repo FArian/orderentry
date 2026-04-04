@@ -46,36 +46,6 @@ const _configuredLevel: LogLevel = parseLevel(
 );
 const _logFile: string | null = process.env.LOG_FILE?.trim() || null;
 
-/**
- * Tracing integration — reads the active OpenTelemetry span when available.
- *
- * Uses lazy require() to avoid bundling @opentelemetry/api into the browser
- * bundle (FhirClient → ServiceFactory → useResults is a client-side import
- * chain). The guard  typeof window !== "undefined"  short-circuits on the
- * browser before any require() call is reached.
- */
-const _tracingEnabled: boolean =
-  (process.env.ENABLE_TRACING ?? "").trim().toLowerCase() === "true";
-
-function getActiveTraceId(): string | undefined {
-  if (!_tracingEnabled) return undefined;
-  if (typeof window !== "undefined") return undefined;       // browser — no OTel
-  if (process.env.NEXT_RUNTIME !== "nodejs") return undefined; // Edge runtime — no OTel
-  try {
-    // Split the package name so the Edge bundler cannot statically resolve it.
-    // A literal require("@opentelemetry/api") is picked up by webpack's static
-    // analysis and pulled into the Edge bundle even inside a guarded function.
-    // Concatenating at runtime makes the dependency opaque to the bundler while
-    // the server webpack externals rule still externalises it for Node.js.
-    const pkg = "@opentelemetry" + "/api";
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { trace } = require(pkg) as typeof import("@opentelemetry/api");
-    return trace.getActiveSpan()?.spanContext().traceId;
-  } catch {
-    return undefined;
-  }
-}
-
 // ── Formatter ─────────────────────────────────────────────────────────────────
 
 function format(
@@ -85,15 +55,12 @@ function format(
   meta?: Record<string, unknown>,
   traceId?: string,
 ): string {
-  // Prefer the explicitly supplied traceId (withTraceId()), then fall back
-  // to the active OpenTelemetry span context (automatic propagation).
-  const resolvedTraceId = traceId ?? getActiveTraceId();
   const entry: Record<string, unknown> = {
     time: new Date().toISOString(),
     level,
     ctx,
     msg: message,
-    ...(_tracingEnabled && resolvedTraceId ? { traceId: resolvedTraceId } : {}),
+    ...(traceId ? { traceId } : {}),
     ...meta,
   };
   return JSON.stringify(entry);
