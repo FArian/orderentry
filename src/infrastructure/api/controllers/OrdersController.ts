@@ -10,7 +10,6 @@
 
 import { FHIR_BASE } from "@/infrastructure/fhir/FhirClient";
 import { createLogger, type Logger } from "@/infrastructure/logging/Logger";
-import { FHIR_SYSTEMS } from "@/lib/fhir";
 import { OrderStatus } from "@/domain/entities/Order";
 import {
   buildOperationOutcome,
