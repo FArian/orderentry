@@ -226,32 +226,25 @@ export default function ProfilePage() {
     setGlnMsg(null);
     setGlnErr(null);
     try {
-      const res = await fetch(`/api/gln-lookup?gln=${encodeURIComponent(gln)}`);
+      const res = await fetch(`/api/fhir/gln-search?gln=${encodeURIComponent(gln)}`);
       let json: Record<string, string>;
       try { json = await res.json(); }
       catch { throw new Error(`HTTP ${res.status} – ungültige Antwort`); }
-      if (!res.ok) {
-        const key = json.error === "noGlnApi"    ? "profile.noGlnApi"
-                  : json.error === "glnNotFound" ? "profile.glnNotFound"
+      if (!res.ok || json.found === "false" || (json.found as unknown) === false) {
+        const key = json.error === "glnNotFound" ? "profile.glnNotFound"
                   : json.error === "invalidGln"  ? "profile.invalidGln"
                   : null;
         throw new Error(key ? t(key) : (json.error || `HTTP ${res.status}`));
       }
       const ptype = json.ptype || "";
       setGlnPtype(ptype);
-      setGlnRoleType(json.roleType || "");
+      setGlnRoleType("");
       const isNATLocal = ptype === "NAT";
       setFields((prev) => ({
         ...prev,
         firstName:    isNATLocal ? (json.firstName    || prev.firstName)    : "",
         lastName:     isNATLocal ? (json.lastName     || prev.lastName)     : "",
         organization: isNATLocal ? "" : (json.organization || prev.organization),
-        ...(json.street   && { street:   json.street }),
-        ...(json.streetNo && { streetNo: json.streetNo }),
-        ...(json.zip      && { zip:      json.zip }),
-        ...(json.city     && { city:     json.city }),
-        ...(json.canton   && { canton:   json.canton }),
-        ...(json.country  && { country:  json.country }),
       }));
       const label = isNATLocal
         ? [json.lastName, json.firstName].filter(Boolean).join(", ")
@@ -272,20 +265,19 @@ export default function ProfilePage() {
     setOrgGlnMsg(null);
     setOrgGlnErr(null);
     try {
-      const res = await fetch(`/api/gln-lookup?gln=${encodeURIComponent(gln)}`);
+      const res = await fetch(`/api/fhir/gln-search?gln=${encodeURIComponent(gln)}&resourceType=Organization`);
       let json: Record<string, string>;
       try { json = await res.json(); }
       catch { throw new Error(`HTTP ${res.status} – ungültige Antwort`); }
-      if (!res.ok) {
-        const key = json.error === "noGlnApi"    ? "profile.noGlnApi"
-                  : json.error === "glnNotFound" ? "profile.glnNotFound"
+      if (!res.ok || json.found === "false" || (json.found as unknown) === false) {
+        const key = json.error === "glnNotFound" ? "profile.glnNotFound"
                   : json.error === "invalidGln"  ? "profile.invalidGln"
                   : null;
         throw new Error(key ? t(key) : (json.error || `HTTP ${res.status}`));
       }
       const name = json.organization || [json.lastName, json.firstName].filter(Boolean).join(", ") || gln;
       setOrgName(name);
-      setOrgFhirId("");
+      setOrgFhirId(json.fhirId || "");
       setOrgGlnMsg(`${t("profile.glnFound")}: ${name}`);
     } catch (e: unknown) {
       setOrgGlnErr(e instanceof Error ? e.message : String(e));
