@@ -32,6 +32,9 @@ export interface UserProfileDto {
   orgFhirId?: string;
   locationId?: string;   // FHIR Location.id — required for NAT
   locationName?: string; // display name
+  zsr?: string;          // Zahlstellenregister-Nummer (NAT + JUR)
+  uid?: string;          // Unternehmens-ID CHE-XXX.XXX.XXX (JUR only)
+  bur?: string;          // Betriebseinheitsnummer BFS (JUR only)
 }
 
 // ── Request DTOs ──────────────────────────────────────────────────────────────

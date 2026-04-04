@@ -34,7 +34,10 @@ export interface ManagedUserProfile {
   orgFhirId?: string;
   locationId?: string;   // FHIR Location.id — required for NAT (PractitionerRole.location)
   locationName?: string; // display name of the location
-  ahv?: string;          // Swiss AHV/AVS/AVS number
+  ahv?: string;          // Swiss AHV/AVS number (NAT/PER)
+  zsr?: string;          // Zahlstellenregister-Nummer santésuisse (NAT + JUR)
+  uid?: string;          // Unternehmens-ID CHE-XXX.XXX.XXX (JUR only)
+  bur?: string;          // Betriebseinheitsnummer BFS (JUR only)
 }
 
 export interface ManagedUser {

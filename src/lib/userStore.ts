@@ -37,6 +37,9 @@ export type UserProfile = {
   orgFhirId?:   string;
   locationId?:   string;
   locationName?: string;
+  zsr?:          string;
+  uid?:          string;
+  bur?:          string;
 };
 
 export type UserRole           = "admin" | "user";

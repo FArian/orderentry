@@ -96,6 +96,9 @@ function UserFormModal({ mode, initial, catalog, onSave, onClose, saving, error,
   const [orgName,       setOrgName]      = useState(initial?.profile?.orgName      ?? "");
   const [organization,  setOrganization] = useState(initial?.profile?.organization ?? "");
   const [locationId,    setLocationId]   = useState(initial?.profile?.locationId   ?? "");
+  const [zsr,           setZsr]          = useState(initial?.profile?.zsr          ?? "");
+  const [uid,           setUid]          = useState(initial?.profile?.uid          ?? "");
+  const [bur,           setBur]          = useState(initial?.profile?.bur          ?? "");
   const [locationName,  setLocationName] = useState(initial?.profile?.locationName ?? "");
   const [orgs,          setOrgs]         = useState<FhirOrganizationDto[]>([]);
   const [locations,     setLocations]    = useState<{ id: string; name: string }[]>([]);
@@ -167,6 +170,9 @@ function UserFormModal({ mode, initial, catalog, onSave, onClose, saving, error,
     }
     setGlnError(null);
 
+    // ptype is mandatory for all users
+    if (!ptype) { alert(t("users.ptypeRequired")); return; }
+
     // NAT: org + location + at least one roleType required
     if (ptype === "NAT") {
       if (!orgFhirId) { alert(t("users.orgRequired")); return; }
@@ -175,8 +181,8 @@ function UserFormModal({ mode, initial, catalog, onSave, onClose, saving, error,
     }
 
     const profile = {
-      ...(ptype                && { ptype }),
-      // NAT / other — person fields
+      ptype,
+      // NAT / PER — person fields
       ...(ptype !== "JUR" && firstName  && { firstName }),
       ...(ptype !== "JUR" && lastName   && { lastName }),
       ...(ptype !== "JUR" && ahv        && { ahv }),
@@ -184,13 +190,19 @@ function UserFormModal({ mode, initial, catalog, onSave, onClose, saving, error,
       ...(ptype === "JUR" && organization && { organization }),
       ...(email            && { email }),
       ...(gln              && { gln }),
-      // NAT: org + location + roles
+      // NAT only: roles + location + ZSR
       ...(ptype === "NAT" && roleTypes.length > 0 && { roleTypes }),
-      ...(orgFhirId        && { orgFhirId }),
-      ...(orgGln           && { orgGln }),
-      ...(orgName          && { orgName }),
       ...(locationId       && { locationId }),
       ...(locationName     && { locationName }),
+      ...(ptype === "NAT" && zsr        && { zsr }),
+      // JUR only: UID + BUR + ZSR
+      ...(ptype === "JUR" && uid        && { uid }),
+      ...(ptype === "JUR" && bur        && { bur }),
+      ...(ptype === "JUR" && zsr        && { zsr }),
+      // NAT + PER: org membership (JUR IS the org, doesn't reference another org)
+      ...(ptype !== "JUR" && orgFhirId  && { orgFhirId }),
+      ...(ptype !== "JUR" && orgGln     && { orgGln }),
+      ...(ptype !== "JUR" && orgName    && { orgName }),
     };
     if (mode === "create") {
       await onSave({
@@ -286,18 +298,19 @@ function UserFormModal({ mode, initial, catalog, onSave, onClose, saving, error,
           <div className="border-t border-zt-border pt-3">
             <p className="text-[11px] font-medium text-zt-text-tertiary uppercase tracking-wide mb-3">{t("users.profileSection")}</p>
 
-            {/* ptype selector — always visible */}
+            {/* ptype selector — always visible, required */}
             <div className="mb-3">
-              <label className={labelCls}>{t("users.ptype")}</label>
-              <select className={selectCls} value={ptype} onChange={(e) => {
+              <label className={labelCls}>{t("users.ptype")} *</label>
+              <select required className={selectCls} value={ptype} onChange={(e) => {
                 setPtype(e.target.value);
                 setGlnError(null);
                 setLocationId(""); setLocationName(""); setLocations([]);
                 setRoleTypes([]);
               }}>
-                <option value="">— {t("users.ptypeNone")}</option>
+                <option value="">— {t("users.ptypeSelect")} —</option>
                 <option value="NAT">NAT — {t("users.ptypeNAT")}</option>
                 <option value="JUR">JUR — {t("users.ptypeJUR")}</option>
+                <option value="PER">PER — {t("users.ptypePER")}</option>
               </select>
             </div>
 
@@ -351,7 +364,7 @@ function UserFormModal({ mode, initial, catalog, onSave, onClose, saving, error,
                 {!ptype && <p className="mt-0.5 text-[10px] text-zt-text-tertiary">{t("profile.glnHint")}</p>}
               </div>
 
-              {/* AHV — only for NAT and others, not JUR */}
+              {/* AHV — only for NAT and PER, not JUR */}
               {ptype !== "JUR" && (
                 <div>
                   <label className={labelCls}>{t("profile.ahv")}</label>
@@ -363,6 +376,50 @@ function UserFormModal({ mode, initial, catalog, onSave, onClose, saving, error,
                     maxLength={16}
                   />
                   <p className="mt-0.5 text-[10px] text-zt-text-tertiary">{t("profile.ahvHint")}</p>
+                </div>
+              )}
+
+              {/* ZSR — NAT and JUR (billing number santésuisse) */}
+              {(ptype === "NAT" || ptype === "JUR") && (
+                <div>
+                  <label className={labelCls}>{t("profile.zsr")}</label>
+                  <input
+                    className={fieldCls}
+                    value={zsr}
+                    onChange={(e) => setZsr(e.target.value)}
+                    placeholder="K123456"
+                  />
+                  <p className="mt-0.5 text-[10px] text-zt-text-tertiary">{t("profile.zsrHint")}</p>
+                </div>
+              )}
+
+              {/* UID — JUR only (Unternehmens-ID) */}
+              {ptype === "JUR" && (
+                <div>
+                  <label className={labelCls}>{t("profile.uid")}</label>
+                  <input
+                    className={fieldCls}
+                    value={uid}
+                    onChange={(e) => setUid(e.target.value)}
+                    placeholder="CHE-123.456.789"
+                    maxLength={15}
+                  />
+                  <p className="mt-0.5 text-[10px] text-zt-text-tertiary">{t("profile.uidHint")}</p>
+                </div>
+              )}
+
+              {/* BUR — JUR only (Betriebseinheitsnummer BFS) */}
+              {ptype === "JUR" && (
+                <div>
+                  <label className={labelCls}>{t("profile.bur")}</label>
+                  <input
+                    className={fieldCls}
+                    value={bur}
+                    onChange={(e) => setBur(e.target.value)}
+                    placeholder="12345678"
+                    maxLength={9}
+                  />
+                  <p className="mt-0.5 text-[10px] text-zt-text-tertiary">{t("profile.burHint")}</p>
                 </div>
               )}
             </div>
@@ -380,11 +437,11 @@ function UserFormModal({ mode, initial, catalog, onSave, onClose, saving, error,
             )}
           </div>
 
-          {/* Organisation + Location — NAT (required) or other (optional), not JUR */}
-          {ptype !== "JUR" && (
+          {/* Organisation + Location — NAT (required) or PER (optional), not JUR */}
+          {(ptype === "NAT" || ptype === "PER") && (
             <div className="border-t border-zt-border pt-3">
               <p className="text-[11px] font-medium text-zt-text-tertiary uppercase tracking-wide mb-3">
-                {ptype === "NAT" ? t("orgs.sectionNAT") : t("orgs.selectLabel")}
+                {ptype === "NAT" ? t("orgs.sectionNAT") : t("orgs.sectionPER")}
               </p>
               <div>
                 <label className={labelCls}>
@@ -728,9 +785,9 @@ export default function UsersPage() {
                         <div className="flex items-center gap-1.5">
                           <button
                             onClick={() => handleSync(u)}
-                            disabled={isSyncing || isDeleting}
-                            title={t("users.syncBtn")}
-                            className="text-[11px] px-[9px] py-[3px] rounded-[6px] border border-zt-primary-border bg-zt-primary-light text-zt-primary hover:bg-zt-primary hover:text-zt-text-on-primary disabled:opacity-40 whitespace-nowrap transition-colors cursor-pointer"
+                            disabled={isSyncing || isDeleting || !u.profile?.ptype}
+                            title={!u.profile?.ptype ? t("users.syncNoPtype") : t("users.syncBtn")}
+                            className="text-[11px] px-[9px] py-[3px] rounded-[6px] border border-zt-primary-border bg-zt-primary-light text-zt-primary hover:bg-zt-primary hover:text-zt-text-on-primary disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap transition-colors"
                           >
                             {isSyncing ? "⏳" : "🔄"} FHIR
                           </button>

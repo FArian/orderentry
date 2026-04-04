@@ -20,6 +20,9 @@ import type { ManagedUserProfile } from "@/domain/entities/ManagedUser";
 
 const GLN_SYSTEM      = "https://www.gs1.org/gln";
 const LOCAL_ID_SYSTEM = "https://www.zetlab.ch/fhir/identifier/local-id";
+const ZSR_SYSTEM      = "urn:oid:2.16.756.5.30.1.123.100.2.1.1"; // santésuisse Zahlstellenregister
+const UID_SYSTEM      = "urn:oid:2.16.756.5.35";                  // Swiss Unternehmens-ID (UID/CHE)
+const BUR_SYSTEM      = "urn:oid:2.16.756.5.45";                  // Swiss Betriebseinheitsnummer (BUR)
 const ROLE_SYSTEM     = "urn:oid:2.51.1.3.roleType";
 const LAB_ORG_ID      = process.env.NEXT_PUBLIC_LAB_ORG_ID ?? "zlz"; // Auftragnehmer (Labor)
 
@@ -55,13 +58,13 @@ export class PractitionerMapper {
 
   async syncUser(userId: string, profile: ManagedUserProfile): Promise<PractitionerSyncResult> {
     if (!profile.ptype) {
-      return { success: false, error: "profile.ptype is required (NAT or JUR)" };
+      return { success: false, error: "profile.ptype is required (NAT, JUR or PER)" };
     }
 
     try {
-      return profile.ptype === "NAT"
-        ? await this.syncNAT(userId, profile)
-        : await this.syncJUR(userId, profile);
+      if (profile.ptype === "NAT") return await this.syncNAT(userId, profile);
+      if (profile.ptype === "JUR") return await this.syncJUR(userId, profile);
+      return await this.syncPER(userId, profile);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       this.log.error("PractitionerMapper syncUser threw", { userId, message });
@@ -94,7 +97,7 @@ export class PractitionerMapper {
     const practitioner: Record<string, unknown> = {
       resourceType: "Practitioner",
       id: practId,
-      identifier: this.buildIdentifiers(p.gln, p.localId),
+      identifier: this.buildIdentifiers(p.gln, p.localId, p.zsr),
       name: [{
         use: "official",
         ...(p.lastName  && { family: p.lastName }),
@@ -165,7 +168,7 @@ export class PractitionerMapper {
     const org: Record<string, unknown> = {
       resourceType: "Organization",
       id: orgId,
-      identifier: this.buildIdentifiers(p.gln, p.localId),
+      identifier: this.buildIdentifiers(p.gln, p.localId, p.zsr, p.uid, p.bur),
       ...(p.organization && { name: p.organization }),
       address: this.buildAddress(p),
     };
@@ -203,6 +206,37 @@ export class PractitionerMapper {
 
     this.log.info("JUR sync ok", { userId, orgId });
     return { success: true, organizationId: orgId };
+  }
+
+  // ── PER: Person resource (regular staff — admin, IT, reception) ──────────────
+
+  private async syncPER(userId: string, p: ManagedUserProfile): Promise<PractitionerSyncResult> {
+    const personId = `person-${userId}`;
+
+    const person: Record<string, unknown> = {
+      resourceType: "Person",
+      id: personId,
+      active: true,
+      name: [{
+        use: "official",
+        ...(p.lastName  && { family: p.lastName }),
+        ...(p.firstName && { given: [p.firstName] }),
+      }],
+      ...(p.email && { telecom: [{ system: "email", value: p.email, use: "work" }] }),
+      address: this.buildAddress(p),
+      // FHIR R4: Person.managingOrganization — links person to their organisation
+      ...(p.orgFhirId && { managingOrganization: { reference: `Organization/${p.orgFhirId}` } }),
+    };
+
+    // Optional GLN identifier
+    const ids = this.buildIdentifiers(p.gln, p.localId);
+    if (ids.length > 0) person.identifier = ids;
+
+    const ok = await this.postBundle([this.entry(person)]);
+    if (!ok.success) return ok;
+
+    this.log.info("PER sync ok", { userId, personId, orgFhirId: p.orgFhirId });
+    return { success: true, practitionerId: personId };
   }
 
   // ── FHIR helpers ─────────────────────────────────────────────────────────────
@@ -244,10 +278,13 @@ export class PractitionerMapper {
     return id ?? `org-${orgGln}`;
   }
 
-  private buildIdentifiers(gln?: string, localId?: string) {
+  private buildIdentifiers(gln?: string, localId?: string, zsr?: string, uid?: string, bur?: string) {
     const ids: { system: string; value: string }[] = [];
     if (gln)     ids.push({ system: GLN_SYSTEM,      value: gln });
     if (localId) ids.push({ system: LOCAL_ID_SYSTEM, value: localId });
+    if (zsr)     ids.push({ system: ZSR_SYSTEM,      value: zsr });
+    if (uid)     ids.push({ system: UID_SYSTEM,       value: uid });
+    if (bur)     ids.push({ system: BUR_SYSTEM,       value: bur });
     return ids;
   }
 
