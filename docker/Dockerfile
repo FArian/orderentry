@@ -87,7 +87,12 @@ COPY --from=builder /app/public ./public
 # Carry the generated version into the runner so server.js loads it via @next/env
 COPY --from=builder /app/.env.local ./.env.local
 
-# Ensure the data directory exists for the user store (server-side auth)
+# Copy Prisma schema + migrations so `prisma migrate deploy` can run at startup
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+
+# Ensure the data directory exists (SQLite DB file lives here)
 RUN mkdir -p /app/data && chown nextjs:nodejs /app/data
 
 # Ensure the logs directory exists for optional file logging (LOG_FILE=/app/logs/zetlab.log)
@@ -97,4 +102,10 @@ USER nextjs
 
 EXPOSE 3000
 
+# SQLite migrations run automatically at startup via SqliteMigrationRunner
+# (reads flyway/migrations/sqlite/*.sql — same files as the Flyway Docker service).
+#
+# PostgreSQL/MSSQL: run the Flyway service BEFORE starting this container:
+#   docker compose --profile flyway up flyway
+#   docker compose up orderentry
 CMD ["node", "server.js"]

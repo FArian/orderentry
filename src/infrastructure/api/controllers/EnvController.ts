@@ -43,6 +43,13 @@ const ALLOWED_SERVER_KEYS = new Set([
   "SASIS_API_BASE",
   "GLN_API_BASE",
   "ALLOW_LOCAL_AUTH",
+  // DB configuration — DATABASE_URL is intentionally excluded (may contain passwords;
+  // use GET /api/health/db for a masked URL instead).
+  "DB_PROVIDER",
+  // Orchestra HL7 proxy — path variables are optional (defaults built into EnvConfig)
+  "ORCHESTRA_HL7_BASE",
+  "ORCHESTRA_HL7_INBOUND_PATH",
+  "ORCHESTRA_HL7_OUTBOUND_PATH",
 ]);
 
 /** Patterns in key names that are always blocked, regardless of whitelist. */
@@ -208,6 +215,37 @@ const ENV_SCHEMA: ReadonlyArray<{
     restartRequired: true,
     secret:          false,
     group:           "External APIs",
+  },
+  // ── Orchestra / HL7 Proxy ─────────────────────────────────────────────────
+  {
+    key:             "ORCHESTRA_HL7_BASE",
+    description:     "Base URL of the Orchestra HL7 API (e.g. http://orchestra:8019). Empty = HL7 proxy disabled.",
+    default:         "",
+    required:        false,
+    writable:        true,
+    restartRequired: true,
+    secret:          false,
+    group:           "Orchestra",
+  },
+  {
+    key:             "ORCHESTRA_HL7_INBOUND_PATH",
+    description:     "Orchestra path for receiving inbound HL7 messages from the Edge agent.",
+    default:         "/api/v1/in/hl7",
+    required:        false,
+    writable:        true,
+    restartRequired: true,
+    secret:          false,
+    group:           "Orchestra",
+  },
+  {
+    key:             "ORCHESTRA_HL7_OUTBOUND_PATH",
+    description:     "Orchestra path for retrieving outbound HL7 result messages (ORU).",
+    default:         "/api/v1/out/hl7",
+    required:        false,
+    writable:        true,
+    restartRequired: true,
+    secret:          false,
+    group:           "Orchestra",
   },
   // ── Build-time (NEXT_PUBLIC_*) ─────────────────────────────────────────────
   {

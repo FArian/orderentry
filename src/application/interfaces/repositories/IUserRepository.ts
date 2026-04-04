@@ -1,44 +1,21 @@
 /**
- * IUserRepository — application-layer interface for managed user persistence.
- *
- * Infrastructure provides the concrete implementation (JSON file store).
- * Tests inject a mock implementation.
+ * IUserRepository — application-layer contract for user persistence.
  */
 
-import type { ManagedUser, ManagedUserProfile, UserFhirSyncStatus, UserRole, UserStatus } from "@/domain/entities/ManagedUser";
-
-export interface CreateUserData {
-  username: string;
-  role?: UserRole;
-  status?: UserStatus;
-  providerType?: "local" | "external";
-  externalId?: string;
-  profile?: ManagedUserProfile;
-  /** Only for local users — will be hashed by the implementation. */
-  password?: string;
-}
-
-export interface UpdateUserData {
-  role?: UserRole;
-  status?: UserStatus;
-  externalId?: string;
-  profile?: Partial<ManagedUserProfile>;
-}
-
-export interface FhirSyncResult {
-  fhirSyncStatus: UserFhirSyncStatus;
-  fhirSyncedAt?: string;
-  fhirSyncError?: string;
-  fhirPractitionerId?: string;
-  fhirPractitionerRoleId?: string;
-}
+import type { User, UserProfile, UserRole, UserStatus, UserFhirSyncStatus } from "@/lib/userStore";
 
 export interface IUserRepository {
-  findAll(filters?: { role?: UserRole; status?: UserStatus }): Promise<ManagedUser[]>;
-  findById(id: string): Promise<ManagedUser | null>;
-  findByUsername(username: string): Promise<ManagedUser | null>;
-  create(data: CreateUserData): Promise<ManagedUser>;
-  update(id: string, data: UpdateUserData): Promise<ManagedUser>;
+  findAll(): Promise<User[]>;
+  findById(id: string): Promise<User | undefined>;
+  findByUsername(username: string): Promise<User | undefined>;
+  create(username: string, passwordHash: string, salt: string, profile?: UserProfile): Promise<User>;
+  createExternal(data: { username: string; externalId: string; role?: UserRole; status?: UserStatus; profile?: UserProfile }): Promise<User>;
+  update(id: string, patch: Partial<Omit<User, "id" | "passwordHash" | "salt">>): Promise<User>;
+  updatePassword(id: string, passwordHash: string, salt: string): Promise<void>;
+  updateProfile(id: string, profile: UserProfile): Promise<User>;
+  updateFhirSync(id: string, data: { fhirSyncStatus: UserFhirSyncStatus; fhirSyncedAt?: string; fhirSyncError?: string; fhirPractitionerId?: string; fhirPractitionerRoleId?: string }): Promise<User>;
+  setApiToken(id: string, hash: string): Promise<void>;
+  clearApiToken(id: string): Promise<void>;
   delete(id: string): Promise<void>;
-  updateFhirSync(id: string, result: FhirSyncResult): Promise<ManagedUser>;
+  hasAnyAdmin(): Promise<boolean>;
 }

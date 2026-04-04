@@ -1,0 +1,57 @@
+// Prisma schema — z2Lab OrderEntry
+//
+// Default provider: sqlite (embedded, no extra service needed).
+//
+// To switch to PostgreSQL or MSSQL:
+//   1. Change `provider` below to "postgresql" or "sqlserver"
+//   2. Set DATABASE_URL to the new connection string
+//   3. Run: npx prisma migrate deploy
+//   4. Restart the container
+//
+// The script `scripts/db-setup.mjs` can auto-generate this file from DB_PROVIDER env.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ── User ─────────────────────────────────────────────────────────────────────
+
+model User {
+  id                     String    @id @default(uuid())
+  username               String    @unique
+  passwordHash           String
+  salt                   String
+  createdAt              DateTime  @default(now())
+  role                   String    @default("user")
+  status                 String    @default("active")
+  providerType           String    @default("local")
+  externalId             String?
+  fhirSyncStatus         String    @default("not_synced")
+  fhirSyncedAt           DateTime?
+  fhirSyncError          String?
+  fhirPractitionerId     String?
+  fhirPractitionerRoleId String?
+  apiTokenHash           String?
+  apiTokenCreatedAt      DateTime?
+
+  /// UserProfile serialized as JSON string (SQLite has no native JSON column type in Prisma 5).
+  /// PostgreSQL/MSSQL: change to `Json?` for native JSON support.
+  profile String?
+
+  resetTokens PasswordResetToken[]
+}
+
+// ── Password reset tokens ────────────────────────────────────────────────────
+
+model PasswordResetToken {
+  token     String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}

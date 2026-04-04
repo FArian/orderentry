@@ -1,0 +1,82 @@
+# =============================================================================
+# Dockerfile.postgres — PostgreSQL Dev-Container für z2Lab OrderEntry
+#
+# Erstellt eine vorkonfigurierte PostgreSQL-Instanz mit:
+#   - Datenbank: orderentry
+#   - User:      zetlab / zetlab
+#   - Port:      5432
+#
+# Build & Start (Kontext = frontend/zetlab/):
+#   docker build -f src/infrastructure/db/docker/Dockerfile.postgres -t zetlab-postgres .
+#   docker run -d --name zetlab-postgres -p 5432:5432 zetlab-postgres
+#
+# Mit Volume für Persistenz:
+#   docker run -d --name zetlab-postgres \
+#     -p 5432:5432 \
+#     -v zetlab-pg-data:/var/lib/postgresql/data \
+#     zetlab-postgres
+#
+# Empfohlen — via Docker Compose (src/infrastructure/db/docker/docker-compose.yml):
+#   docker compose -f src/infrastructure/db/docker/docker-compose.yml up -d
+#
+# ENV für die App danach:
+#   DB_PROVIDER=postgresql
+#   DATABASE_URL=postgresql://zetlab:zetlab@localhost:5432/orderentry
+#
+# Verbindung testen:
+#   docker exec -it zetlab-postgres psql -U zetlab -d orderentry
+# =============================================================================
+
+FROM postgres:16-alpine
+
+LABEL maintainer="ZLZ Zentrallabor AG"
+LABEL description="PostgreSQL Dev-Container für z2Lab OrderEntry"
+
+# ── Standardkonfiguration ─────────────────────────────────────────────────────
+ENV POSTGRES_DB=orderentry
+ENV POSTGRES_USER=zetlab
+ENV POSTGRES_PASSWORD=zetlab
+ENV PGDATA=/var/lib/postgresql/data
+
+# ── PostgreSQL-Tuning für Entwicklung ─────────────────────────────────────────
+# Werte sind für einen kleinen Dev-Container optimiert — in Produktion anpassen.
+RUN echo "shared_buffers = 128MB"          >> /usr/local/share/postgresql/postgresql.conf.sample \
+ && echo "work_mem = 4MB"                   >> /usr/local/share/postgresql/postgresql.conf.sample \
+ && echo "maintenance_work_mem = 64MB"      >> /usr/local/share/postgresql/postgresql.conf.sample \
+ && echo "log_statement = 'ddl'"            >> /usr/local/share/postgresql/postgresql.conf.sample \
+ && echo "log_min_duration_statement = 500" >> /usr/local/share/postgresql/postgresql.conf.sample \
+ && echo "timezone = 'Europe/Zurich'"       >> /usr/local/share/postgresql/postgresql.conf.sample
+
+# ── Init-Script: Schema + Berechtigungen ─────────────────────────────────────
+# Wird automatisch beim ersten Start ausgeführt (nur wenn PGDATA leer ist).
+COPY flyway/migrations/postgresql/V1__create_users.sql             /docker-entrypoint-initdb.d/01_V1__create_users.sql
+COPY flyway/migrations/postgresql/V2__create_password_reset_tokens.sql /docker-entrypoint-initdb.d/02_V2__create_password_reset_tokens.sql
+
+# Berechtigungen für den App-User setzen
+RUN printf '%s\n' \
+  "GRANT ALL PRIVILEGES ON DATABASE orderentry TO zetlab;" \
+  "GRANT ALL ON SCHEMA public TO zetlab;" \
+  "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO zetlab;" \
+  "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO zetlab;" \
+  > /docker-entrypoint-initdb.d/03_grants.sql
+
+EXPOSE 5432
+
+HEALTHCHECK --interval=10s --timeout=5s --start-period=20s --retries=5 \
+  CMD pg_isready -U zetlab -d orderentry || exit 1
+
+# ── Verwendung ────────────────────────────────────────────────────────────────
+# Nach dem Start sind die Tabellen bereits erstellt (via docker-entrypoint-initdb.d).
+# Flyway ist für spätere Migrationen (V3, V4 ...) weiterhin zuständig:
+#
+#   docker compose --profile flyway up flyway
+#
+# Verbindungsdaten:
+#   Host     : localhost
+#   Port     : 5432
+#   DB       : orderentry
+#   User     : zetlab
+#   Password : zetlab
+#
+# pgAdmin / TablePlus / DBeaver: mit obigen Daten verbinden.
+# psql CLI: docker exec -it zetlab-postgres psql -U zetlab -d orderentry

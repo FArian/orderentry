@@ -202,6 +202,19 @@ export const EnvConfig = {
 
   /** Comma-separated list of allowed source system identifiers. Empty = accept all. */
   deepLinkAllowedSystems: str(process.env.DEEPLINK_ALLOWED_SYSTEMS, ""),
+
+  // ── Orchestra HL7 proxy ───────────────────────────────────────────────────
+  // Used by POST /api/v1/proxy/hl7/inbound and GET /api/v1/proxy/hl7/outbound.
+  // OrderEntry does NOT parse HL7 — it is a pure HTTP proxy here.
+
+  /** Base URL of the Orchestra HL7 HTTP API (e.g. http://orchestra:8019). Empty = disabled. */
+  orchestraHl7Base: str(process.env.ORCHESTRA_HL7_BASE, ""),
+
+  /** Path on Orchestra that accepts inbound HL7 messages via POST. */
+  orchestraHl7InboundPath: str(process.env.ORCHESTRA_HL7_INBOUND_PATH, "/api/v1/in/hl7"),
+
+  /** Path on Orchestra that exposes outbound HL7 results via GET. */
+  orchestraHl7OutboundPath: str(process.env.ORCHESTRA_HL7_OUTBOUND_PATH, "/api/v1/out/hl7"),
 } as const;
 
 export type EnvConfigType = typeof EnvConfig;

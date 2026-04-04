@@ -1,0 +1,77 @@
+# =============================================================================
+# docker-compose.yml — PostgreSQL Dev-DB für z2Lab OrderEntry
+#
+# Standalone-Compose für lokale Entwicklung mit PostgreSQL.
+# Unabhängig vom Produktions-Stack (devops/docker/docker-compose.yml).
+#
+# Start (aus frontend/zetlab/):
+#   docker compose -f src/infrastructure/db/docker/docker-compose.yml up -d
+#
+# Stop:
+#   docker compose -f src/infrastructure/db/docker/docker-compose.yml down
+#
+# Stop + Daten löschen:
+#   docker compose -f src/infrastructure/db/docker/docker-compose.yml down -v
+#
+# Logs anzeigen:
+#   docker compose -f src/infrastructure/db/docker/docker-compose.yml logs -f
+#
+# psql-Verbindung:
+#   docker exec -it zetlab-postgres-dev psql -U zetlab -d orderentry
+#
+# ENV für die App danach:
+#   DB_PROVIDER=postgresql
+#   DATABASE_URL=postgresql://zetlab:zetlab@localhost:5432/orderentry
+# =============================================================================
+
+services:
+
+  postgres:
+    build:
+      context: ../../../..          # Build-Kontext: frontend/zetlab/
+      dockerfile: src/infrastructure/db/docker/Dockerfile.postgres
+    image: zetlab-postgres-dev
+    container_name: zetlab-postgres-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       orderentry
+      POSTGRES_USER:     zetlab
+      POSTGRES_PASSWORD: zetlab
+    ports:
+      - "5432:5432"
+    volumes:
+      - zetlab-pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zetlab -d orderentry"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ── Optional: pgAdmin Web-GUI ─────────────────────────────────────────────
+  # Aufruf nach Start: http://localhost:5050
+  # Login: admin@zlz.ch / admin
+  # Verbindung: Host=postgres, Port=5432, User=zetlab, Password=zetlab, DB=orderentry
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: zetlab-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL:    admin@zlz.ch
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: "False"   # Desktop-Modus (kein Login nötig)
+    ports:
+      - "5050:80"
+    volumes:
+      - zetlab-pgadmin-data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles:
+      - pgadmin    # nur mit: docker compose ... --profile pgadmin up -d
+
+volumes:
+  zetlab-pg-data:
+    name: zetlab-pg-data
+  zetlab-pgadmin-data:
+    name: zetlab-pgadmin-data
