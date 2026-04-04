@@ -44,6 +44,7 @@
     "adminFhir": "FHIR Registry",
     "adminOrgs": "Organizations",
     "adminLogs": "Logs",
+    "adminEnv": "ENV Configuration",
     "adminMerge": "Duplicates",
     "accountSystem": "System",
     "connectedSection": "Connected Systems"
@@ -402,7 +403,25 @@
     "envEditorError": "Error while saving.",
     "envEditorEmptyKey": "Variable name must not be empty.",
     "envEditorRestartNote": "Environment variables are loaded at application startup. Changes to .env.local take effect only after restarting the container. Hot-reloading is not supported.",
-    "envEditorUnavailable": "Not available in this environment. Manage environment variables via the deployment dashboard (e.g. Vercel)."
+    "envEditorUnavailable": "Not available in this environment. Manage environment variables via the deployment dashboard (e.g. Vercel).",
+    "envSchemaLink": "View ENV schema →"
+  },
+  "admin": {
+    "envSchema": {
+      "title": "ENV Configuration",
+      "subtitle": "All environment variables with description, default and current value",
+      "search": "Search variable (name or description)…",
+      "noResults": "No variables found",
+      "required": "Required",
+      "writable": "Writable",
+      "secret": "Secret",
+      "restart": "Restart",
+      "default": "Default",
+      "current": "Current",
+      "notSet": "not set",
+      "isDefault": "= default",
+      "editLink": "Edit variables"
+    }
   },
   "auth": {
     "title": "Sign in",

@@ -283,6 +283,7 @@ export function AppSidebar() {
             <NavItem href="/admin/organizations" icon={IconOrgs}  label={t("nav.adminOrgs")}  activePaths={["/admin/organizations"]} {...(counts.fhirOrgs !== null && { badge: counts.fhirOrgs })} />
             <NavItem href="/admin/auth-config"   icon={IconAuth}  label={t("nav.adminAuthConfig")} activePaths={["/admin/auth-config"]} />
             <NavItem href="/settings/mail"        icon={IconMail}  label={t("nav.mailConfig")}       activePaths={["/settings/mail"]} />
+            <NavItem href="/admin/env"           icon={IconSettings} label={t("nav.adminEnv")}  activePaths={["/admin/env"]}  />
             <NavItem href="/admin/fhir"          icon={IconFhir}  label={t("nav.adminFhir")}  activePaths={["/admin/fhir"]}  />
             <NavItem href="/admin/api"           icon={IconApi}   label={t("nav.adminApi")}   activePaths={["/admin/api"]}   />
             <NavItem href="/admin/logs"          icon={IconLogs}  label={t("nav.adminLogs")}  activePaths={["/admin/logs"]}  />

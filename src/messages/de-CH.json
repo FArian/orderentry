@@ -44,6 +44,7 @@
     "adminFhir": "FHIR Registry",
     "adminOrgs": "Organisatione",
     "adminLogs": "Logs",
+    "adminEnv": "ENV Konfiguration",
     "adminMerge": "Duplikate",
     "accountSystem": "System",
     "connectedSection": "Verbundeni Systeme"
@@ -399,7 +400,25 @@
     "envEditorError": "Fehler bim Spichere.",
     "envEditorEmptyKey": "Variablenname darf nöd leer si.",
     "envEditorRestartNote": "Umgebigsvariable werde bim Start vo de Aawendig iiglese. Änderige a .env.local werde erst nach emem Neustart vom Container wirksam. E Hot-Reload isch nöd möglich.",
-    "envEditorUnavailable": "In dere Umgebig nöd verfüegbar. Umgebigsvariable müend über s'Deployment-Dashboard (z.B. Vercel) verwaltet werde."
+    "envEditorUnavailable": "In dere Umgebig nöd verfüegbar. Umgebigsvariable müend über s'Deployment-Dashboard (z.B. Vercel) verwaltet werde.",
+    "envSchemaLink": "ENV Schema azeige →"
+  },
+  "admin": {
+    "envSchema": {
+      "title": "ENV Konfiguration",
+      "subtitle": "Alli Umgebigsvariable mit Beschribig, Default und aktuellem Wert",
+      "search": "Variable sueche (Name oder Beschribig)…",
+      "noResults": "Kei Variable gfunde",
+      "required": "Pflicht",
+      "writable": "Editierbar",
+      "secret": "Secret",
+      "restart": "Neustart",
+      "default": "Default",
+      "current": "Aktuell",
+      "notSet": "nöd gsetzt",
+      "isDefault": "= Default",
+      "editLink": "Variable bearbeite"
+    }
   },
   "auth": {
     "title": "Ilogge",

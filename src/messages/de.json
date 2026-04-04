@@ -44,6 +44,7 @@
     "adminFhir": "FHIR Registry",
     "adminOrgs": "Organisationen",
     "adminLogs": "Logs",
+    "adminEnv": "ENV Konfiguration",
     "adminMerge": "Duplikate",
     "accountSystem": "System",
     "connectedSection": "Verbundene Systeme"
@@ -402,7 +403,25 @@
     "envEditorError": "Fehler beim Speichern.",
     "envEditorEmptyKey": "Variablenname darf nicht leer sein.",
     "envEditorRestartNote": "Umgebungsvariablen werden beim Start der Anwendung eingelesen. Änderungen an .env.local werden erst nach einem Neustart des Containers wirksam. Ein Hot-Reload ist nicht möglich.",
-    "envEditorUnavailable": "In dieser Umgebung nicht verfügbar. Umgebungsvariablen müssen über das Deployment-Dashboard (z. B. Vercel) verwaltet werden."
+    "envEditorUnavailable": "In dieser Umgebung nicht verfügbar. Umgebungsvariablen müssen über das Deployment-Dashboard (z. B. Vercel) verwaltet werden.",
+    "envSchemaLink": "ENV Schema anzeigen →"
+  },
+  "admin": {
+    "envSchema": {
+      "title": "ENV Konfiguration",
+      "subtitle": "Alle Umgebungsvariablen mit Beschreibung, Default und aktuellem Wert",
+      "search": "Variable suchen (Name oder Beschreibung)…",
+      "noResults": "Keine Variablen gefunden",
+      "required": "Pflicht",
+      "writable": "Editierbar",
+      "secret": "Secret",
+      "restart": "Neustart",
+      "default": "Default",
+      "current": "Aktuell",
+      "notSet": "nicht gesetzt",
+      "isDefault": "= Default",
+      "editLink": "Variablen bearbeiten"
+    }
   },
   "auth": {
     "title": "Anmelden",

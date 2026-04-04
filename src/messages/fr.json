@@ -44,6 +44,7 @@
     "adminFhir": "Registre FHIR",
     "adminOrgs": "Organisations",
     "adminLogs": "Logs",
+    "adminEnv": "Configuration ENV",
     "adminMerge": "Doublons",
     "accountSystem": "Système",
     "connectedSection": "Systèmes connectés"
@@ -402,7 +403,25 @@
     "envEditorError": "Erreur lors de l'enregistrement.",
     "envEditorEmptyKey": "Le nom de la variable ne peut pas être vide.",
     "envEditorRestartNote": "Les variables d'environnement sont chargées au démarrage de l'application. Les modifications de .env.local ne prennent effet qu'après le redémarrage du conteneur. Le rechargement à chaud n'est pas pris en charge.",
-    "envEditorUnavailable": "Non disponible dans cet environnement. Gérez les variables d'environnement via le tableau de bord de déploiement (p. ex. Vercel)."
+    "envEditorUnavailable": "Non disponible dans cet environnement. Gérez les variables d'environnement via le tableau de bord de déploiement (p. ex. Vercel).",
+    "envSchemaLink": "Voir le schéma ENV →"
+  },
+  "admin": {
+    "envSchema": {
+      "title": "Configuration ENV",
+      "subtitle": "Toutes les variables d'environnement avec description, valeur par défaut et valeur actuelle",
+      "search": "Rechercher une variable (nom ou description)…",
+      "noResults": "Aucune variable trouvée",
+      "required": "Obligatoire",
+      "writable": "Modifiable",
+      "secret": "Secret",
+      "restart": "Redémarrage",
+      "default": "Défaut",
+      "current": "Actuel",
+      "notSet": "non défini",
+      "isDefault": "= défaut",
+      "editLink": "Modifier les variables"
+    }
   },
   "auth": {
     "title": "Se connecter",

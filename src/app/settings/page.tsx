@@ -372,7 +372,11 @@ export default function SettingsPage() {
           </Card>
 
           {/* ── 6. Environment Variables Editor ──────────────────────────────── */}
-          <Card title={t("settings.envEditor")}>
+          <Card title={t("settings.envEditor")} headerAction={
+            <Link href="/admin/env" className="text-[12px] text-zt-primary hover:underline">
+              {t("settings.envSchemaLink")}
+            </Link>
+          }>
             {envReadOnly ? (
               <div className="flex gap-2 rounded-md border border-zt-info-border bg-zt-info-light px-3 py-2 text-[12px] text-zt-info" role="note">
                 <span className="shrink-0 font-bold">ℹ</span>

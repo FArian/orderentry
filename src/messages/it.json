@@ -44,6 +44,7 @@
     "adminFhir": "Registro FHIR",
     "adminOrgs": "Organizzazioni",
     "adminLogs": "Log",
+    "adminEnv": "Configurazione ENV",
     "adminMerge": "Duplicati",
     "accountSystem": "Sistema",
     "connectedSection": "Sistemi collegati"
@@ -402,7 +403,25 @@
     "envEditorError": "Errore durante il salvataggio.",
     "envEditorEmptyKey": "Il nome della variabile non può essere vuoto.",
     "envEditorRestartNote": "Le variabili d'ambiente vengono caricate all'avvio dell'applicazione. Le modifiche a .env.local hanno effetto solo dopo il riavvio del container. Il ricaricamento a caldo non è supportato.",
-    "envEditorUnavailable": "Non disponibile in questo ambiente. Gestire le variabili d'ambiente tramite il dashboard di deployment (es. Vercel)."
+    "envEditorUnavailable": "Non disponibile in questo ambiente. Gestire le variabili d'ambiente tramite il dashboard di deployment (es. Vercel).",
+    "envSchemaLink": "Visualizza schema ENV →"
+  },
+  "admin": {
+    "envSchema": {
+      "title": "Configurazione ENV",
+      "subtitle": "Tutte le variabili d'ambiente con descrizione, valore predefinito e valore attuale",
+      "search": "Cerca variabile (nome o descrizione)…",
+      "noResults": "Nessuna variabile trovata",
+      "required": "Obbligatorio",
+      "writable": "Modificabile",
+      "secret": "Segreto",
+      "restart": "Riavvio",
+      "default": "Predefinito",
+      "current": "Attuale",
+      "notSet": "non impostato",
+      "isDefault": "= predefinito",
+      "editLink": "Modifica variabili"
+    }
   },
   "auth": {
     "title": "Accedi",
