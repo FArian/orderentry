@@ -20,7 +20,7 @@ import { fhirPractitionersController, type FhirPractitioner, type FhirPractition
 import type { FhirOrganizationDto, FhirPractitionerDto } from "../dto/FhirRegistryDto";
 import type { FhirBundle } from "@/infrastructure/fhir/FhirTypes";
 
-const GLN_SYSTEM = "urn:oid:2.51.1.3";
+const GLN_SYSTEM = "https://www.gs1.org/gln";
 
 // ── DTOs ───────────────────────────────────────────────────────────────────────
 
@@ -195,7 +195,28 @@ export class AdminMergeController {
         });
       }));
 
-      // 3. Delete the duplicate org
+      // 3. Remove partOf references pointing to the deleted org (prevents HAPI 409)
+      const partOfRes = await this.fetchFn(
+        `${this.fhirBase}/Organization?partof=Organization/${deleteId}&_count=200`,
+        { headers: { accept: "application/fhir+json" }, cache: "no-store" },
+      );
+      if (partOfRes.ok) {
+        const partOfBundle = (await partOfRes.json()) as FhirBundle;
+        const childOrgs = (partOfBundle.entry ?? [])
+          .map((e) => e.resource as FhirOrganization | undefined)
+          .filter((r): r is FhirOrganization => r?.resourceType === "Organization" && !!r.id);
+        await Promise.all(childOrgs.map((child) => {
+          const { partOf: _removed, ...updated } = child as FhirOrganization & { partOf?: unknown };
+          return this.fetchFn(`${this.fhirBase}/Organization/${child.id!}`, {
+            method:  "PUT",
+            headers: { "content-type": "application/fhir+json", accept: "application/fhir+json" },
+            body:    JSON.stringify(updated),
+            cache:   "no-store",
+          });
+        }));
+      }
+
+      // 4. Delete the duplicate org
       const delRes = await this.fetchFn(`${this.fhirBase}/Organization/${deleteId}`, {
         method: "DELETE",
         headers: { accept: "application/fhir+json" },
