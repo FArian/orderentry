@@ -2,12 +2,19 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
 
+# Upgrade npm to match the version used to generate package-lock.json locally.
+# npm ci fails when the npm version that produced the lockfile differs too much
+# from the version running in the container (different integrity algorithms, etc.).
+RUN npm install -g npm@latest
+
 COPY package.json package-lock.json ./
 RUN npm ci
 
 # ---- Stage 2: Build ----
 FROM node:20-alpine AS builder
 WORKDIR /app
+
+RUN npm install -g npm@latest
 
 # Git is needed by scripts/write-version.mjs
 RUN apk add --no-cache git

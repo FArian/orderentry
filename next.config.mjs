@@ -1,3 +1,8 @@
+import { fileURLToPath } from "url";
+import path from "path";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // "standalone" is required for Docker deployment.
@@ -6,15 +11,7 @@ const nextConfig = {
 
   /**
    * Mark all @opentelemetry/* and @grpc/* packages as Node.js externals.
-   *
-   * This tells Next.js (and Vercel's build pipeline) not to bundle these
-   * packages. They are loaded at runtime from node_modules on the Node.js
-   * server. The Edge bundle never receives a reference because:
-   *
-   *   1. serverExternalPackages excludes them from bundling analysis.
-   *   2. instrumentation.ts guards the dynamic import with process.env.VERCEL,
-   *      which the bundler constant-folds to "1" on Vercel builds, making the
-   *      import statically dead code (see instrumentation.ts for details).
+   * They are loaded at runtime from node_modules — never bundled.
    */
   serverExternalPackages: [
     "@opentelemetry/api",
@@ -27,15 +24,39 @@ const nextConfig = {
     "@grpc/proto-loader",
   ],
 
-  /**
-   * Webpack externals for the Node.js server bundle.
-   *
-   * serverExternalPackages handles the module exclusion at the Next.js level.
-   * This webpack function provides a complementary regex-based exclusion that
-   * catches all transitive @opentelemetry/* and @grpc/* sub-packages that are
-   * not listed explicitly above (e.g. @opentelemetry/instrumentation-http).
-   */
-  webpack(config, { isServer }) {
+  webpack(config, { isServer, nextRuntime }) {
+    // ── PRIMARY: Swap initTelemetry.ts → telemetry.edge.ts on Edge builds ────────
+    //
+    // When `nextRuntime === "edge"`, webpack compiles the Edge bundle (middleware +
+    // Edge API routes). We replace the entire initTelemetry module with the empty
+    // Edge stub AT MODULE RESOLUTION TIME — before the bundler opens any file.
+    //
+    // Because the alias targets the entry-point file itself (initTelemetry.ts),
+    // webpack never follows the `export { initTelemetry } from "./telemetry.node"`
+    // re-export and therefore never opens telemetry.node.ts. @opentelemetry/*
+    // has no path into the Edge dependency graph.
+    //
+    // This works because:
+    //   - Aliases are resolved by absolute path AFTER webpack resolves the full path
+    //   - initTelemetry.ts is the single entry point; aliasing it is sufficient
+    //   - telemetry.edge.ts has zero imports — the substitution is terminal
+    if (nextRuntime === "edge") {
+      config.resolve = {
+        ...config.resolve,
+        alias: {
+          ...config.resolve?.alias,
+          // Alias the entry-point module (with and without extension for safety)
+          [path.resolve(__dirname, "src/infrastructure/telemetry/initTelemetry.ts")]:
+            path.resolve(__dirname, "src/infrastructure/telemetry/telemetry.edge.ts"),
+          [path.resolve(__dirname, "src/infrastructure/telemetry/initTelemetry")]:
+            path.resolve(__dirname, "src/infrastructure/telemetry/telemetry.edge.ts"),
+        },
+      };
+    }
+
+    // ── SECONDARY: Keep @opentelemetry/* external in the Node.js server bundle ───
+    // serverExternalPackages handles this at the Next.js level.
+    // The regex below catches transitive sub-packages not listed explicitly above.
     if (isServer) {
       const prior = Array.isArray(config.externals)
         ? config.externals
@@ -53,6 +74,7 @@ const nextConfig = {
         },
       ];
     }
+
     return config;
   },
 };
