@@ -449,6 +449,13 @@
     "resetPasswordMismatch": "Die Passwörter stimmen nicht überein.",
     "backToLogin": "Zurück zur Anmeldung"
   },
+  "idleTimeout": {
+    "title": "Sitzung läuft ab",
+    "subtitle": "Sie waren längere Zeit inaktiv.",
+    "countdownLabel": "bis zur automatischen Abmeldung",
+    "continue": "Weiterarbeiten",
+    "logoutNow": "Jetzt abmelden"
+  },
   "dashboard": {
     "title": "Dashboard",
     "greeting": "Willkommen",

@@ -449,6 +449,13 @@
     "resetPasswordMismatch": "Les mots de passe ne correspondent pas.",
     "backToLogin": "Retour à la connexion"
   },
+  "idleTimeout": {
+    "title": "Session sur le point d'expirer",
+    "subtitle": "Vous avez été inactif pendant un moment.",
+    "countdownLabel": "avant la déconnexion automatique",
+    "continue": "Continuer",
+    "logoutNow": "Se déconnecter maintenant"
+  },
   "dashboard": {
     "title": "Tableau de bord",
     "greeting": "Bienvenue",

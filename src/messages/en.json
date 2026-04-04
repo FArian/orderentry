@@ -449,6 +449,13 @@
     "resetPasswordMismatch": "Passwords do not match.",
     "backToLogin": "Back to login"
   },
+  "idleTimeout": {
+    "title": "Session expiring",
+    "subtitle": "You have been inactive for a while.",
+    "countdownLabel": "until automatic logout",
+    "continue": "Continue working",
+    "logoutNow": "Logout now"
+  },
   "dashboard": {
     "title": "Dashboard",
     "greeting": "Welcome",

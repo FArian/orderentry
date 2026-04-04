@@ -444,6 +444,13 @@
     "resetPasswordMismatch": "D Passwörter stimmed nöd überein.",
     "backToLogin": "Zrück zur Aamäldig"
   },
+  "idleTimeout": {
+    "title": "Sitzung läuft ab",
+    "subtitle": "Sie wäred längeri Zyt inaktiv.",
+    "countdownLabel": "bis zur automatische Abmäldig",
+    "continue": "Wiiterarbeite",
+    "logoutNow": "Jetzt abmälde"
+  },
   "dashboard": {
     "title": "Dashboard",
     "greeting": "Willkomme",

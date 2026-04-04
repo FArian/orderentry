@@ -50,6 +50,8 @@ const ALLOWED_SERVER_KEYS = new Set([
   "ORCHESTRA_HL7_BASE",
   "ORCHESTRA_HL7_INBOUND_PATH",
   "ORCHESTRA_HL7_OUTBOUND_PATH",
+  // Security
+  "SESSION_IDLE_TIMEOUT_MINUTES",
 ]);
 
 /** Patterns in key names that are always blocked, regardless of whitelist. */
@@ -246,6 +248,17 @@ const ENV_SCHEMA: ReadonlyArray<{
     restartRequired: true,
     secret:          false,
     group:           "Orchestra",
+  },
+  // ── Security ──────────────────────────────────────────────────────────────
+  {
+    key:             "SESSION_IDLE_TIMEOUT_MINUTES",
+    description:     "Automatische Abmeldung nach Inaktivität (Minuten). 0 = deaktiviert. Empfehlung für Medizinsoftware: 15–30 Minuten.",
+    default:         "30",
+    required:        false,
+    writable:        true,
+    restartRequired: true,
+    secret:          false,
+    group:           "Security",
   },
   // ── Build-time (NEXT_PUBLIC_*) ─────────────────────────────────────────────
   {

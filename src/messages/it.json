@@ -449,6 +449,13 @@
     "resetPasswordMismatch": "Le password non corrispondono.",
     "backToLogin": "Torna al login"
   },
+  "idleTimeout": {
+    "title": "Sessione in scadenza",
+    "subtitle": "È stato inattivo per un po' di tempo.",
+    "countdownLabel": "alla disconnessione automatica",
+    "continue": "Continua a lavorare",
+    "logoutNow": "Disconnetti ora"
+  },
   "dashboard": {
     "title": "Dashboard",
     "greeting": "Benvenuto",

@@ -21,6 +21,11 @@ function str(value: string | undefined, fallback: string): string {
   return (value ?? "").trim() || fallback;
 }
 
+function num(value: string | undefined, fallback: number): number {
+  const parsed = parseInt((value ?? "").trim(), 10);
+  return isNaN(parsed) ? fallback : parsed;
+}
+
 export const EnvConfig = {
   // ── FHIR ─────────────────────────────────────────────────────────────────
   /** Base URL of the HAPI FHIR R4 server. */
@@ -215,6 +220,14 @@ export const EnvConfig = {
 
   /** Path on Orchestra that exposes outbound HL7 results via GET. */
   orchestraHl7OutboundPath: str(process.env.ORCHESTRA_HL7_OUTBOUND_PATH, "/api/v1/out/hl7"),
+
+  // ── Security ──────────────────────────────────────────────────────────────
+  /**
+   * Idle session timeout in minutes. 0 = disabled.
+   * After this period of inactivity the user is automatically logged out.
+   * Medical software recommendation: 15–30 minutes.
+   */
+  sessionIdleTimeoutMinutes: num(process.env.SESSION_IDLE_TIMEOUT_MINUTES, 30),
 } as const;
 
 export type EnvConfigType = typeof EnvConfig;
