@@ -26,6 +26,9 @@ hl7-outbox
 dist
 build
 
+# Vercel (local dev artifacts — never needed in Docker image)
+.vercel
+
 # OS
 .DS_Store
 
