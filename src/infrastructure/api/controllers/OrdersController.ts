@@ -150,11 +150,3 @@ export class OrdersController {
 /** Production singleton — routes import this directly. */
 export const ordersController = new OrdersController();
 
-// ── Helpers re-exported for FhirOrderRepository ───────────────────────────────
-
-export function extractOrderNumber(ids?: Array<{ system?: string; value?: string }>): string {
-  if (!ids) return "";
-  const preferred = ids.find((i) => i.system === FHIR_SYSTEMS.orderNumbers);
-  if (preferred?.value) return preferred.value;
-  return ids.find((i) => i.value)?.value ?? "";
-}

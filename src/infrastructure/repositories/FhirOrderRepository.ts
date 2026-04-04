@@ -7,7 +7,16 @@ import type { Order, OrderStatus } from "@/domain/entities/Order";
 import { OrderFactory } from "@/domain/factories/OrderFactory";
 import { HttpClient } from "@/infrastructure/api/HttpClient";
 import { type FhirBundle } from "@/infrastructure/fhir/FhirTypes";
-import { extractOrderNumber } from "@/infrastructure/api/controllers/OrdersController";
+import { FHIR_SYSTEMS } from "@/lib/fhir";
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function extractOrderNumber(ids?: Array<{ system?: string; value?: string }>): string {
+  if (!ids) return "";
+  const preferred = ids.find((i) => i.system === FHIR_SYSTEMS.orderNumbers);
+  if (preferred?.value) return preferred.value;
+  return ids.find((i) => i.value)?.value ?? "";
+}
 
 // ── Minimal FHIR type for ServiceRequest ─────────────────────────────────────
 interface FhirIdentifier { system?: string; value?: string }
