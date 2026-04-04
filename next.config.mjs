@@ -5,6 +5,21 @@ const nextConfig = {
   output: process.env.VERCEL ? undefined : "standalone",
 
   /**
+   * Tell Next.js NOT to bundle these packages — they are required as external
+   * Node.js modules at runtime.  This prevents webpack from inlining OTel
+   * into the server bundle and, crucially, prevents Vercel's Edge analyser
+   * from following their transitive imports into @opentelemetry/api.
+   */
+  serverExternalPackages: [
+    "@opentelemetry/sdk-node",
+    "@opentelemetry/exporter-trace-otlp-http",
+    "@opentelemetry/auto-instrumentations-node",
+    "@opentelemetry/resources",
+    "@opentelemetry/semantic-conventions",
+    "@opentelemetry/api",
+  ],
+
+  /**
    * Exclude the entire @opentelemetry/* and @grpc/* package namespaces from
    * Webpack bundling. These packages use Node.js built-ins (fs, stream, tls,
    * net, http, path, zlib) that Webpack cannot resolve for the browser bundle.
