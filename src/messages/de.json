@@ -420,7 +420,10 @@
       "current": "Aktuell",
       "notSet": "nicht gesetzt",
       "isDefault": "= Default",
-      "editLink": "Variablen bearbeiten"
+      "editLink": "Variablen bearbeiten",
+      "editVar": "Bearbeiten",
+      "secretNote": "Secret-Wert — wird nach dem Speichern nicht mehr angezeigt.",
+      "clearNote": "Leer lassen um den Default-Wert zu verwenden."
     }
   },
   "auth": {

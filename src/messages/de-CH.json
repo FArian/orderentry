@@ -417,7 +417,10 @@
       "current": "Aktuell",
       "notSet": "nöd gsetzt",
       "isDefault": "= Default",
-      "editLink": "Variable bearbeite"
+      "editLink": "Variable bearbeite",
+      "editVar": "Bearbeite",
+      "secretNote": "Secret-Wert — wird nach em Speichere nöd meh azeigt.",
+      "clearNote": "Leer lah um de Default-Wert z'verwende."
     }
   },
   "auth": {

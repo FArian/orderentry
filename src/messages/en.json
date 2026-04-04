@@ -420,7 +420,10 @@
       "current": "Current",
       "notSet": "not set",
       "isDefault": "= default",
-      "editLink": "Edit variables"
+      "editLink": "Edit variables",
+      "editVar": "Edit",
+      "secretNote": "Secret value — will not be shown after saving.",
+      "clearNote": "Leave empty to use the default value."
     }
   },
   "auth": {
