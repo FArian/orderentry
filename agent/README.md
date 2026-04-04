@@ -1,367 +1,455 @@
-# ZetLab Local Agent
+# ZetLab Local Agent — Architektur & Entwicklungsstand
 
-Dieses Verzeichnis dokumentiert die Architektur und den Entwicklungsstand
-des **Local Agent** — der Brücke zwischen Klinik/Praxis (lokal) und
-OrderEntry (Cloud).
+Der **ZetLab Local Agent** ist die Brücke zwischen der Cloud-Infrastruktur (OrderEntry, Orchestra, HAPI FHIR) und den lokalen Systemen in Klinik, Praxis und Labor. Er ermöglicht bidirektionalen HL7-Datenaustausch, lokalen Druck von Begleitscheinen und Barcode-Etiketten sowie die automatische Patientenübernahme aus bestehenden KIS/PIS-Systemen — ohne Firewall-Anpassungen oder Port-Forwarding.
 
 ---
 
-## Gesamtarchitektur
+## Inhaltsverzeichnis
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                                   CLOUD                                      │
-│                                                                              │
-│   ┌──────────────────┐      ┌──────────────────┐      ┌──────────────────┐  │
-│   │                  │      │                  │      │                  │  │
-│   │   OrderEntry     │◄────►│    Orchestra     │◄────►│   HAPI FHIR      │  │
-│   │   (Vercel)       │      │  (Integration    │      │   (Cloud)        │  │
-│   │                  │      │    Server)       │      │                  │  │
-│   │  /proxy/hl7/     │      │  ADT  → Patient  │      │  Patient         │  │
-│   │  inbound         │      │  ORU  → DiagRep  │      │  DiagnosticRep.  │  │
-│   │  outbound        │      │  ORM  → HL7      │      │  ServiceRequest  │  │
-│   │  /agent/jobs     │      │                  │      │                  │  │
-│   │  /agent/status   │      │                  │      │                  │  │
-│   └────────┬─────────┘      └────────┬─────────┘      └──────────────────┘  │
-│            │                         │                                       │
-└────────────┼─────────────────────────┼───────────────────────────────────────┘
-             │                         │
-             │ HTTPS outbound only      │ HL7 ORM/ORU
-             │ kein Port-Forwarding     │ (bereits verbunden)
-             │                         │
-┌────────────▼─────────────┐  ┌────────▼─────────────────────────────────────┐
-│   KLINIK / PRAXIS         │  │   LABOR                                       │
-│                           │  │                                               │
-│  ┌──────────────────────┐ │  │   LIS / Vianova                               │
-│  │   LOCAL AGENT         │ │  │                                               │
-│  │   (Binary / Docker)   │ │  │   ◄── HL7 ORM  (Aufträge rein)               │
-│  │                       │ │  │   ──► HL7 ORU  (Befunde raus)                │
-│  │  1. Dir Watcher       │ │  │                                               │
-│  │  /adt/*.hl7 → Cloud   │ │  └──────────────────────────────────────────────┘
-│  │                       │ │
-│  │  2. ORU File Writer   │ │
-│  │  Cloud → /oru/*.hl7   │ │
-│  │  Cloud → /pdf/*.pdf   │ │
-│  │                       │ │
-│  │  3. Print Client      │ │
-│  │  PDF  → Drucker       │ │
-│  │  ZPL  → Zebra/Dymo    │ │
-│  └──────────┬────────────┘ │
-│             │               │
-│   ┌─────────▼────────────┐  │
-│   │   PIS / KIS          │  │
-│   │                      │  │
-│   │  legt ADT ab         │  │
-│   │  liest ORU ein       │  │
-│   │  druckt Begleitschein│  │
-│   └──────────────────────┘  │
-└──────────────────────────────┘
-```
+1. [Architekturprinzipien](#architekturprinzipien)
+2. [Komponenten](#komponenten)
+3. [Gesamtübersicht](#gesamtübersicht)
+4. [Datenflüsse](#datenflüsse)
+5. [Implementierungsstand](#implementierungsstand)
+6. [Offene Implementierungen](#offene-implementierungen)
+7. [Implementierungsreihenfolge](#implementierungsreihenfolge)
+8. [Deployment-Varianten](#deployment-varianten)
+9. [Konfiguration](#konfiguration)
+10. [Sicherheit & Auth](#sicherheit--auth)
+11. [Resilienz & Betrieb](#resilienz--betrieb)
 
 ---
 
-## Verbindungspunkte
+## Architekturprinzipien
 
-| Seite | Verbindung | Status |
+| # | Prinzip | Begründung |
 |---|---|---|
-| **Orchestra → LIS** | HL7 ORM/ORU (Labor) | ✅ bereits vorhanden |
-| **OrderEntry → HAPI FHIR** | FHIR Proxy Routes | ✅ bereits gebaut |
-| **Agent → Klinik/PIS** | Directory + Druck + ORU | 🔜 noch zu bauen |
+| 1 | **Cloud verarbeitet kein HL7** | OrderEntry ist reiner Proxy. HL7-Parsing und -Konvertierung liegt ausschliesslich bei Orchestra. |
+| 2 | **Kommunikation ist outbound-only** | Der Agent baut Verbindungen zur Cloud auf — nie umgekehrt. Kein Port-Forwarding, keine Firewall-Anpassungen. |
+| 3 | **Orchestra ist der einzige HL7↔FHIR-Konverter** | ADT→Patient, ORU→DiagnosticReport, ServiceRequest→ORM erfolgen ausschliesslich in Orchestra. |
+| 4 | **Alle lokalen Integrationen laufen über den Agent** | Kein lokales System kommuniziert direkt mit der Cloud. Der Agent ist der einzige Zugangspunkt. |
+| 5 | **Routing über Organization GLN** | Jeder Agent ist über seinen API-Key eindeutig einer FHIR-Organization (GS1-GLN) zugeordnet. Druckjobs und ORU-Dateien werden klinikspezifisch zugestellt. |
+| 6 | **Polling statt Push** | Der Agent pollt aktiv für ausstehende Jobs. Die Cloud muss keine Verbindungen initiieren. |
 
 ---
 
-## Agent — 3 Aufgaben
+## Komponenten
 
-| # | Aufgabe | Richtung | Protokoll |
-|---|---|---|---|
-| 1 | **ADT empfangen** | Klinik/Dir → Cloud | POST /api/v1/proxy/hl7/inbound |
-| 2 | **ORU/PDF liefern** | Cloud → Klinik/Dir | GET /api/v1/proxy/hl7/outbound |
-| 3 | **Drucken** | Cloud → lokaler Drucker | GET /api/v1/agent/jobs (print) |
+### Cloud
 
-**Polling-Prinzip:** Agent verbindet sich nur ausgehend (outbound-only).
-Kein Port-Forwarding, keine Firewall-Änderungen nötig.
+| Komponente | Aufgabe |
+|---|---|
+| **OrderEntry** (Vercel/Docker) | Web-UI für Auftragserfassung; HL7-Proxy (kein Parsing); Agent-API (`/agent/jobs`, `/agent/status`) |
+| **Orchestra** (Integration Engine) | Bidirektionaler HL7↔FHIR-Konverter; Subscriber auf HAPI FHIR Events; Verbindung zum LIS |
+| **HAPI FHIR** | FHIR R4 Datenspeicher für Patient, ServiceRequest, DiagnosticReport |
+
+### Lokal — Klinik / Praxis
+
+| Komponente | Aufgabe |
+|---|---|
+| **Local Agent** (Go Binary / Docker) | Directory Watcher für ADT; Job Poller für Druckjobs + ORU; Print Client (PDF + ZPL) |
+| **PIS / KIS** | Patientenverwaltungssystem; legt ADT-Dateien ab; ruft OrderEntry-Deeplink auf; liest ORU ein |
+| **Drucker** | Begleitschein-Drucker (PDF/CUPS/WinPrint); Barcode-Drucker (ZPL/Zebra/Dymo) |
+
+### Lokal — Labor
+
+| Komponente | Aufgabe |
+|---|---|
+| **LIS / Vianova** | Laborinformationssystem; empfängt HL7 ORM (Aufträge); sendet HL7 ORU (Befunde) |
+
+---
+
+## Gesamtübersicht
+
+```mermaid
+graph TB
+    subgraph CLOUD["☁️ Cloud"]
+        OE["OrderEntry\n(Vercel / Docker)\n\n/proxy/hl7/inbound\n/proxy/hl7/outbound\n/agent/jobs\n/agent/status\n/agent/token"]
+        ORC["Orchestra\n(Integration Engine)\n\nADT → Patient\nORU → DiagnosticReport\nServiceRequest → ORM\nSubscriber auf HAPI Events"]
+        FHIR["HAPI FHIR\n(Cloud)\n\nPatient\nServiceRequest\nDiagnosticReport"]
+    end
+
+    subgraph KLINIK["🏥 Klinik / Praxis"]
+        AGENT["Local Agent\n(Go Binary / Docker)\nGLN-identifiziert\n\n1. Dir Watcher → ADT\n2. Job Poller → Print + ORU\n3. Print Client"]
+        PIS["PIS / KIS\n\nDeeplink-Aufruf\nADT ablegen\nORU einlesen\nBegleitschein drucken"]
+        PRINTER["🖨️ Drucker\nPDF → Begleitschein\nZPL → Zebra / Dymo"]
+    end
+
+    subgraph LABOR["🔬 Labor"]
+        LIS["LIS / Vianova\n\nORM empfangen\nORU senden"]
+    end
+
+    OE <-->|"HL7 Proxy\n(bidirektional)"| ORC
+    ORC <-->|"FHIR R4\n(bidirektional)"| FHIR
+    ORC <-->|"HL7 ORM / ORU\n(bidirektional)"| LIS
+
+    AGENT -->|"HTTPS outbound only\nkein Port-Forwarding"| OE
+    OE -.->|"Jobs via Polling"| AGENT
+
+    PIS --> AGENT
+    AGENT --> PRINTER
+    PIS -->|"Deeplink"| OE
+```
+
+---
+
+## Datenflüsse
+
+### Szenario 1 — ADT: Patient aus KIS/PIS in OrderEntry
+
+Ein Patient wird im PIS/KIS aufgenommen. Der Agent erkennt die neue ADT-Datei und überträgt sie in die Cloud. Orchestra konvertiert die HL7-Nachricht in eine FHIR-Patient-Ressource und schreibt sie in HAPI FHIR. Parallel leitet Orchestra die ADT-Nachricht auch ans LIS weiter. Der Patient erscheint sofort in der OrderEntry-Oberfläche.
+
+```mermaid
+sequenceDiagram
+    participant PIS as PIS / KIS
+    participant AGT as Local Agent
+    participant OE as OrderEntry
+    participant ORC as Orchestra
+    participant FHIR as HAPI FHIR
+    participant LIS as LIS / Vianova
+
+    PIS->>AGT: HL7 ADT (A01/A08/A28/A31)\n/var/adt/*.hl7
+    AGT->>OE: POST /api/v1/proxy/hl7/inbound\n(HTTPS outbound)
+    OE->>ORC: weiterleiten (kein Parsing)
+    par FHIR speichern
+        ORC->>FHIR: FHIR Patient erstellen / updaten
+    and LIS informieren
+        ORC->>LIS: ADT weiterleiten (LIS-intern)
+    end
+    FHIR-->>OE: Patient in UI verfügbar
+```
+
+---
+
+### Szenario 2 — Auftragserfassung: Deeplink → ServiceRequest → LIS → Druck
+
+Das PIS/KIS öffnet OrderEntry per Deeplink mit dem Patienten-Kontext. Der Arzt erfasst den Laborauftrag. OrderEntry persistiert den ServiceRequest in HAPI FHIR. Orchestra empfängt den neuen ServiceRequest als Subscriber, erstellt daraus eine HL7 ORM-Nachricht und sendet sie ans LIS. Gleichzeitig erstellt OrderEntry einen Druckjob, den der Agent per Polling abholt und lokal ausdruckt.
+
+```mermaid
+sequenceDiagram
+    participant PIS as PIS / KIS
+    participant OE as OrderEntry
+    participant FHIR as HAPI FHIR
+    participant ORC as Orchestra
+    participant LIS as LIS / Vianova
+    participant AGT as Local Agent
+    participant PRN as Drucker
+
+    PIS->>OE: Deeplink\n/order/new?patientId=Patient/p-123
+    OE->>FHIR: Patientendaten laden
+    FHIR-->>OE: Patient (bereits via ADT vorhanden)
+    Note over OE: Arzt erfasst Auftrag\n(Tests, Material, Priorität)
+    OE->>FHIR: POST ServiceRequest
+    par Orchestra reagiert
+        ORC->>FHIR: ServiceRequest lesen (Subscriber)
+        ORC->>LIS: HL7 ORM^O01\n(Auftrag mit Barcode)
+    and Druckjob erstellen
+        OE->>OE: Druckjob in interner Job-Queue anlegen\n(POST /api/v1/agent/jobs/print)
+    end
+    AGT->>OE: GET /api/v1/agent/jobs\n(polling, alle 5s)
+    OE-->>AGT: Druckjob (PDF + ZPL)
+    AGT->>PRN: PDF → Begleitschein\nZPL → Barcode-Etikette
+    AGT->>OE: POST /api/v1/agent/jobs/[id]/done
+```
+
+> **GLN-Routing:** Jeder Agent authentifiziert sich mit einem klinikspezifischen API-Key (`Bearer`-Token). OrderEntry liest daraus die FHIR-Organization-ID (GS1-GLN) und stellt Druckjobs ausschliesslich dem zuständigen Agenten zu.
+
+---
+
+### Szenario 3 — ORU: Laborbefund zurück an Klinik
+
+Das LIS meldet einen fertigen Laborbefund als HL7 ORU^R01 an Orchestra. Orchestra verarbeitet die Nachricht auf zwei parallelen Wegen: Es konvertiert die ORU in einen FHIR DiagnosticReport (sichtbar in OrderEntry-UI) und leitet die ORU gleichzeitig als Datei über den Agent-Proxy an die Klinik zurück.
+
+```mermaid
+sequenceDiagram
+    participant LIS as LIS / Vianova
+    participant ORC as Orchestra
+    participant FHIR as HAPI FHIR
+    participant OE as OrderEntry
+    participant AGT as Local Agent
+    participant PIS as PIS / KIS
+
+    LIS->>ORC: HL7 ORU^R01 (Befund)
+    par FHIR speichern
+        ORC->>FHIR: DiagnosticReport erstellen
+        FHIR-->>OE: Befund in UI sichtbar
+    and An Klinik liefern
+        ORC->>OE: HL7 ORU via /proxy/hl7/outbound
+        AGT->>OE: GET /api/v1/proxy/hl7/outbound\n(polling)
+        OE-->>AGT: HL7 ORU + PDF
+        AGT->>PIS: /var/oru/*.hl7\n/var/pdf/*.pdf
+    end
+```
+
+> **Paralleler Fluss:** HAPI FHIR und die lokale ORU-Zustellung sind voneinander unabhängig. Beide Wege laufen gleichzeitig.
+
+---
+
+## Implementierungsstand
+
+### ✅ Bereits in OrderEntry gebaut
+
+#### Agent API
+
+| Route | Methode | Funktion |
+|---|---|---|
+| `/api/v1/agent/status` | GET | Connectivity-Check, Token-Validierung, HL7-Proxy-Status |
+| `/api/v1/agent/token` | POST | JWT / PAT für Agent-Authentifizierung ausstellen |
+
+#### HL7 Proxy
+
+| Route | Methode | Funktion |
+|---|---|---|
+| `/api/v1/proxy/hl7/inbound` | POST | HL7 vom Agent → Orchestra (ADT, ORU) |
+| `/api/v1/proxy/hl7/outbound` | GET | HL7 von Orchestra → Agent (ORU, Polling) |
+
+#### FHIR Proxy
+
+| Route | Methode | Funktion |
+|---|---|---|
+| `/api/v1/proxy/fhir/patients` | GET | Patientenliste |
+| `/api/v1/proxy/fhir/patients/[id]` | GET | Einzelpatient |
+| `/api/v1/proxy/fhir/patients/[id]/service-requests` | GET | Aufträge je Patient |
+| `/api/v1/proxy/fhir/patients/[id]/diagnostic-reports` | GET | Befunde je Patient |
+| `/api/v1/proxy/fhir/service-requests` | GET | Alle Aufträge |
+| `/api/v1/proxy/fhir/service-requests/[id]` | GET | Einzelauftrag |
+| `/api/v1/proxy/fhir/diagnostic-reports` | GET | Alle Befunde |
+
+#### Auth (für Agent nutzbar)
+
+| Route | Methode | Funktion |
+|---|---|---|
+| `/api/v1/auth/token` | POST | JWT / PAT ausstellen (Bearer Auth) |
+| `/api/v1/users/[id]/token` | POST | PAT pro User / Klinik |
+
+#### Begleitschein & Druck (Browser-seitig)
+
+Bereits vollständig implementiert in `src/presentation/hooks/useOrderDocuments.ts`:
+
+- `buildBegleitscheinHtml()` — vollständiges HTML mit Patientendaten, Proben-Tabelle, Barcodes
+- `printBegleitschein()` — öffnet Browser-Druckdialog
+- `printLabel()` — Barcode-Etikette im Browser drucken
+- `buildBegleitscheinBase64()` — Base64-PDF für HL7 OBX-Segment + FHIR DocumentReference
+- Auto-Print nach Auftragserfassung (`OrderCreatePage.tsx`)
+- Barcodes: CODE128 via JsBarcode — Format `{orderNumber} {materialCode}`
+
+> **Hinweis:** Der Browser-Druck ist fertig. Der Agent-seitige Druck (für Kliniken ohne Browser-Zugang, Zebra-Drucker) ist noch nicht implementiert.
+
+---
+
+## Offene Implementierungen
+
+### Phase 1 — OrderEntry Server-side
+
+#### 1. Print Job Queue
+
+```
+POST /api/v1/agent/jobs/print       ← Druckjob nach Auftragserfassung erstellen
+GET  /api/v1/agent/jobs             ← Agent pollt: offene Print- + ORU-Jobs
+POST /api/v1/agent/jobs/[id]/done  ← Agent bestätigt Job abgeschlossen
+```
+
+#### 2. ZPL-Generierung (Server-side)
+
+- Barcode-Etikette als ZPL-Template für Zebra/Dymo-Drucker
+- Format: `{orderNumber} {materialCode}` (LIS-Barcode-Konvention)
+
+#### 3. Agent Registration & Management
+
+```
+POST   /api/v1/agent/register      ← Klinik registriert Agent → erhält API-Key
+GET    /api/v1/agent/list          ← Admin: alle registrierten Agents
+DELETE /api/v1/agent/[id]          ← Admin: Agent deaktivieren
+```
+
+#### 4. Admin UI — Agent-Verwaltung (`/admin/agents`)
+
+- Übersicht registrierter Kliniken: letzter Kontakt, Agent-Version, Status
+- Aktionen: API-Key erstellen, deaktivieren, erneuern
+
+#### 5. Druckjob-Routing — Practitioner → Abteilung → Agent ⚠️ TODO: Design-Entscheidung offen
+
+Beim Erstellen eines Auftrags ist ein **Practitioner** (mit GLN) bereits ausgewählt.
+Dieser Practitioner gehört via `PractitionerRole` zu einer **Location / Abteilung**.
+Jede Abteilung hat einen eigenen registrierten **Agent** mit eigenem Drucker.
+
+**Offene Frage:** Wie wird die Zuordnung `Practitioner → Abteilung → Agent` gespeichert?
+
+**Kandidat:** `PractitionerRole.location` in HAPI FHIR — der Practitioner ist einer Location
+zugeordnet, der Agent ist für diese Location registriert. OrderEntry liest beim
+Auftragserstellen die PractitionerRole und routet den Druckjob an den zuständigen Agent.
+
+**Zwei Routing-Modi:**
+- **Broadcast** — Druckjob geht an alle Agents der Organization (Fallback)
+- **Gezielt** — Druckjob geht an den Agent der Abteilung des erstellenden Practitioners
+
+**Muss geklärt werden:**
+- [ ] Wird `PractitionerRole.location` als Routing-Grundlage verwendet?
+- [ ] Wie wird ein Agent einer Location zugeordnet? (bei Registrierung / Admin UI)
+- [ ] Was passiert wenn kein Agent für die Location registriert ist → Broadcast oder Fehler?
+
+---
+
+### Phase 2 — Orchestra Konfiguration
+
+#### 5. ADT-Szenario
+
+Orchestra benötigt ein Szenario für eingehende ADT-Nachrichten:
+
+- `A01` — Patient aufnehmen
+- `A08` — Patientendaten ändern
+- `A28` / `A31` — Patient anlegen / updaten
+
+Aktuell ist nur das ORM-Szenario (Auftragserfassung → LIS) vorhanden.
+
+---
+
+### Phase 3 — Agent (separates Go-Projekt)
+
+```
+zetlab-agent/
+├── main.go                  # Entry point, Service-Registrierung (Windows/macOS/Linux/Docker)
+├── watcher/
+│   └── adtWatcher.go        # Directory Watcher → POST /proxy/hl7/inbound
+├── poller/
+│   └── jobPoller.go         # GET /agent/jobs → Drucken + ORU schreiben
+├── printer/
+│   ├── pdfPrinter.go        # PDF → CUPS (Linux/macOS) / WinPrint (Windows)
+│   └── zplPrinter.go        # ZPL → TCP:9100 (Zebra / Dymo RAW)
+├── writer/
+│   └── oruWriter.go         # HL7 ORU → lokales Verzeichnis
+├── config/
+│   └── config.go            # ENV-Konfiguration
+└── Dockerfile
+```
+
+**Technologie:** Go — cross-platform, single binary, kein Runtime erforderlich.
+
+---
+
+### Phase 4 — Admin UI
+
+#### 4. `/admin/agents`
+
+Verwaltungsseite für registrierte Agents: Status, Version, letzter Kontakt, Key-Management.
 
 ---
 
 ## Deployment-Varianten
 
-### Modell 2 — Agent (Standard: Praxen + kleine Kliniken)
+### Modell 1 — Cloud-Only *(ohne Agent — für einfache Integrationen)*
 
-```
-Cloud:  OrderEntry + Orchestra + HAPI FHIR
-Lokal:  NUR Agent (1 Binary oder 1 Docker Container)
-```
+Kein lokaler Agent. Alle Dienste laufen in der Cloud.
 
-- Windows: `zetlab-agent.exe` als Windows Service
-- macOS: `zetlab-agent` als LaunchAgent
-- Linux: `zetlab-agent` als systemd Service
-- Docker: `docker run zetlab/agent` (wo Docker verfügbar)
+| Funktion | Lösung |
+|---|---|
+| **Druck** | Cloud Printing / Remote Printing — Drucker ist direkt über das Internet oder VPN erreichbar |
+| **ORU-Zustellung** | SFTP — Orchestra legt ORU-Dateien auf einem SFTP-Server ab; PIS/KIS holt sie von dort ab |
+| **ADT** | Direkter FHIR-Push vom KIS/PIS in die Cloud (kein Agent-Watcher nötig) |
 
-### Modell 3 — Hybrid (grosse Kliniken mit Datenschutz)
+**Einsatz:** Kliniken mit einfacher IT-Infrastruktur, Cloud-Druckern oder bestehendem SFTP-Workflow.
+
+**Einschränkungen:** Kein lokaler Offline-Puffer, kein automatischer Druckjob-Routing über Abteilungen, SFTP-Konfiguration auf KIS-Seite erforderlich.
+
+---
+
+### Modell 2 — Agent Standard *(empfohlen für Praxen und kleine Kliniken)*
+
+Gesamte Infrastruktur (OrderEntry, Orchestra, HAPI FHIR) läuft in der Cloud. Lokal wird ausschliesslich der Agent betrieben.
+
+| Betriebssystem | Deployment |
+|---|---|
+| Windows | `zetlab-agent.exe` als Windows Service |
+| macOS | `zetlab-agent` als LaunchAgent |
+| Linux | `zetlab-agent` als systemd Service |
+| Docker | `docker run zetlab/agent` |
+
+### Modell 3 — Hybrid *(für grosse Kliniken mit erhöhten Datenschutzanforderungen)*
+
+OrderEntry und Orchestra laufen in der Cloud. HAPI FHIR und der Agent laufen lokal — Patientendaten verlassen das Haus nicht. Die Verbindung zur Cloud erfolgt über einen ausgehenden Cloudflare Tunnel (kein Port-Forwarding).
 
 ```
 Cloud:  OrderEntry UI + Orchestra
-Lokal:  HAPI FHIR (Patientendaten bleiben lokal) + Agent
-        Verbindung via Cloudflare Tunnel (kein Port-Forwarding)
+Lokal:  HAPI FHIR + Agent
+        Verbindung: Cloudflare Tunnel (outbound)
 ```
 
 ---
 
-## Was bereits in OrderEntry gebaut ist ✅
+## Konfiguration
 
-### Agent API Routes
+### Agent ENV-Variablen
 
-| Route | Methode | Funktion | Status |
-|---|---|---|---|
-| `/api/v1/agent/status` | GET | Connectivity-Check, Token-Validierung, HL7-Proxy-Status | ✅ |
-| `/api/v1/agent/token` | POST | JWT/PAT Token für Agent-Auth | ✅ |
-
-### HL7 Proxy Routes
-
-| Route | Methode | Funktion | Status |
-|---|---|---|---|
-| `/api/v1/proxy/hl7/inbound` | POST | HL7 von Agent → Orchestra (ADT, ORU) | ✅ |
-| `/api/v1/proxy/hl7/outbound` | GET | HL7 von Orchestra → Agent (ORU, polling) | ✅ |
-
-### FHIR Proxy Routes
-
-| Route | Methode | Funktion | Status |
-|---|---|---|---|
-| `/api/v1/proxy/fhir/patients` | GET | Patientenliste | ✅ |
-| `/api/v1/proxy/fhir/patients/[id]` | GET | Einzelpatient | ✅ |
-| `/api/v1/proxy/fhir/patients/[id]/service-requests` | GET | Aufträge je Patient | ✅ |
-| `/api/v1/proxy/fhir/patients/[id]/diagnostic-reports` | GET | Befunde je Patient | ✅ |
-| `/api/v1/proxy/fhir/service-requests` | GET | Alle Aufträge | ✅ |
-| `/api/v1/proxy/fhir/service-requests/[id]` | GET | Einzelauftrag | ✅ |
-| `/api/v1/proxy/fhir/diagnostic-reports` | GET | Alle Befunde | ✅ |
-
-### Auth (für Agent nutzbar)
-
-| Route | Methode | Funktion | Status |
-|---|---|---|---|
-| `/api/v1/auth/token` | POST | JWT/PAT ausstellen (Bearer Auth) | ✅ |
-| `/api/v1/users/[id]/token` | POST | PAT pro User/Klinik | ✅ |
+| Variable | Standard | Beschreibung |
+|---|---|---|
+| `AGENT_ORDERENTRY_URL` | — | OrderEntry Cloud URL (erforderlich) |
+| `AGENT_API_KEY` | — | Klinikspezifischer API-Key / PAT (erforderlich) |
+| `AGENT_POLL_INTERVAL_MS` | `5000` | Polling-Intervall in Millisekunden |
+| `AGENT_ADT_WATCH_DIR` | `/var/adt/` | Verzeichnis für eingehende ADT HL7-Dateien |
+| `AGENT_ORU_OUTPUT_DIR` | `/var/oru/` | Verzeichnis für ausgehende ORU HL7-Dateien |
+| `AGENT_PDF_OUTPUT_DIR` | `/var/pdf/` | Verzeichnis für ausgehende PDF-Dateien |
+| `AGENT_PRINTER_NAME` | — | Druckername für Begleitschein (CUPS / WinPrint) |
+| `AGENT_ZEBRA_IP` | — | IP-Adresse des Zebra/Dymo-Druckers (optional) |
+| `AGENT_ZEBRA_PORT` | `9100` | TCP-Port für ZPL RAW-Druck |
+| `AGENT_HEALTH_PORT` | `7890` | Lokaler Health-Endpoint-Port (0 = deaktiviert) |
+| `AGENT_JOB_TIMEOUT_MS` | `30000` | Maximale Laufzeit pro Job |
+| `AGENT_RETRY_MAX_HOURS` | `24` | Maximale Retry-Dauer für fehlgeschlagene ADT-Uploads |
+| `AGENT_LOG_FILE` | `/var/log/zetlab-agent.log` | Pfad zur Audit-Log-Datei |
+| `AGENT_LOG_RETENTION_DAYS` | `30` | Aufbewahrungsdauer für Log-Einträge |
 
 ---
 
-## Was noch fehlt ❌
+## Sicherheit & Auth
 
-### 1. Print Job Queue (OrderEntry — Server-side)
+### Konzept
 
-```
-POST /api/v1/agent/jobs/print        ← erstellt Druckjob nach Auftragserfassung
-GET  /api/v1/agent/jobs              ← Agent pollt: offene Print- + ORU-Jobs
-POST /api/v1/agent/jobs/[id]/done   ← Agent bestätigt Job erledigt
-```
+Jede Klinik erhält bei der Registrierung einen eigenen API-Key (Personal Access Token). Der Agent sendet diesen Key bei jedem Request als `Authorization: Bearer`-Header. OrderEntry identifiziert darüber die Klinik und deren FHIR-Organization (inkl. GS1-GLN). Ein Key kann jederzeit widerrufen werden, ohne andere Kliniken zu beeinflussen.
 
-Kein Druckjob-System existiert. Nach Auftragserfassung muss OrderEntry
-automatisch einen Druckjob (PDF Begleitschein + ZPL Barcode) erstellen.
-
-### 2. PDF / ZPL Generierung (OrderEntry — Server-side)
-
-- Begleitschein als PDF (mit Patientendaten, Aufträgen, Barcodes)
-- Barcode-Etikette als ZPL (für Zebra/Dymo Drucker)
-- Bibliothek: `pdf-lib` oder `puppeteer` für PDF, ZPL als Template
-
-### 3. Agent Registration / Management
+### Request-Header des Agents
 
 ```
-POST /api/v1/agent/register          ← Klinik registriert Agent (erhält API-Key)
-GET  /api/v1/agent/list              ← Admin: alle registrierten Agents
-DELETE /api/v1/agent/[id]            ← Admin: Agent deaktivieren
-```
-
-Jede Klinik braucht einen eigenen API-Key. Aktuell kein Registrierungs-System.
-
-### 4. Admin UI — Agent-Verwaltung
-
-- Seite `/admin/agents`
-- Zeigt: registrierte Kliniken, letzter Kontakt, Version, Status
-- Aktionen: neuen Agent-Key erstellen, deaktivieren
-
-### 5. ENV Konfiguration Agent-seitig
-
-```
-AGENT_POLL_INTERVAL_MS=5000          # Polling-Intervall (default: 5s)
-AGENT_ORDERENTRY_URL=https://...     # OrderEntry Cloud URL
-AGENT_API_KEY=...                    # Klinik-spezifischer API-Key
-AGENT_ADT_WATCH_DIR=/var/adt/        # Ordner für ADT HL7 Dateien
-AGENT_ORU_OUTPUT_DIR=/var/oru/       # Ordner für ORU HL7 Ausgabe
-AGENT_PDF_OUTPUT_DIR=/var/pdf/       # Ordner für PDF Ausgabe
-AGENT_PRINTER_NAME=HP_LaserJet       # Drucker für PDF
-AGENT_ZEBRA_IP=192.168.1.50          # Zebra Drucker IP (optional)
-AGENT_ZEBRA_PORT=9100                # Zebra RAW Port
-```
-
-### 6. Orchestra Konfiguration — ADT Szenario
-
-Orchestra muss ein Szenario für ADT → FHIR Patient haben:
-- Eingehende ADT-Nachrichten (A01/A08/A28/A31) → FHIR Patient erstellen/updaten
-- Aktuell nur ORM-Szenario vorhanden
-
-### 7. Der Agent selbst (separates Projekt)
-
-```
-zetlab-agent/
-├── main.go                 # Entry point, Service-Registrierung
-├── watcher/
-│   └── adtWatcher.go       # Directory Watcher → POST /inbound
-├── poller/
-│   └── jobPoller.go        # GET /agent/jobs → Drucken + ORU schreiben
-├── printer/
-│   ├── pdfPrinter.go       # PDF → CUPS/WinPrint
-│   └── zplPrinter.go       # ZPL → TCP:9100
-├── writer/
-│   └── oruWriter.go        # HL7 ORU → lokales Verzeichnis
-├── config/
-│   └── config.go           # ENV Konfiguration
-└── Dockerfile
-```
-
-Technologie: **Go** (cross-platform, single binary, kein Runtime nötig)
-
----
-
-## Reihenfolge der Implementierung
-
-```
-Phase 1 — OrderEntry Server-side (Voraussetzung für Agent)
-  1. Print Job Queue API  (/api/v1/agent/jobs/*)
-  2. PDF Generierung      (Begleitschein)
-  3. ZPL Generierung      (Barcode-Etikette)
-  4. Agent Registration   (/api/v1/agent/register)
-
-Phase 2 — Orchestra Konfiguration
-  5. ADT Szenario in Orchestra  (ADT → FHIR Patient)
-
-Phase 3 — Agent (separates Projekt)
-  6. Directory Watcher    (ADT)
-  7. Job Poller           (Drucken + ORU)
-  8. PDF Print Client
-  9. ZPL Print Client
- 10. ORU File Writer
-
-Phase 4 — Admin UI
- 11. /admin/agents         (Agent-Verwaltung)
-```
-
----
-
-## Auth-Konzept
-
-```
-Klinik registriert sich → erhält API-Key (PAT)
-Agent konfiguriert API-Key → sendet bei jedem Request als Bearer Token
-OrderEntry validiert Bearer Token → identifiziert Klinik
-```
-
-Pro Klinik ein eigener API-Key — Revocation möglich ohne andere Kliniken zu beeinflussen.
-
----
-
-## Vorschläge / Offene Punkte (noch nicht eingeplant)
-
-Die folgenden Punkte fehlen noch im aktuellen Design und sollten vor oder während
-Phase 3 entschieden werden.
-
----
-
-### A. Offline-Puffer (Resilienz)
-
-**Problem:** Was passiert, wenn die Cloud vorübergehend nicht erreichbar ist?
-
-**Vorschlag:** Agent puffert ADT-Dateien lokal in einem Warteverzeichnis:
-
-```
-/var/adt/pending/    ← neue ADT-Dateien vom PIS
-/var/adt/sent/       ← erfolgreich hochgeladen (behalten für Audit)
-/var/adt/failed/     ← nach N Retries → manuell prüfen
-```
-
-- Retry-Logik: exponentielles Backoff (5s → 30s → 5min)
-- Nach Wiederherstellung der Verbindung: Pending-Queue automatisch abarbeiten
-- Timeout pro Datei konfigurierbar (`AGENT_RETRY_MAX_HOURS=24`)
-
-**Warum wichtig:** Kliniken arbeiten rund um die Uhr. Kurze Cloud-Ausfälle (Update,
-Netzwerkproblem) dürfen den lokalen Ablauf nicht unterbrechen.
-
----
-
-### B. Datei-Deduplizierung (Doppel-Upload verhindern)
-
-**Problem:** Dir-Watcher könnte dieselbe HL7-Datei zweimal senden (Neustart,
-Crash, Retry).
-
-**Vorschlag:** Gelesene Dateien mit SHA-256 Hash in einer lokalen SQLite-DB
-(oder `.sent`-Datei) markieren:
-
-```
-/var/adt/sent.db    ← Tabelle: (filename, sha256, uploaded_at)
-```
-
-- Vor Upload: Hash prüfen → wenn bekannt, überspringen + loggen
-- Hash wird nach erfolgreichem Upload gespeichert
-- DB-Grösse begrenzen: Einträge älter als 30 Tage löschen
-
----
-
-### C. Health Endpoint (lokale Überwachung)
-
-**Vorschlag:** Agent öffnet einen lokalen HTTP-Port nur für Health-Checks:
-
-```
-GET http://localhost:7890/health   → 200 { status: "ok", version: "1.2.0", lastPoll: "..." }
-GET http://localhost:7890/metrics  → Prometheus text (optional)
-```
-
-- Nur lokal erreichbar (`127.0.0.1`) — kein Netzwerkzugang von aussen
-- Erlaubt Docker `HEALTHCHECK` und systemd/Windows-Service-Monitor
-- OrderEntry `/api/v1/agent/status` bleibt der Cloud-seitige Check
-
-**ENV:** `AGENT_HEALTH_PORT=7890` (0 = deaktiviert)
-
----
-
-### D. Agent Auto-Update
-
-**Vorschlag:** Agent vergleicht beim `/api/v1/agent/status` Poll seine eigene
-Version mit der vom Server gemeldeten Mindestversion:
-
-```json
-{ "minAgentVersion": "1.3.0", "latestAgentVersion": "1.4.2" }
-```
-
-- Wenn `minAgentVersion > current` → Agent loggt kritische Warnung, Admin-Mail
-- Wenn `latestAgentVersion > current` → optionaler Auto-Download + Neustart
-- Download-URL: `AGENT_UPDATE_URL` (default: GitHub Releases oder interner Server)
-
-**Warum wichtig:** Kliniken installieren selten manuell. Auto-Update verhindert
-veraltete Agents im Feld.
-
----
-
-### E. `X-Clinic-ID` Header (Multi-Tenant Logging)
-
-**Vorschlag:** Agent sendet bei jedem Request einen zusätzlichen Header:
-
-```
-X-Clinic-ID: org-123
+Authorization: Bearer <AGENT_API_KEY>
+X-Clinic-ID:   org-123          (FHIR Organization ID)
 X-Agent-Version: 1.2.0
 ```
 
-- OrderEntry loggt `clinicId` in jedem strukturierten Log-Eintrag
-- Ermöglicht spätere Auswertung: welche Klinik sendet wie viele ADT/ORU?
-- `X-Clinic-ID` = FHIR Organization ID (aus Agent-Config)
+`X-Clinic-ID` ermöglicht klinikspezifisches Logging und Routing von Druckjobs / ORU-Dateien.
 
 ---
 
-### F. Startup-Validierung
+## Resilienz & Betrieb
 
-**Vorschlag:** Beim Start prüft der Agent alle Voraussetzungen bevor er in den
-Polling-Loop eintritt:
+### Offline-Puffer
+
+Bei Cloud-Nichterreichbarkeit puffert der Agent ADT-Dateien lokal:
 
 ```
-[ ] AGENT_ORDERENTRY_URL erreichbar (HTTP 200/401)
+/var/adt/pending/   ← neue Dateien vom PIS
+/var/adt/sent/      ← erfolgreich übertragen (Audit-Aufbewahrung)
+/var/adt/failed/    ← nach maximaler Retry-Dauer → manuelle Prüfung
+```
+
+Retry-Strategie: exponentielles Backoff (5 s → 30 s → 5 min). Nach Wiederherstellung der Verbindung wird die Pending-Queue automatisch abgearbeitet.
+
+### Datei-Deduplizierung
+
+Jede gesendete Datei wird per SHA-256-Hash in einer lokalen SQLite-Datenbank (`/var/adt/sent.db`) markiert. Vor jedem Upload prüft der Agent, ob der Hash bereits bekannt ist — bekannte Dateien werden übersprungen.
+
+### Health Endpoint
+
+```
+GET http://localhost:7890/health   → { "status": "ok", "version": "1.2.0", "lastPoll": "..." }
+GET http://localhost:7890/metrics  → Prometheus text (optional)
+```
+
+Nur lokal erreichbar (`127.0.0.1`). Ermöglicht Docker `HEALTHCHECK` und Service-Monitor.
+
+### Startup-Validierung
+
+Beim Start prüft der Agent alle Voraussetzungen, bevor er in den Polling-Loop eintritt:
+
+```
+[ ] AGENT_ORDERENTRY_URL erreichbar (HTTP 200 / 401)
 [ ] API-Key gültig (GET /api/v1/agent/status → 200)
 [ ] ADT_WATCH_DIR existiert und ist lesbar
 [ ] ORU_OUTPUT_DIR existiert und ist schreibbar
@@ -369,85 +457,34 @@ Polling-Loop eintritt:
 [ ] Drucker erreichbar (CUPS-Abfrage oder TCP-Ping auf Zebra-IP)
 ```
 
-- Bei kritischem Fehler: Agent beendet sich mit Exit-Code 1 (systemd/Windows
-  Service startet nicht → sofortige Fehlermeldung statt stilles Versagen)
-- Nicht-kritische Fehler (Drucker fehlt): Warnung loggen, Agent startet trotzdem
+Kritische Fehler beenden den Agent mit Exit-Code 1. Nicht-kritische Fehler (z. B. Drucker fehlt) werden geloggt; der Agent startet trotzdem.
 
----
+### Graceful Shutdown
 
-### G. Graceful Shutdown
+Der Agent fängt `SIGTERM` / `SIGINT` ab, schliesst den laufenden Job ab, sichert offene ADT-Dateien in die Pending-Queue und beendet sich sauber mit Exit-Code 0.
 
-**Vorschlag:** SIGTERM / SIGINT abfangen — laufenden Job fertig verarbeiten,
-dann sauber beenden:
+### Auto-Update
 
-```
-SIGTERM empfangen
-  → polling-Loop stoppen
-  → aktuellen Job (ORU schreiben / Druckjob) abschliessen
-  → pending ADT-Dateien in Queue schieben (nicht verlieren)
-  → Exit 0
-```
+Beim Status-Poll vergleicht der Agent seine Version mit der vom Server gemeldeten Mindestversion. Liegt die eigene Version darunter, wird eine kritische Warnung geloggt und eine Admin-Benachrichtigung ausgelöst.
 
-Wichtig für:
-- Windows-Service-Stop (SCM wartet auf sauberes Exit)
-- Docker `docker stop` (sendet SIGTERM, wartet 10s, dann SIGKILL)
-- systemd `systemctl stop`
-
----
-
-### H. Audit Log (lokal)
-
-**Vorschlag:** Agent schreibt ein lokales Audit-Log (append-only):
+### Audit Log
 
 ```
-/var/log/zetlab-agent.log
 2026-04-04T14:32:01Z  ADT  SENT     patient_123.hl7  sha256:abc123
 2026-04-04T14:32:06Z  ORU  WRITTEN  oru_456.hl7      → /var/oru/
 2026-04-04T14:32:07Z  PDF  PRINTED  job_789.pdf      → HP_LaserJet
 2026-04-04T14:35:00Z  ADT  RETRY    patient_124.hl7  attempt=2
 ```
 
-- Format: structured JSON oder TSV (maschinenlesbar)
-- Rotation: täglich, max. 30 Tage aufbewahren
-- Wichtig für Datenschutz-Audit (nDSG): was wurde wann übertragen?
-
-**ENV:** `AGENT_LOG_FILE=/var/log/zetlab-agent.log`, `AGENT_LOG_RETENTION_DAYS=30`
-
----
-
-### I. Watchdog / Hang Detection
-
-**Problem:** Job-Poller könnte bei einem fehlerhaften Druckjob oder einem
-blockierten Netzwerk-Call hängen bleiben.
-
-**Vorschlag:** Jeder Job-Lauf hat ein konfigurierbares Timeout:
-
-```
-AGENT_JOB_TIMEOUT_MS=30000   # 30 Sekunden pro Job
-```
-
-- Wenn ein Job nicht innerhalb Timeout abgeschlossen: abbrechen, als `failed`
-  markieren, nächster Poll-Zyklus beginnt
-- Separater Watchdog-Thread: wenn Haupt-Loop > 5× Polling-Intervall keine
-  Aktivität → Alert loggen + optional Neustart
-
----
-
-## Auth-Konzept
-
-```
-Klinik registriert sich → erhält API-Key (PAT)
-Agent konfiguriert API-Key → sendet bei jedem Request als Bearer Token
-OrderEntry validiert Bearer Token → identifiziert Klinik
-```
-
-Pro Klinik ein eigener API-Key — Revocation möglich ohne andere Kliniken zu beeinflussen.
+Format: strukturiertes JSON oder TSV. Rotation täglich, Aufbewahrung 30 Tage (nDSG-konform).
 
 ---
 
 ## Referenzen
 
-- `CLAUDE.md` → Abschnitt "Orchestra Integration"
-- `src/app/api/v1/proxy/hl7/` → HL7 Proxy Routes (bereits implementiert)
-- `src/app/api/v1/agent/` → Agent Routes (teilweise implementiert)
-- Memory: `project_client_architecture.md`
+| Quelle | Inhalt |
+|---|---|
+| `CLAUDE.md` → Orchestra Integration | JWT-Vertrag, Launch-Flow, HL7-Proxy-Regeln |
+| `src/app/api/v1/proxy/hl7/` | HL7 Proxy Routes (implementiert) |
+| `src/app/api/v1/agent/` | Agent Routes (teilweise implementiert) |
+| `src/presentation/hooks/useOrderDocuments.ts` | Begleitschein + Barcode (Browser-seitig, fertig) |

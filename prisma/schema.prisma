@@ -55,3 +55,26 @@ model PasswordResetToken {
   expiresAt DateTime
   createdAt DateTime @default(now())
 }
+
+// ── AgentJob ─────────────────────────────────────────────────────────────────
+
+/// Print- or ORU-job queued for a Local Agent to pick up via polling.
+///
+/// payload: JSON string containing:
+///   { documentReferenceId, serviceRequestId, patientId, orderNumber, zpl }
+///
+/// Routing:
+///   orgId      — FHIR Organization ID (mandatory — identifies the clinic)
+///   locationId — FHIR Location ID (optional — targets a specific department/printer)
+///               If null → Broadcast to all agents of the organization.
+model AgentJob {
+  id                  String    @id @default(uuid())
+  type                String    /// "print" | "oru"
+  status              String    @default("pending") /// "pending" | "done" | "failed"
+  orgId               String    /// FHIR Organization ID — routing key
+  locationId          String?   /// FHIR Location ID — targeted routing (nullable = broadcast)
+  payload             String    /// JSON: documentReferenceId, serviceRequestId, patientId, orderNumber, zpl
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  doneAt              DateTime?
+}

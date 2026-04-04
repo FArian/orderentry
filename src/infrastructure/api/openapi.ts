@@ -132,6 +132,22 @@ export const openApiSpec = {
         "Requires DEEPLINK_ENABLED=true and a shared secret (JWT or HMAC-SHA256). " +
         "Every request is audit-logged.",
     },
+    {
+      name: "Agent",
+      description:
+        "Local Agent job queue — print jobs (ZPL barcode labels + Begleitschein PDF) and ORU dispatch. " +
+        "The Agent polls `GET /agent/jobs` every few seconds and marks completed jobs via `POST /agent/jobs/{id}/done`. " +
+        "Authentication: Bearer JWT or PAT (`ztk_...`). " +
+        "Routing: `orgId` (mandatory) selects the organisation; `locationId` (optional) targets a department agent — " +
+        "omitting it broadcasts the job to all agents of that organisation.",
+    },
+    {
+      name: "FHIR Proxy",
+      description:
+        "Server-side proxies for FHIR resources on the HAPI FHIR R4 server. " +
+        "Used by the Local Agent (e.g. fetching DocumentReference PDFs) and by the UI. " +
+        "Authentication: Bearer JWT, PAT, or session cookie.",
+    },
   ],
   paths: {
     // ── Results ───────────────────────────────────────────────────────────────
@@ -1850,6 +1866,153 @@ export const openApiSpec = {
         },
       },
     },
+
+    // ── Agent job queue ───────────────────────────────────────────────────────
+
+    "/v1/agent/jobs": {
+      get: {
+        tags: ["Agent"],
+        summary: "Poll pending Agent jobs",
+        description:
+          "Returns all pending jobs (print and ORU) for the given organisation and optional location.\n\n" +
+          "**Routing logic:**\n" +
+          "- `locationId` provided → returns jobs targeted at that location **plus** broadcast jobs (`locationId = null`)\n" +
+          "- `locationId` omitted → returns broadcast-only jobs\n\n" +
+          "The Agent polls this endpoint every few seconds and processes returned jobs sequentially.",
+        operationId: "listAgentJobs",
+        security: [{ bearerAuth: [] }, { sessionCookie: [] }],
+        parameters: [
+          {
+            name: "orgId",
+            in: "query",
+            required: true,
+            description: "FHIR Organization ID — identifies the lab or clinic",
+            schema: { type: "string", example: "zlz" },
+          },
+          {
+            name: "locationId",
+            in: "query",
+            required: false,
+            description: "FHIR Location ID of the department/station running this Agent instance",
+            schema: { type: "string", example: "loc-notaufnahme" },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "List of pending jobs",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ListAgentJobsResponse" },
+              },
+            },
+          },
+          "400": { description: "Missing orgId" },
+          "401": { description: "Not authenticated" },
+        },
+      },
+      post: {
+        tags: ["Agent"],
+        summary: "Create a print job (after order submission)",
+        description:
+          "Creates a pending print job containing ZPL barcode labels (one per specimen) " +
+          "and a reference to the Begleitschein PDF stored in HAPI FHIR as a DocumentReference.\n\n" +
+          "Called automatically by OrderEntry after every successful order submission.\n\n" +
+          "**ZPL format:** CODE128 barcode `{orderNumber} {materialCode}` — required by the ZLZ LIS scanner.\n\n" +
+          "**PDF retrieval:** The Agent fetches the DocumentReference PDF via " +
+          "`GET /api/v1/proxy/fhir/document-references/{documentReferenceId}`.",
+        operationId: "createPrintJob",
+        security: [{ bearerAuth: [] }, { sessionCookie: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/CreatePrintJobRequest" },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "Print job created",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/CreatePrintJobResponse" },
+              },
+            },
+          },
+          "400": { description: "Missing required fields (orgId, documentReferenceId, orderNumber)" },
+          "401": { description: "Not authenticated" },
+        },
+      },
+    },
+
+    "/v1/agent/jobs/{id}/done": {
+      post: {
+        tags: ["Agent"],
+        summary: "Mark Agent job as completed",
+        description:
+          "The Agent calls this endpoint after successfully completing a job " +
+          "(print sent to printer, ORU delivered to LIS). " +
+          "Sets `status → done` and records `doneAt` timestamp.",
+        operationId: "markAgentJobDone",
+        security: [{ bearerAuth: [] }, { sessionCookie: [] }],
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            description: "AgentJob UUID",
+            schema: { type: "string", format: "uuid" },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "Job marked done",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/JobDoneResponse" },
+              },
+            },
+          },
+          "400": { description: "Missing job id" },
+          "401": { description: "Not authenticated" },
+          "404": { description: "Job not found" },
+        },
+      },
+    },
+
+    "/v1/proxy/fhir/document-references/{id}": {
+      get: {
+        tags: ["FHIR Proxy"],
+        summary: "Get FHIR DocumentReference (PDF for Agent printing)",
+        description:
+          "Proxies a single `DocumentReference` resource from HAPI FHIR. " +
+          "Used by the Local Agent to retrieve the Begleitschein PDF attachment before printing.\n\n" +
+          "The PDF is encoded in `content[].attachment.data` (Base64) with `contentType: application/pdf`.",
+        operationId: "getFhirDocumentReference",
+        security: [{ bearerAuth: [] }, { sessionCookie: [] }],
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            description: "FHIR DocumentReference ID",
+            schema: { type: "string", example: "doc-ref-abc123" },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "FHIR DocumentReference resource",
+            content: {
+              "application/fhir+json": {
+                schema: { type: "object", description: "FHIR R4 DocumentReference resource" },
+              },
+            },
+          },
+          "401": { description: "Not authenticated" },
+          "404": { description: "DocumentReference not found in HAPI FHIR" },
+        },
+      },
+    },
   },
 
   // ── Reusable schemas ───────────────────────────────────────────────────────
@@ -2463,6 +2626,80 @@ export const openApiSpec = {
           message:     { type: "string", description: "Human-readable status or error message" },
           fhirVersion: { type: "string", nullable: true, description: "FHIR version from CapabilityStatement (e.g. `4.0.1`)" },
           server:      { type: "string", nullable: true, description: "Server software name (e.g. `HAPI FHIR`)" },
+        },
+      },
+
+      // ── Agent job schemas ──────────────────────────────────────────────────
+
+      AgentJobResponse: {
+        type: "object",
+        required: ["id", "type", "orgId", "orderNumber", "zpl", "createdAt"],
+        properties: {
+          id:                  { type: "string", format: "uuid", description: "Unique job identifier" },
+          type:                { type: "string", enum: ["print", "oru"], description: "Job type" },
+          orgId:               { type: "string", description: "FHIR Organization ID" },
+          locationId:          { type: "string", nullable: true, description: "FHIR Location ID (null = broadcast)" },
+          documentReferenceId: { type: "string", description: "FHIR DocumentReference ID — use to fetch the Begleitschein PDF" },
+          serviceRequestId:    { type: "string", nullable: true, description: "FHIR ServiceRequest ID" },
+          patientId:           { type: "string", nullable: true, description: "FHIR Patient ID" },
+          orderNumber:         { type: "string", description: "ZLZ order number (Auftragsnummer)" },
+          zpl:                 { type: "string", description: "Concatenated ZPL label data — one label per specimen (CODE128 barcode)" },
+          createdAt:           { type: "string", format: "date-time", description: "ISO 8601 creation timestamp" },
+        },
+      },
+
+      ListAgentJobsResponse: {
+        type: "object",
+        required: ["jobs"],
+        properties: {
+          jobs: {
+            type: "array",
+            items: { $ref: "#/components/schemas/AgentJobResponse" },
+          },
+        },
+      },
+
+      CreatePrintJobRequest: {
+        type: "object",
+        required: ["orgId", "documentReferenceId", "orderNumber"],
+        properties: {
+          orgId:               { type: "string", description: "FHIR Organization ID (mandatory for routing)" },
+          locationId:          { type: "string", description: "FHIR Location ID — targets a specific department Agent (omit for broadcast)" },
+          documentReferenceId: { type: "string", description: "FHIR DocumentReference ID — Begleitschein PDF stored in HAPI FHIR" },
+          serviceRequestId:    { type: "string", description: "FHIR ServiceRequest ID" },
+          patientId:           { type: "string", description: "FHIR Patient ID" },
+          orderNumber:         { type: "string", description: "ZLZ order number (Auftragsnummer)" },
+          specimens: {
+            type: "array",
+            description: "Specimen list — one ZPL label per entry",
+            items: {
+              type: "object",
+              required: ["materialCode", "materialName"],
+              properties: {
+                materialCode: { type: "string", description: "ZLZ LIS material code (specimen_additionalinfo)" },
+                materialName: { type: "string", description: "Material display name (German)" },
+              },
+            },
+          },
+        },
+      },
+
+      CreatePrintJobResponse: {
+        type: "object",
+        required: ["id", "status", "createdAt"],
+        properties: {
+          id:        { type: "string", format: "uuid", description: "Created job ID" },
+          status:    { type: "string", enum: ["pending"], description: "Always `pending` at creation" },
+          createdAt: { type: "string", format: "date-time" },
+        },
+      },
+
+      JobDoneResponse: {
+        type: "object",
+        required: ["id", "status"],
+        properties: {
+          id:     { type: "string", format: "uuid" },
+          status: { type: "string", enum: ["done"] },
         },
       },
     },
