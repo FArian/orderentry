@@ -1,18 +1,28 @@
 /**
- * Node.js-only OpenTelemetry initialisation.
+ * Node.js-only startup hook — auto-detected and executed by Next.js 15
+ * on the Node.js runtime. Never imported by instrumentation.ts so the
+ * Edge bundler (esbuild) never sees this file.
  *
- * Imported dynamically from instrumentation.ts inside the nodejs runtime guard.
- * All OTel imports are dynamic (inside the function body) so webpack never
- * statically bundles Node.js built-ins (fs, http, path, tls) into the
- * client or Edge bundles.
+ * Responsibilities:
+ *  1. Run DB migrations (SQLite auto-migrate; PostgreSQL via Prisma migrate deploy)
+ *  2. Start OpenTelemetry SDK (opt-in via ENABLE_TRACING + TRACING_URL)
  *
- * Activation:
- *   ENABLE_TRACING=true
- *   TRACING_URL=http://<collector>:4318
+ * All imports are dynamic (inside the function body) so that if this file
+ * is ever accidentally bundled, webpack/esbuild won't include the full
+ * Node.js module tree at build time.
  */
 
 export async function register(): Promise<void> {
-  // ── OpenTelemetry tracing (optional) ─────────────────────────────────────────
+  // ── 1. DB migrations ────────────────────────────────────────────────────────
+  try {
+    const { runMigrations } = await import("@/infrastructure/db/runMigrations");
+    await runMigrations();
+  } catch (err) {
+    console.error("[db] Migration failed — server will not start:", err);
+    process.exit(1);
+  }
+
+  // ── 2. OpenTelemetry tracing (opt-in) ───────────────────────────────────────
   if ((process.env.ENABLE_TRACING ?? "").trim().toLowerCase() !== "true") return;
 
   const tracingUrl = (process.env.TRACING_URL ?? "").trim();

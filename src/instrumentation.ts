@@ -1,35 +1,18 @@
 /**
- * Next.js 15 instrumentation entry point.
+ * Next.js 15 instrumentation entry point — Edge-safe, no Node.js imports.
  *
- * Called once on server startup (Node.js runtime only — not Edge).
- * Dynamic imports inside the `nodejs` guard are safe: the Edge bundler
- * never follows runtime-conditional import() calls.
+ * Node.js-specific startup (DB migrations, OpenTelemetry) lives exclusively
+ * in instrumentation.node.ts. Next.js 15 auto-detects that file and runs
+ * its register() function on the Node.js runtime without any import from here.
  *
- * Responsibilities:
- *  1. Run DB migrations (SQLite auto-migrate; PostgreSQL via Prisma migrate deploy)
- *  2. Start OpenTelemetry SDK (opt-in via ENABLE_TRACING + TRACING_URL)
+ * This file is compiled for BOTH the Edge runtime (middleware) and the
+ * Node.js runtime. It must never import any Node.js-only module — not even
+ * via dynamic import() — because Vercel's esbuild-based Edge bundler does
+ * not respect /* webpackIgnore *\/ comments.
  */
 
 export async function register(): Promise<void> {
-  if (process.env.NEXT_RUNTIME !== "nodejs") return;
-
-  // ── 1. DB migrations ────────────────────────────────────────────────────────
-  // webpackIgnore: true — prevents the Edge bundler from statically including
-  // this Node.js-only module in the middleware/Edge bundle.
-  try {
-    const { runMigrations } = await import(
-      /* webpackIgnore: true */ "@/infrastructure/db/runMigrations"
-    );
-    await runMigrations();
-  } catch (err) {
-    console.error("[db] Migration failed — server will not start:", err);
-    process.exit(1);
-  }
-
-  // ── 2. OpenTelemetry tracing (opt-in) ───────────────────────────────────────
-  // webpackIgnore: true — same reason: keeps OTel out of the Edge bundle.
-  const { register: registerOtel } = await import(
-    /* webpackIgnore: true */ "./instrumentation.node"
-  );
-  await registerOtel();
+  // Intentionally empty.
+  // All startup logic is in instrumentation.node.ts (auto-loaded by Next.js
+  // on the Node.js runtime only).
 }
