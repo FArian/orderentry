@@ -89,15 +89,20 @@ function UserFormModal({ mode, initial, catalog, onSave, onClose, saving, error,
   const [gln,          setGln]          = useState(initial?.profile?.gln         ?? "");
   const [ptype,        setPtype]        = useState(initial?.profile?.ptype       ?? "");
   const [roleTypes,    setRoleTypes]    = useState<string[]>(initial?.profile?.roleTypes ?? []);
-  const [glnError,     setGlnError]     = useState<string | null>(null);
-  const [ahv,          setAhv]          = useState(initial?.profile?.ahv        ?? "");
-  const [orgFhirId,    setOrgFhirId]    = useState(initial?.profile?.orgFhirId  ?? "");
-  const [orgGln,       setOrgGln]       = useState(initial?.profile?.orgGln     ?? "");
-  const [orgName,      setOrgName]      = useState(initial?.profile?.orgName    ?? "");
-  const [orgs,         setOrgs]         = useState<FhirOrganizationDto[]>([]);
+  const [glnError,      setGlnError]     = useState<string | null>(null);
+  const [ahv,           setAhv]          = useState(initial?.profile?.ahv          ?? "");
+  const [orgFhirId,     setOrgFhirId]    = useState(initial?.profile?.orgFhirId    ?? "");
+  const [orgGln,        setOrgGln]       = useState(initial?.profile?.orgGln       ?? "");
+  const [orgName,       setOrgName]      = useState(initial?.profile?.orgName      ?? "");
+  const [organization,  setOrganization] = useState(initial?.profile?.organization ?? "");
+  const [locationId,    setLocationId]   = useState(initial?.profile?.locationId   ?? "");
+  const [locationName,  setLocationName] = useState(initial?.profile?.locationName ?? "");
+  const [orgs,          setOrgs]         = useState<FhirOrganizationDto[]>([]);
+  const [locations,     setLocations]    = useState<{ id: string; name: string }[]>([]);
+
+  const GLN_SYSTEMS = ["https://www.gs1.org/gln", "urn:oid:2.51.1.3"];
 
   useEffect(() => {
-    const GLN_SYSTEMS = ["https://www.gs1.org/gln", "urn:oid:2.51.1.3"];
     fetch("/api/fhir/organizations", { cache: "no-store" })
       .then((r) => r.json())
       .then((bundle: { entry?: Array<{ resource?: { id?: string; name?: string; identifier?: Array<{ system?: string; value?: string }> } }> }) => {
@@ -111,25 +116,50 @@ function UserFormModal({ mode, initial, catalog, onSave, onClose, saving, error,
           }));
         setOrgs(mapped);
       })
-      .catch(() => { /* silently ignore — org select is optional */ });
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  function fetchLocations(orgId: string) {
+    if (!orgId) { setLocations([]); return; }
+    fetch(`/api/fhir/locations?organization=${encodeURIComponent(orgId)}`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((bundle: { entry?: Array<{ resource?: { id?: string; name?: string } }> }) => {
+        const mapped = (bundle.entry ?? [])
+          .map((e) => e.resource)
+          .filter((r): r is NonNullable<typeof r> => !!r?.id)
+          .map((r) => ({ id: r.id!, name: r.name ?? r.id! }));
+        setLocations(mapped);
+      })
+      .catch(() => {});
+  }
 
   function handleOrgSelect(id: string) {
     if (!id) {
       setOrgFhirId(""); setOrgGln(""); setOrgName("");
+      setLocationId(""); setLocationName(""); setLocations([]);
       return;
     }
     const org = orgs.find((o) => o.id === id);
-    if (org) { setOrgFhirId(org.id); setOrgGln(org.gln); setOrgName(org.name); }
+    if (org) {
+      setOrgFhirId(org.id); setOrgGln(org.gln); setOrgName(org.name);
+      setLocationId(""); setLocationName("");
+      if (ptype === "NAT") fetchLocations(org.id);
+    }
+  }
+
+  function handleLocationSelect(id: string) {
+    if (!id) { setLocationId(""); setLocationName(""); return; }
+    const loc = locations.find((l) => l.id === id);
+    if (loc) { setLocationId(loc.id); setLocationName(loc.name); }
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    // GLN is required for Practitioners (NAT) and Organisations (JUR)
+    // GLN required for NAT (Practitioner) and JUR (Organisation)
     if ((ptype === "NAT" || ptype === "JUR") && !gln.trim()) {
-      setGlnError(t("roles.glnRequired"));
-      return;
+      setGlnError(t("roles.glnRequired")); return;
     }
     if (gln.trim()) {
       const v = validateGln(gln);
@@ -137,17 +167,30 @@ function UserFormModal({ mode, initial, catalog, onSave, onClose, saving, error,
     }
     setGlnError(null);
 
+    // NAT: org + location + at least one roleType required
+    if (ptype === "NAT") {
+      if (!orgFhirId) { alert(t("users.orgRequired")); return; }
+      if (!locationId) { alert(t("users.locationRequired")); return; }
+      if (roleTypes.length === 0) { alert(t("users.roleTypeRequired")); return; }
+    }
+
     const profile = {
-      ...(firstName            && { firstName }),
-      ...(lastName             && { lastName }),
-      ...(email                && { email }),
-      ...(gln                  && { gln }),
-      ...(ahv                  && { ahv }),
       ...(ptype                && { ptype }),
-      ...(roleTypes.length > 0 && { roleTypes }),
-      ...(orgFhirId            && { orgFhirId }),
-      ...(orgGln               && { orgGln }),
-      ...(orgName              && { orgName }),
+      // NAT / other — person fields
+      ...(ptype !== "JUR" && firstName  && { firstName }),
+      ...(ptype !== "JUR" && lastName   && { lastName }),
+      ...(ptype !== "JUR" && ahv        && { ahv }),
+      // JUR — org name stored in organization field
+      ...(ptype === "JUR" && organization && { organization }),
+      ...(email            && { email }),
+      ...(gln              && { gln }),
+      // NAT: org + location + roles
+      ...(ptype === "NAT" && roleTypes.length > 0 && { roleTypes }),
+      ...(orgFhirId        && { orgFhirId }),
+      ...(orgGln           && { orgGln }),
+      ...(orgName          && { orgName }),
+      ...(locationId       && { locationId }),
+      ...(locationName     && { locationName }),
     };
     if (mode === "create") {
       await onSave({
@@ -242,21 +285,55 @@ function UserFormModal({ mode, initial, catalog, onSave, onClose, saving, error,
           {/* Profile section */}
           <div className="border-t border-zt-border pt-3">
             <p className="text-[11px] font-medium text-zt-text-tertiary uppercase tracking-wide mb-3">{t("users.profileSection")}</p>
+
+            {/* ptype selector — always visible */}
+            <div className="mb-3">
+              <label className={labelCls}>{t("users.ptype")}</label>
+              <select className={selectCls} value={ptype} onChange={(e) => {
+                setPtype(e.target.value);
+                setGlnError(null);
+                setLocationId(""); setLocationName(""); setLocations([]);
+                setRoleTypes([]);
+              }}>
+                <option value="">— {t("users.ptypeNone")}</option>
+                <option value="NAT">NAT — {t("users.ptypeNAT")}</option>
+                <option value="JUR">JUR — {t("users.ptypeJUR")}</option>
+              </select>
+            </div>
+
+            {/* JUR: organisation name */}
+            {ptype === "JUR" && (
+              <div className="mb-3">
+                <label className={labelCls}>{t("profile.organizationName")} *</label>
+                <input required className={fieldCls} value={organization} onChange={(e) => setOrganization(e.target.value)} placeholder="Klinik Hirslanden AG" />
+              </div>
+            )}
+
+            {/* NAT / other: first + last name */}
+            {ptype !== "JUR" && (
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div>
+                  <label className={labelCls}>{t("profile.firstName")}</label>
+                  <input className={fieldCls} value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                </div>
+                <div>
+                  <label className={labelCls}>{t("profile.lastName")}</label>
+                  <input className={fieldCls} value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={labelCls}>{t("profile.firstName")}</label>
-                <input className={fieldCls} value={firstName} onChange={(e) => setFirstName(e.target.value)} />
-              </div>
-              <div>
-                <label className={labelCls}>{t("profile.lastName")}</label>
-                <input className={fieldCls} value={lastName} onChange={(e) => setLastName(e.target.value)} />
-              </div>
               <div>
                 <label className={labelCls}>{t("profile.email")}</label>
                 <input type="email" className={fieldCls} value={email} onChange={(e) => setEmail(e.target.value)} />
               </div>
+
+              {/* GLN — required for NAT/JUR, optional for others */}
               <div>
-                <label className={labelCls}>{t("profile.gln")}</label>
+                <label className={labelCls}>
+                  {t("profile.gln")} {(ptype === "NAT" || ptype === "JUR") ? "*" : ""}
+                </label>
                 <input
                   className={`${fieldCls}${glnError ? " border-zt-danger" : ""}`}
                   value={gln}
@@ -271,63 +348,89 @@ function UserFormModal({ mode, initial, catalog, onSave, onClose, saving, error,
                 />
                 {glnError && <p className="mt-1 text-[11px] text-zt-danger">{glnError}</p>}
                 {!glnError && gln.length === 13 && <p className="mt-1 text-[11px] text-zt-success">✓ Gültige GLN</p>}
-                <p className="mt-0.5 text-[10px] text-zt-text-tertiary">Optional · 13 Stellen EAN-13 (nur für Practitioners)</p>
+                {!ptype && <p className="mt-0.5 text-[10px] text-zt-text-tertiary">{t("profile.glnHint")}</p>}
               </div>
-              <div>
-                <label className={labelCls}>{t("profile.ahv")}</label>
-                <input
-                  className={fieldCls}
-                  value={ahv}
-                  onChange={(e) => setAhv(e.target.value)}
-                  placeholder="756.1234.5678.90"
-                  maxLength={16}
+
+              {/* AHV — only for NAT and others, not JUR */}
+              {ptype !== "JUR" && (
+                <div>
+                  <label className={labelCls}>{t("profile.ahv")}</label>
+                  <input
+                    className={fieldCls}
+                    value={ahv}
+                    onChange={(e) => setAhv(e.target.value)}
+                    placeholder="756.1234.5678.90"
+                    maxLength={16}
+                  />
+                  <p className="mt-0.5 text-[10px] text-zt-text-tertiary">{t("profile.ahvHint")}</p>
+                </div>
+              )}
+            </div>
+
+            {/* PractitionerRole (roleTypes) — NAT only, required */}
+            {ptype === "NAT" && (
+              <div className="mt-3">
+                <RoleTagInput
+                  label={`${t("roles.labelRoleTypes")} *`}
+                  value={roleTypes}
+                  onChange={setRoleTypes}
+                  catalog={catalog}
                 />
-                <p className="mt-0.5 text-[10px] text-zt-text-tertiary">Optional · Format: 756.XXXX.XXXX.XX</p>
-              </div>
-              <div>
-                <label className={labelCls}>{t("users.ptype")}</label>
-                <select className={selectCls} value={ptype} onChange={(e) => { setPtype(e.target.value); setGlnError(null); }}>
-                  <option value="">—</option>
-                  <option value="NAT">NAT (Person / Practitioner)</option>
-                  <option value="JUR">JUR (Organisation)</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Role assignment — tag-based multi-select */}
-            <div className="mt-3">
-              <RoleTagInput
-                label={t("roles.labelRoleTypes")}
-                value={roleTypes}
-                onChange={setRoleTypes}
-                catalog={catalog}
-              />
-            </div>
-          </div>
-
-          {/* Organisation section */}
-          <div className="border-t border-zt-border pt-3">
-            <p className="text-[11px] font-medium text-zt-text-tertiary uppercase tracking-wide mb-3">{t("orgs.selectLabel")}</p>
-            <div>
-              <label className={labelCls}>{t("orgs.title")}</label>
-              <select
-                className={selectCls}
-                value={orgFhirId}
-                onChange={(e) => handleOrgSelect(e.target.value)}
-              >
-                <option value="">{t("orgs.selectNone")}</option>
-                {orgs.map((o) => (
-                  <option key={o.id} value={o.id}>{o.name} — GLN {o.gln}</option>
-                ))}
-              </select>
-            </div>
-            {orgFhirId && (
-              <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] text-zt-text-tertiary bg-zt-bg-page border border-zt-border rounded-lg px-3 py-2">
-                <span>FHIR ID: <span className="font-mono text-zt-text-secondary">{orgFhirId}</span></span>
-                <span>GLN: <span className="font-mono text-zt-text-secondary">{orgGln}</span></span>
               </div>
             )}
           </div>
+
+          {/* Organisation + Location — NAT (required) or other (optional), not JUR */}
+          {ptype !== "JUR" && (
+            <div className="border-t border-zt-border pt-3">
+              <p className="text-[11px] font-medium text-zt-text-tertiary uppercase tracking-wide mb-3">
+                {ptype === "NAT" ? t("orgs.sectionNAT") : t("orgs.selectLabel")}
+              </p>
+              <div>
+                <label className={labelCls}>
+                  {t("orgs.title")} {ptype === "NAT" ? "*" : ""}
+                </label>
+                <select className={selectCls} value={orgFhirId} onChange={(e) => handleOrgSelect(e.target.value)}>
+                  <option value="">{t("orgs.selectNone")}</option>
+                  {orgs.map((o) => (
+                    <option key={o.id} value={o.id}>{o.name} — GLN {o.gln}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Location — NAT only, required, filtered by selected org */}
+              {ptype === "NAT" && (
+                <div className="mt-3">
+                  <label className={labelCls}>{t("orgs.location")} *</label>
+                  {locations.length === 0 && orgFhirId ? (
+                    <p className="text-[11px] text-zt-text-tertiary mt-1">{t("orgs.locationNone")}</p>
+                  ) : (
+                    <select
+                      className={selectCls}
+                      value={locationId}
+                      onChange={(e) => handleLocationSelect(e.target.value)}
+                      disabled={!orgFhirId}
+                    >
+                      <option value="">{t("orgs.selectLocation")}</option>
+                      {locations.map((l) => (
+                        <option key={l.id} value={l.id}>{l.name}</option>
+                      ))}
+                    </select>
+                  )}
+                  {!orgFhirId && (
+                    <p className="mt-0.5 text-[10px] text-zt-text-tertiary">{t("orgs.selectOrgFirst")}</p>
+                  )}
+                </div>
+              )}
+
+              {orgFhirId && (
+                <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] text-zt-text-tertiary bg-zt-bg-page border border-zt-border rounded-lg px-3 py-2">
+                  <span>FHIR ID: <span className="font-mono text-zt-text-secondary">{orgFhirId}</span></span>
+                  <span>GLN: <span className="font-mono text-zt-text-secondary">{orgGln}</span></span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Footer */}

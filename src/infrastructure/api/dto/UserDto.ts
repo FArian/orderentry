@@ -30,6 +30,8 @@ export interface UserProfileDto {
   orgGln?: string;
   orgName?: string;
   orgFhirId?: string;
+  locationId?: string;   // FHIR Location.id — required for NAT
+  locationName?: string; // display name
 }
 
 // ── Request DTOs ──────────────────────────────────────────────────────────────

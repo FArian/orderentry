@@ -209,6 +209,9 @@
     "firstName": "First name",
     "lastName": "Last name",
     "organization": "Organisation / Practice",
+    "organizationName": "Organisation name",
+    "glnHint": "Optional · 13-digit EAN-13",
+    "ahvHint": "Optional · Format: 756.XXXX.XXXX.XX",
     "localId": "Additional ID (e.g. ZSR, internal identifier)",
     "street": "Street",
     "streetNo": "No.",
@@ -562,7 +565,13 @@
     "statTotal": "Total",
     "statAdmins": "Administrators",
     "statPendingSync": "Sync pending",
-    "statErrors": "Sync errors"
+    "statErrors": "Sync errors",
+    "ptypeNone": "No type (regular person)",
+    "ptypeNAT": "Natural person / Practitioner",
+    "ptypeJUR": "Legal entity / Organisation (ordering party)",
+    "orgRequired": "Please select an organisation.",
+    "locationRequired": "Please select a location.",
+    "roleTypeRequired": "Please select at least one role."
   },
   "bs": {
     "title": "Cover Sheet",
@@ -727,7 +736,12 @@
     "colParent": "Parent Org.",
     "parent": "Parent Organization",
     "parentNone": "— None (Top-Level) —",
-    "parentHint": "Optional: This organization belongs to a parent organization (e.g. a department within a clinic)."
+    "parentHint": "Optional: This organization belongs to a parent organization (e.g. a department within a clinic).",
+    "sectionNAT": "Affiliated Organisation & Location",
+    "location": "Location",
+    "selectLocation": "— Select location —",
+    "locationNone": "No locations found for this organisation.",
+    "selectOrgFirst": "Select an organisation first."
   },
   "mail": {
     "title": "Mail Server Configuration",

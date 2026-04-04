@@ -209,6 +209,9 @@
     "firstName": "Vorname",
     "lastName": "Nachname",
     "organization": "Organisation / Praxis",
+    "organizationName": "Name der Organisation",
+    "glnHint": "Optional · 13 Stellen EAN-13",
+    "ahvHint": "Optional · Format: 756.XXXX.XXXX.XX",
     "localId": "Weitere ID (z.B. ZSR, interne Kennung)",
     "street": "Strasse",
     "streetNo": "Nr.",
@@ -562,7 +565,13 @@
     "statTotal": "Gesamt",
     "statAdmins": "Administratoren",
     "statPendingSync": "Sync ausstehend",
-    "statErrors": "Sync-Fehler"
+    "statErrors": "Sync-Fehler",
+    "ptypeNone": "Keine Angabe (normale Person)",
+    "ptypeNAT": "Natürliche Person / Practitioner",
+    "ptypeJUR": "Juristische Person / Organisation (Auftraggeber)",
+    "orgRequired": "Bitte eine Organisation auswählen.",
+    "locationRequired": "Bitte einen Standort auswählen.",
+    "roleTypeRequired": "Bitte mindestens eine Rolle auswählen."
   },
   "bs": {
     "title": "Begleitschein",
@@ -727,7 +736,12 @@
     "colParent": "Übergeordnete Org.",
     "parent": "Übergeordnete Organisation",
     "parentNone": "— Keine (Top-Level) —",
-    "parentHint": "Optional: Diese Organisation ist Teil einer übergeordneten Organisation (z.B. Abteilung einer Klinik)."
+    "parentHint": "Optional: Diese Organisation ist Teil einer übergeordneten Organisation (z.B. Abteilung einer Klinik).",
+    "sectionNAT": "Zugehörige Organisation & Standort",
+    "location": "Standort (Location)",
+    "selectLocation": "— Standort auswählen —",
+    "locationNone": "Keine Standorte für diese Organisation gefunden.",
+    "selectOrgFirst": "Zuerst eine Organisation auswählen."
   },
   "mail": {
     "title": "Mail-Server-Konfiguration",

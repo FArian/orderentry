@@ -21,6 +21,7 @@ import type { ManagedUserProfile } from "@/domain/entities/ManagedUser";
 const GLN_SYSTEM      = "https://www.gs1.org/gln";
 const LOCAL_ID_SYSTEM = "https://www.zetlab.ch/fhir/identifier/local-id";
 const ROLE_SYSTEM     = "urn:oid:2.51.1.3.roleType";
+const LAB_ORG_ID      = process.env.NEXT_PUBLIC_LAB_ORG_ID ?? "zlz"; // Auftragnehmer (Labor)
 
 // ── Result type ───────────────────────────────────────────────────────────────
 
@@ -125,6 +126,10 @@ export class PractitionerMapper {
       active: true,
       practitioner: { reference: `Practitioner/${practId}` },
       ...(p.orgGln && { organization: { reference: `Organization/${orgId}` } }),
+      // FHIR R4: PractitionerRole.location[] — required for NAT users
+      ...(p.locationId && {
+        location: [{ reference: `Location/${p.locationId}`, display: p.locationName }],
+      }),
     };
     // Resolve role codes: prefer roleTypes[] (multi-role), fall back to single roleType.
     const roleCodes: string[] = p.roleTypes?.length
@@ -177,6 +182,21 @@ export class PractitionerMapper {
       }));
     }
     entries.push(this.entry(org));
+
+    // OrganizationAffiliation: Auftraggeber (JUR) ↔ Labor (ZLZ)
+    // FHIR R4: organization = Labor (Auftragnehmer), participatingOrganization = Klinik (Auftraggeber)
+    const affId = `aff-${LAB_ORG_ID}-${orgId}`;
+    entries.push(this.entry({
+      resourceType: "OrganizationAffiliation",
+      id: affId,
+      active: true,
+      organization: { reference: `Organization/${LAB_ORG_ID}` },
+      participatingOrganization: { reference: `Organization/${orgId}` },
+      code: [{
+        coding: [{ system: "http://hl7.org/fhir/organization-role", code: "laboratory", display: "Laboratory" }],
+        text: "Labor-Dienstleister",
+      }],
+    }));
 
     const ok = await this.postBundle(entries);
     if (!ok.success) return ok;

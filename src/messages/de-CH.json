@@ -557,7 +557,13 @@
     "statTotal": "Gsamt",
     "statAdmins": "Administratore",
     "statPendingSync": "Sync ausstehend",
-    "statErrors": "Sync-Fehler"
+    "statErrors": "Sync-Fehler",
+    "ptypeNone": "Keini Angabe (normali Person)",
+    "ptypeNAT": "Natürlechi Person / Practitioner",
+    "ptypeJUR": "Juriistischi Person / Organisation (Auftraggeber)",
+    "orgRequired": "Bitte e Organisation uswähle.",
+    "locationRequired": "Bitte en Standort uswähle.",
+    "roleTypeRequired": "Bitte mindestens ei Rolle uswähle."
   },
   "bs": {
     "title": "Begleitschein",
@@ -722,7 +728,12 @@
     "colParent": "Übergeordneti Org.",
     "parent": "Übergeordneti Organisation",
     "parentNone": "— Kei (Top-Level) —",
-    "parentHint": "Optional: Die Organisation ghört zu ere übergeordnete Organisation (z.B. Abteili vo ere Klinik)."
+    "parentHint": "Optional: Die Organisation ghört zu ere übergeordnete Organisation (z.B. Abteili vo ere Klinik).",
+    "sectionNAT": "Zugehörige Organisation & Standort",
+    "location": "Standort (Location)",
+    "selectLocation": "— Standort uswähle —",
+    "locationNone": "Kein Standort für dii Organisation gfunde.",
+    "selectOrgFirst": "Zerscht e Organisation uswähle."
   },
   "mail": {
     "title": "Mail-Server-Konfiguration",

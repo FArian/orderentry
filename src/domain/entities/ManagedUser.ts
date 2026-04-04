@@ -32,6 +32,9 @@ export interface ManagedUserProfile {
   orgGln?: string;
   orgName?: string;
   orgFhirId?: string;
+  locationId?: string;   // FHIR Location.id — required for NAT (PractitionerRole.location)
+  locationName?: string; // display name of the location
+  ahv?: string;          // Swiss AHV/AVS/AVS number
 }
 
 export interface ManagedUser {

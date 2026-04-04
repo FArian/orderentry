@@ -209,6 +209,9 @@
     "firstName": "Nome",
     "lastName": "Cognome",
     "organization": "Organizzazione / Studio",
+    "organizationName": "Nome dell'organizzazione",
+    "glnHint": "Opzionale · 13 cifre EAN-13",
+    "ahvHint": "Opzionale · Formato: 756.XXXX.XXXX.XX",
     "localId": "ID aggiuntivo (es. ZSR, identificatore interno)",
     "street": "Via",
     "streetNo": "N.",
@@ -562,7 +565,13 @@
     "statTotal": "Totale",
     "statAdmins": "Amministratori",
     "statPendingSync": "Sync in attesa",
-    "statErrors": "Errori di sync"
+    "statErrors": "Errori di sync",
+    "ptypeNone": "Nessun tipo (persona normale)",
+    "ptypeNAT": "Persona fisica / Operatore sanitario",
+    "ptypeJUR": "Persona giuridica / Organizzazione (committente)",
+    "orgRequired": "Selezionare un'organizzazione.",
+    "locationRequired": "Selezionare una sede.",
+    "roleTypeRequired": "Selezionare almeno un ruolo."
   },
   "bs": {
     "title": "Borderò",
@@ -727,7 +736,12 @@
     "colParent": "Org. superiore",
     "parent": "Organizzazione superiore",
     "parentNone": "— Nessuna (livello superiore) —",
-    "parentHint": "Opzionale: Questa organizzazione appartiene a un'organizzazione superiore (p.es. reparto di una clinica)."
+    "parentHint": "Opzionale: Questa organizzazione appartiene a un'organizzazione superiore (p.es. reparto di una clinica).",
+    "sectionNAT": "Organizzazione affiliata e sede",
+    "location": "Sede (Location)",
+    "selectLocation": "— Selezionare sede —",
+    "locationNone": "Nessuna sede trovata per questa organizzazione.",
+    "selectOrgFirst": "Selezionare prima un'organizzazione."
   },
   "mail": {
     "title": "Configurazione server mail",

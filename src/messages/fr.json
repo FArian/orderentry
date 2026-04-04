@@ -209,6 +209,9 @@
     "firstName": "Prénom",
     "lastName": "Nom",
     "organization": "Organisation / Cabinet",
+    "organizationName": "Nom de l'organisation",
+    "glnHint": "Optionnel · 13 chiffres EAN-13",
+    "ahvHint": "Optionnel · Format: 756.XXXX.XXXX.XX",
     "localId": "ID supplémentaire (p.ex. ZSR, identifiant interne)",
     "street": "Rue",
     "streetNo": "N°",
@@ -562,7 +565,13 @@
     "statTotal": "Total",
     "statAdmins": "Administrateurs",
     "statPendingSync": "Sync en attente",
-    "statErrors": "Erreurs de sync"
+    "statErrors": "Erreurs de sync",
+    "ptypeNone": "Sans type (personne ordinaire)",
+    "ptypeNAT": "Personne physique / Praticien",
+    "ptypeJUR": "Personne morale / Organisation (donneur d'ordre)",
+    "orgRequired": "Veuillez sélectionner une organisation.",
+    "locationRequired": "Veuillez sélectionner un site.",
+    "roleTypeRequired": "Veuillez sélectionner au moins un rôle."
   },
   "bs": {
     "title": "Bordereau",
@@ -727,7 +736,12 @@
     "colParent": "Org. parente",
     "parent": "Organisation parente",
     "parentNone": "— Aucune (niveau supérieur) —",
-    "parentHint": "Optionnel: Cette organisation fait partie d'une organisation parente (p.ex. un service d'une clinique)."
+    "parentHint": "Optionnel: Cette organisation fait partie d'une organisation parente (p.ex. un service d'une clinique).",
+    "sectionNAT": "Organisation affiliée & site",
+    "location": "Site (Location)",
+    "selectLocation": "— Sélectionner un site —",
+    "locationNone": "Aucun site trouvé pour cette organisation.",
+    "selectOrgFirst": "Sélectionnez d'abord une organisation."
   },
   "mail": {
     "title": "Configuration du serveur mail",
