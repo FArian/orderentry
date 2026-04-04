@@ -1,14 +1,15 @@
 /**
  * Next.js 15 instrumentation entry point.
  *
- * Delegates to initTelemetry, which routes to telemetry.node.ts (Docker/Node)
- * or telemetry.edge.ts (Edge/Vercel) based on two independent build-time
- * mechanisms. See src/infrastructure/telemetry/initTelemetry.ts for details.
+ * All OTel code lives in instrumentation.node.ts.
+ * Next.js has a built-in webpack plugin that physically excludes any file
+ * named *.node.ts from the Edge compilation — Vercel's __vc__ns__ bundler
+ * respects this convention. The dynamic import below is never followed
+ * in the Edge bundle because the file does not exist in that bundle.
  */
 
 export async function register(): Promise<void> {
-  const { initTelemetry } = await import(
-    "@/infrastructure/telemetry/initTelemetry"
-  );
-  await initTelemetry();
+  if (process.env.NEXT_RUNTIME === "nodejs") {
+    await import("./instrumentation.node");
+  }
 }
