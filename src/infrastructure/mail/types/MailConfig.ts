@@ -5,7 +5,7 @@
  * nodemailer's transport layer is the only consumer of this type.
  *
  * ENV variable mapping:
- *   MAIL_PROVIDER      smtp | gmail | smtp_oauth2 | google_workspace_relay
+ *   MAIL_PROVIDER      smtp | gmail | smtp_oauth2 | google_workspace_relay | hin
  *   MAIL_AUTH_TYPE     APP_PASSWORD | OAUTH2 | NONE
  *   MAIL_HOST          SMTP host (required for smtp, smtp_oauth2, relay)
  *   MAIL_PORT          SMTP port (default: 587)
@@ -24,7 +24,8 @@ export type MailProvider =
   | "smtp"
   | "gmail"
   | "smtp_oauth2"
-  | "google_workspace_relay";
+  | "google_workspace_relay"
+  | "hin";
 
 export type MailAuthType = "APP_PASSWORD" | "OAUTH2" | "NONE";
 
@@ -33,6 +34,7 @@ export const MAIL_PROVIDERS: readonly MailProvider[] = [
   "gmail",
   "smtp_oauth2",
   "google_workspace_relay",
+  "hin",
 ];
 
 export const MAIL_AUTH_TYPES: readonly MailAuthType[] = [
@@ -50,6 +52,7 @@ export const PROVIDER_AUTH_MATRIX: Record<MailProvider, readonly MailAuthType[]>
   gmail:                   ["APP_PASSWORD", "OAUTH2"],
   smtp_oauth2:             ["OAUTH2"],
   google_workspace_relay:  ["NONE", "APP_PASSWORD"],
+  hin:                     ["APP_PASSWORD"],
 };
 
 export interface MailConfig {

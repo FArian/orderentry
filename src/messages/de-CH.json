@@ -738,7 +738,21 @@
     "reference": "Konfigurationsreferenz",
     "referenceDesc": "Provider und Authentifizierigsmethode wähle, um d'erforderliche ENV-Variablen azzeigä.",
     "allProviders": "Alli Provider",
-    "securityNotice": "Zugangsdatä (Passwörter, OAuth2-Tokens, Client-Secrets) dörfä nie über d'Admin-UI bearbeitet werde. Sie müssä direkt als Umgebigsvariable gsetzt werde."
+    "securityNotice": "Zugangsdatä (Passwörter, OAuth2-Tokens, Client-Secrets) dörfä nie über d'Admin-UI bearbeitet werde. Sie müssä direkt als Umgebigsvariable gsetzt werde.",
+    "serverPresetLabel": "Mail-Server uswähle",
+    "serverPresetChoose": "— Server uswähle oder eigene igäh —",
+    "serverHostPlaceholder": "z.B. mail.zlz.ch",
+    "hinConfigured": "Konfiguriert und aktiv",
+    "hinConfiguredText": "HIN isch als Mail-Provider iigrichte. Patientedaten und Laborbefund werde lut nDSG verschlüsselt übertrage.",
+    "hinNdsgTitle": "nDSG-Pflicht: Verschlüsselig erforderlich",
+    "hinNdsgText": "Lut em nDSG (in Kraft sit 1. Sept. 2023) müend Patientedaten und Laborbefund verschlüsselt übertrage werde. HIN isch dr anerkannte Standard im Schwiizer Gesundheitswese.",
+    "hinOption1": "Infomaniak Mail + HIN-Zertifikat (empfohle — SMTP-kompatibel, CHF 50–200/Mt.)",
+    "hinOption2": "SeppMail HIN Connector (Gateway-Lösig, transparent für nodemailer)",
+    "hinOption3": "HIN Mail Gateway direkt (Enterprise-Lizenz, Kontakt: hin.ch)",
+    "hinMore": "Ohni HIN oder gleichwertigi S/MIME-Verschlüsselig dörfed Patientedaten nur mit expliziter schriftlicher Iiwiiligung per E-Mail verschickt werde.",
+    "smtpHelp": "Für interne Spital- und Labor-SMTP-Server sowie externe Standard-Provider. Unterstützt STARTTLS (Port 587) und SSL/TLS (Port 465). Empfohle für Produktionsumgebige.",
+    "gmailHelp": "Nur für Entwicklig und Tests empfohle — nid für medizinischi Produktionsumgebige geignet. Gmail het Versandlimits und isch kein medizinisch zertifizierter Mail-Provider.",
+    "contactHint": "Bi Konfigurationsproblem wändet ihr euch a:"
   },
   "deeplink": {
     "error": {

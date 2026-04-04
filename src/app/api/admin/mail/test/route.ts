@@ -1,9 +1,17 @@
 /**
- * POST /api/mail/test
+ * POST /api/admin/mail/test
  *
- * Legacy path — delegates to the canonical POST /api/admin/mail/test handler.
- * Kept for backward compatibility with any existing callers.
- * New code should call /api/admin/mail/test directly.
+ * Verifies the configured SMTP connection and optionally sends a test email.
+ * Requires admin role. Delegates all logic to MailController.
+ *
+ * Request body (optional JSON):
+ *   { "to": "recipient@example.com" }
+ *
+ * Responses:
+ *   200 { ok: true,  message, provider, from, durationMs }
+ *   502 { ok: false, message, provider, durationMs }        — SMTP unreachable / auth failed
+ *   503 { ok: false, message }                              — MAIL_PROVIDER not configured
+ *   401 / 403                                               — auth required
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -26,7 +34,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     body = (await req.json()) as MailTestRequestDto;
   } catch {
-    // empty body — verify-only
+    // empty or non-JSON body — treat as verify-only request
   }
 
   const result = await mailController.test(body);

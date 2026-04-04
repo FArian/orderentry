@@ -1,16 +1,28 @@
 /**
  * Next.js 15 instrumentation entry point.
  *
- * This file intentionally contains NO imports and NO references to any
- * Node.js-only module. Vercel's Edge bundler analyzes this file statically
- * and follows every import string — even inside runtime guards.
+ * Called once on server startup (Node.js runtime only — not Edge).
+ * Dynamic imports inside the `nodejs` guard are safe: the Edge bundler
+ * never follows runtime-conditional import() calls.
  *
- * OpenTelemetry initialization lives in instrumentation.node.ts.
- * Next.js 15 calls register() from that file AUTOMATICALLY on the Node.js
- * runtime — no import from here is needed or allowed.
+ * Responsibilities:
+ *  1. Run DB migrations (SQLite auto-migrate; PostgreSQL via Prisma migrate deploy)
+ *  2. Start OpenTelemetry SDK (opt-in via ENABLE_TRACING + TRACING_URL)
  */
 
 export async function register(): Promise<void> {
-  // Intentionally empty.
-  // Node.js startup is handled by instrumentation.node.ts (auto-called by Next.js).
+  if (process.env.NEXT_RUNTIME !== "nodejs") return;
+
+  // ── 1. DB migrations ────────────────────────────────────────────────────────
+  try {
+    const { runMigrations } = await import("@/infrastructure/db/runMigrations");
+    await runMigrations();
+  } catch (err) {
+    console.error("[db] Migration failed — server will not start:", err);
+    process.exit(1);
+  }
+
+  // ── 2. OpenTelemetry tracing (opt-in) ───────────────────────────────────────
+  const { register: registerOtel } = await import("./instrumentation.node");
+  await registerOtel();
 }

@@ -1,0 +1,88 @@
+/**
+ * RouteRegistry — declarative catalogue of all versioned API routes.
+ *
+ * Purpose:
+ *   - Single source of truth for what routes exist under /api/v1
+ *   - Used by the gateway for structured logging context
+ *   - Used by health/introspection endpoints to list registered routes
+ *   - NOT a runtime router — Next.js file-system routing handles dispatch
+ *
+ * Rule: every new v1 route MUST have an entry here AND in openapi.ts.
+ * If the route is not in both places, it does not officially exist.
+ */
+
+import type { ApiVersion, GatewayAuth } from "./ApiGateway";
+
+export type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
+
+export interface RouteEntry {
+  readonly method:   HttpMethod;
+  /** Full versioned path, e.g. "/v1/admin/mail/test" */
+  readonly path:     string;
+  readonly version:  ApiVersion;
+  readonly tag:      string;
+  readonly auth:     GatewayAuth;
+  readonly summary:  string;
+}
+
+/**
+ * All registered v1 API routes.
+ * Append new entries here when adding a new versioned endpoint.
+ */
+export const V1_ROUTES: readonly RouteEntry[] = [
+
+  // ── Auth ────────────────────────────────────────────────────────────────────
+  { method: "POST",   path: "/v1/auth/login",                    version: "v1", tag: "Auth",   auth: "public", summary: "Login" },
+  { method: "POST",   path: "/v1/auth/logout",                   version: "v1", tag: "Auth",   auth: "public", summary: "Logout" },
+  { method: "GET",    path: "/v1/auth/me",                       version: "v1", tag: "Auth",   auth: "public", summary: "Current session" },
+  { method: "POST",   path: "/v1/auth/signup",                   version: "v1", tag: "Auth",   auth: "public", summary: "Register user" },
+  { method: "POST",   path: "/v1/auth/token",                    version: "v1", tag: "Auth",   auth: "public", summary: "Obtain JWT access token" },
+  { method: "POST",   path: "/v1/auth/reset-password/request",   version: "v1", tag: "Auth",   auth: "public", summary: "Request password reset email" },
+  { method: "POST",   path: "/v1/auth/reset-password/confirm",   version: "v1", tag: "Auth",   auth: "public", summary: "Confirm password reset" },
+
+  // ── Users ───────────────────────────────────────────────────────────────────
+  { method: "GET",    path: "/v1/users",                         version: "v1", tag: "Users",  auth: "admin", summary: "List users" },
+  { method: "POST",   path: "/v1/users",                         version: "v1", tag: "Users",  auth: "admin", summary: "Create user" },
+  { method: "GET",    path: "/v1/users/:id",                     version: "v1", tag: "Users",  auth: "admin", summary: "Get user" },
+  { method: "PUT",    path: "/v1/users/:id",                     version: "v1", tag: "Users",  auth: "admin", summary: "Update user" },
+  { method: "DELETE", path: "/v1/users/:id",                     version: "v1", tag: "Users",  auth: "admin", summary: "Delete user" },
+  { method: "POST",   path: "/v1/users/:id/sync",                version: "v1", tag: "Users",  auth: "admin", summary: "Sync user to FHIR Practitioner" },
+  { method: "POST",   path: "/v1/users/:id/token",               version: "v1", tag: "Users",  auth: "admin", summary: "Generate personal access token" },
+
+  // ── Config / Env ────────────────────────────────────────────────────────────
+  { method: "GET",    path: "/v1/config",                        version: "v1", tag: "Config", auth: "admin", summary: "Get runtime config" },
+  { method: "POST",   path: "/v1/config",                        version: "v1", tag: "Config", auth: "admin", summary: "Update runtime config" },
+  { method: "GET",    path: "/v1/env",                           version: "v1", tag: "Config", auth: "admin", summary: "Get environment variables" },
+  { method: "POST",   path: "/v1/env",                           version: "v1", tag: "Config", auth: "admin", summary: "Write environment variables" },
+  { method: "GET",    path: "/v1/env/schema",                    version: "v1", tag: "Config", auth: "admin", summary: "Get ENV variable schema" },
+
+  // ── Mail ────────────────────────────────────────────────────────────────────
+  { method: "GET",    path: "/v1/admin/mail/status",             version: "v1", tag: "Mail",   auth: "admin", summary: "Mail configuration status" },
+  { method: "POST",   path: "/v1/admin/mail/test",               version: "v1", tag: "Mail",   auth: "admin", summary: "Test mail connection / send test email" },
+
+  // ── Health ──────────────────────────────────────────────────────────────────
+  { method: "GET",    path: "/v1/health",                        version: "v1", tag: "Health", auth: "public", summary: "Application health check" },
+  { method: "GET",    path: "/v1/health/db",                     version: "v1", tag: "Health", auth: "public", summary: "Database health check" },
+
+  // ── FHIR proxy ──────────────────────────────────────────────────────────────
+  { method: "GET",    path: "/v1/proxy/fhir/patients",                              version: "v1", tag: "FHIR", auth: "public", summary: "Search patients" },
+  { method: "GET",    path: "/v1/proxy/fhir/patients/:id",                          version: "v1", tag: "FHIR", auth: "public", summary: "Get patient" },
+  { method: "GET",    path: "/v1/proxy/fhir/patients/:id/service-requests",         version: "v1", tag: "FHIR", auth: "public", summary: "Patient orders" },
+  { method: "GET",    path: "/v1/proxy/fhir/patients/:id/diagnostic-reports",       version: "v1", tag: "FHIR", auth: "public", summary: "Patient results" },
+  { method: "GET",    path: "/v1/proxy/fhir/service-requests",                      version: "v1", tag: "FHIR", auth: "public", summary: "List service requests" },
+  { method: "GET",    path: "/v1/proxy/fhir/service-requests/:id",                  version: "v1", tag: "FHIR", auth: "public", summary: "Get service request" },
+  { method: "GET",    path: "/v1/proxy/fhir/diagnostic-reports",                    version: "v1", tag: "FHIR", auth: "public", summary: "List diagnostic reports" },
+
+  // ── HL7 proxy ───────────────────────────────────────────────────────────────
+  { method: "POST",   path: "/v1/proxy/hl7/inbound",             version: "v1", tag: "HL7",   auth: "public", summary: "HL7 inbound message" },
+  { method: "POST",   path: "/v1/proxy/hl7/outbound",            version: "v1", tag: "HL7",   auth: "public", summary: "HL7 outbound message" },
+
+  // ── Metrics ─────────────────────────────────────────────────────────────────
+  { method: "GET",    path: "/v1/metrics",                       version: "v1", tag: "Observability", auth: "public", summary: "Prometheus metrics" },
+
+] as const;
+
+/** Look up a route by method + path for gateway logging. */
+export function findRoute(method: string, path: string): RouteEntry | undefined {
+  return V1_ROUTES.find((r) => r.method === method && r.path === path);
+}

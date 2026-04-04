@@ -13,6 +13,7 @@
  *   gmail + APP_PASSWORD    → { service:"gmail", auth: { user, pass } }
  *   gmail + OAUTH2          → { service:"gmail", auth: { type:"OAuth2", … } }
  *   google_workspace_relay  → { host:"smtp-relay.gmail.com", port:587, … }
+ *   hin + APP_PASSWORD      → standard SMTP (HIN encryption is transparent at gateway level)
  */
 
 import nodemailer, { type Transporter, type TransportOptions } from "nodemailer";

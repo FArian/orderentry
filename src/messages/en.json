@@ -743,7 +743,21 @@
     "reference": "Configuration Reference",
     "referenceDesc": "Select provider and authentication method to see the required ENV variables.",
     "allProviders": "All Providers",
-    "securityNotice": "Credentials (passwords, OAuth2 tokens, client secrets) must never be edited via the Admin UI. They must be set directly as environment variables (MAIL_PASSWORD, MAIL_OAUTH_CLIENT_SECRET, MAIL_OAUTH_REFRESH_TOKEN)."
+    "securityNotice": "Credentials (passwords, OAuth2 tokens, client secrets) must never be edited via the Admin UI. They must be set directly as environment variables (MAIL_PASSWORD, MAIL_OAUTH_CLIENT_SECRET, MAIL_OAUTH_REFRESH_TOKEN).",
+    "serverPresetLabel": "Select mail server",
+    "serverPresetChoose": "— Select a server or enter a custom one —",
+    "serverHostPlaceholder": "e.g. mail.company.com",
+    "hinConfigured": "Configured and active",
+    "hinConfiguredText": "HIN is set up as the mail provider. Patient data and lab results are transmitted encrypted in compliance with nDSG.",
+    "hinNdsgTitle": "nDSG obligation: encryption required",
+    "hinNdsgText": "Under the revised Swiss Data Protection Act (nDSG, in force since 1 Sept. 2023), patient data and lab results must be transmitted encrypted. HIN (Health Info Net) is the recognised standard in Swiss healthcare.",
+    "hinOption1": "Infomaniak Mail + HIN certificate (recommended — SMTP-compatible, CHF 50–200/month)",
+    "hinOption2": "SeppMail HIN Connector (gateway solution, transparent to nodemailer)",
+    "hinOption3": "HIN Mail Gateway directly (enterprise licence, contact: hin.ch)",
+    "hinMore": "Without HIN or equivalent S/MIME encryption, patient data may only be sent by email with explicit written consent from the patient.",
+    "smtpHelp": "Use for internal hospital or laboratory SMTP servers and standard external providers. Supports STARTTLS (port 587) and SSL/TLS (port 465). Recommended for production environments.",
+    "gmailHelp": "Recommended for development and testing only — not suitable for medical production environments. Gmail has sending limits (500 emails/day) and is not a medically certified mail provider.",
+    "contactHint": "For configuration issues, contact:"
   },
   "deeplink": {
     "error": {

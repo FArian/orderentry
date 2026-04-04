@@ -47,8 +47,12 @@ export const openApiSpec = {
   },
   servers: [
     {
+      url: "/api/v1",
+      description: "API v1 — stable, recommended for all external clients and integrations",
+    },
+    {
       url: "/api",
-      description: "Current deployment",
+      description: "Unversioned — legacy path, maintained for backward compatibility",
     },
   ],
   tags: [
@@ -833,6 +837,151 @@ export const openApiSpec = {
       },
     },
 
+    // ── Mail (admin) ──────────────────────────────────────────────────────────
+    "/admin/mail/status": {
+      get: {
+        tags: ["Mail"],
+        summary: "Mail configuration status",
+        description:
+          "Returns the current mail provider configuration. " +
+          "No secrets (passwords, tokens) are ever included. Requires admin role.",
+        operationId: "getMailStatus",
+        responses: {
+          "200": {
+            description: "Current mail status",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/MailStatusResponse" },
+              },
+            },
+          },
+          "401": { description: "Not authenticated" },
+          "403": { description: "Forbidden — admin role required" },
+        },
+      },
+    },
+
+    "/admin/mail/test": {
+      post: {
+        tags: ["Mail"],
+        summary: "Test mail connection",
+        description:
+          "Verifies the SMTP connection and optionally sends a test email to the given address. " +
+          "Requires admin role. Never logs credentials.",
+        operationId: "testMail",
+        requestBody: {
+          required: false,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/MailTestRequest" },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "SMTP verification succeeded (optionally: test email sent)",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/MailTestResponse" },
+              },
+            },
+          },
+          "502": {
+            description: "SMTP unreachable or authentication failed",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/MailTestResponse" },
+              },
+            },
+          },
+          "503": {
+            description: "MAIL_PROVIDER not configured",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/MailTestResponse" },
+              },
+            },
+          },
+          "401": { description: "Not authenticated" },
+          "403": { description: "Forbidden — admin role required" },
+        },
+      },
+    },
+
+    // ── Mail v1 (gateway-wrapped, recommended paths) ──────────────────────────
+    "/v1/admin/mail/status": {
+      get: {
+        tags: ["Mail"],
+        summary: "Mail configuration status (v1)",
+        description:
+          "Returns the current mail provider configuration via the API Gateway. " +
+          "No secrets are ever included. Requires admin role.\n\n" +
+          "**Preferred over** `GET /admin/mail/status` for all new integrations.",
+        operationId: "getMailStatusV1",
+        responses: {
+          "200": {
+            description: "Current mail status",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/MailStatusResponse" },
+              },
+            },
+          },
+          "401": { description: "Not authenticated" },
+          "403": { description: "Forbidden — admin role required" },
+        },
+      },
+    },
+
+    "/v1/admin/mail/test": {
+      post: {
+        tags: ["Mail"],
+        summary: "Test mail connection (v1)",
+        description:
+          "Verifies the SMTP connection and optionally sends a test email, " +
+          "routed through the API Gateway (request ID, structured logging, error normalisation). " +
+          "Requires admin role.\n\n" +
+          "**Preferred over** `POST /admin/mail/test` for all new integrations.",
+        operationId: "testMailV1",
+        requestBody: {
+          required: false,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/MailTestRequest" },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "SMTP verification succeeded",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/MailTestResponse" },
+              },
+            },
+          },
+          "502": {
+            description: "SMTP unreachable or authentication failed",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/MailTestResponse" },
+              },
+            },
+          },
+          "503": {
+            description: "MAIL_PROVIDER not configured",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/MailTestResponse" },
+              },
+            },
+          },
+          "401": { description: "Not authenticated" },
+          "403": { description: "Forbidden — admin role required" },
+        },
+      },
+    },
+
     // ── Auth ──────────────────────────────────────────────────────────────────
     "/login": {
       post: {
@@ -1466,58 +1615,31 @@ export const openApiSpec = {
       },
     },
 
-    // ── Mail ─────────────────────────────────────────────────────────────────
+    // ── Mail (legacy — use /admin/mail/test or /v1/admin/mail/test) ──────────
     "/mail/test": {
       post: {
         tags: ["Mail"],
-        summary: "Test mail server connection (optionally send a test email)",
+        summary: "Test mail server connection (deprecated — use /admin/mail/test)",
         description:
-          "Verifies the configured mail server connection using whatever provider + auth " +
-          "is currently set via `MAIL_*` ENV variables.\n\n" +
-          "Optionally sends a real test email to a specified address.\n\n" +
-          "Always returns HTTP 200 — check the `ok` field for success.\n\n" +
-          "**Supported providers:** `smtp` · `gmail` · `smtp_oauth2` · `google_workspace_relay`\n\n" +
-          "**Auth methods:** `APP_PASSWORD` · `OAUTH2` · `NONE`",
-        operationId: "testMail",
+          "**Deprecated.** Use `POST /admin/mail/test` (or preferably `POST /v1/admin/mail/test`) instead.\n\n" +
+          "This path is kept for backward compatibility only and may be removed in a future version.",
+        operationId: "testMailLegacy",
+        deprecated: true,
         security: [{ sessionCookie: [] }, { bearerAuth: [] }],
         requestBody: {
           required: false,
           content: {
             "application/json": {
               schema: { $ref: "#/components/schemas/MailTestRequest" },
-              examples: {
-                verifyOnly: {
-                  summary: "Connection check only",
-                  value: {},
-                },
-                withEmail: {
-                  summary: "Connection check + send test email",
-                  value: { sendEmail: true, to: "admin@example.com" },
-                },
-              },
             },
           },
         },
         responses: {
           "200": {
-            description: "Test result (ok=true = success, ok=false = error)",
+            description: "Test result — see POST /admin/mail/test for full schema",
             content: {
               "application/json": {
                 schema: { $ref: "#/components/schemas/MailTestResponse" },
-                examples: {
-                  success: {
-                    summary: "Connection OK",
-                    value: { ok: true, message: "Mail server reachable and authentication successful", provider: "smtp", from: "noreply@example.com" },
-                  },
-                  notConfigured: {
-                    summary: "Not configured",
-                    value: { ok: false, message: "Mail server not configured — set MAIL_PROVIDER in environment variables" },
-                  },
-                  authFailed: {
-                    summary: "Auth failure",
-                    value: { ok: false, message: "Invalid login: 535 5.7.8 Error: authentication failed", provider: "smtp" },
-                  },
-                },
               },
             },
           },
@@ -2251,8 +2373,7 @@ export const openApiSpec = {
       MailTestRequest: {
         type: "object",
         properties: {
-          sendEmail: { type: "boolean", description: "If true, a test email is sent to `to`" },
-          to:        { type: "string",  description: "Recipient address for the test email (required when sendEmail=true)" },
+          to: { type: "string", format: "email", description: "If provided, a test email is sent to this address after SMTP verify" },
         },
       },
 
@@ -2260,10 +2381,11 @@ export const openApiSpec = {
         type: "object",
         required: ["ok", "message"],
         properties: {
-          ok:       { type: "boolean", description: "`true` = connection and auth successful" },
-          message:  { type: "string",  description: "Human-readable status or error message" },
-          provider: { type: "string",  nullable: true, description: "Active mail provider (e.g. `smtp`, `gmail`)" },
-          from:     { type: "string",  nullable: true, description: "Configured sender address" },
+          ok:         { type: "boolean", description: "`true` = SMTP verify (and optional send) succeeded" },
+          message:    { type: "string",  description: "Human-readable result or error description" },
+          provider:   { type: "string",  nullable: true, description: "Active provider key (smtp|gmail|smtp_oauth2|google_workspace_relay|hin)" },
+          from:       { type: "string",  nullable: true, description: "Sender address used" },
+          durationMs: { type: "integer", nullable: true, description: "Round-trip duration in milliseconds" },
         },
       },
 
@@ -2315,6 +2437,21 @@ export const openApiSpec = {
           mailProvider:   { type: "string", nullable: true, description: "Active mail provider (smtp|gmail|smtp_oauth2|google_workspace_relay). Empty = disabled." },
           mailAuthType:   { type: "string", nullable: true, description: "Active mail auth method (APP_PASSWORD|OAUTH2|NONE)" },
           mailFrom:       { type: "string", nullable: true, description: "Configured sender address (display-only)" },
+        },
+      },
+
+      // ── Mail status schema ───────────────────────────────────────────────────
+
+      MailStatusResponse: {
+        type: "object",
+        required: ["configured"],
+        properties: {
+          configured: { type: "boolean", description: "true when MAIL_PROVIDER is set and valid" },
+          provider:   { type: "string",  nullable: true, description: "Active provider key (smtp|gmail|smtp_oauth2|google_workspace_relay|hin)" },
+          authType:   { type: "string",  nullable: true, description: "Active auth type (APP_PASSWORD|OAUTH2|NONE)" },
+          host:       { type: "string",  nullable: true, description: "SMTP hostname (absent for gmail)" },
+          port:       { type: "integer", nullable: true, description: "SMTP port" },
+          from:       { type: "string",  nullable: true, description: "Configured sender address (display-only)" },
         },
       },
 

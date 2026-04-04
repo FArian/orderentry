@@ -743,7 +743,21 @@
     "reference": "Konfigurationsreferenz",
     "referenceDesc": "Wählen Sie Provider und Authentifizierungsmethode, um die erforderlichen ENV-Variablen anzuzeigen.",
     "allProviders": "Alle Provider",
-    "securityNotice": "Zugangsdaten (Passwörter, OAuth2-Tokens, Client-Secrets) dürfen nie über die Admin-UI bearbeitet werden. Sie müssen direkt als Umgebungsvariablen gesetzt werden (MAIL_PASSWORD, MAIL_OAUTH_CLIENT_SECRET, MAIL_OAUTH_REFRESH_TOKEN)."
+    "securityNotice": "Zugangsdaten (Passwörter, OAuth2-Tokens, Client-Secrets) dürfen nie über die Admin-UI bearbeitet werden. Sie müssen direkt als Umgebungsvariablen gesetzt werden (MAIL_PASSWORD, MAIL_OAUTH_CLIENT_SECRET, MAIL_OAUTH_REFRESH_TOKEN).",
+    "serverPresetLabel": "Mail-Server auswählen",
+    "serverPresetChoose": "— Server auswählen oder eigenen eingeben —",
+    "serverHostPlaceholder": "z.B. mail.zlz.ch",
+    "hinConfigured": "Konfiguriert und aktiv",
+    "hinConfiguredText": "HIN ist als Mail-Provider eingerichtet. Patientendaten und Laborbefunde werden gemäss nDSG verschlüsselt übertragen.",
+    "hinNdsgTitle": "nDSG-Pflicht: Verschlüsselung erforderlich",
+    "hinNdsgText": "Gemäss dem revidierten Datenschutzgesetz (nDSG, in Kraft seit 1. Sept. 2023) müssen Patientendaten und Laborbefunde verschlüsselt übertragen werden. HIN (Health Info Net) ist der anerkannte Standard im Schweizer Gesundheitswesen.",
+    "hinOption1": "Infomaniak Mail + HIN-Zertifikat (empfohlen — SMTP-kompatibel, CHF 50–200/Mt.)",
+    "hinOption2": "SeppMail HIN Connector (Gateway-Lösung, transparent für nodemailer)",
+    "hinOption3": "HIN Mail Gateway direkt (Enterprise-Lizenz, Kontakt: hin.ch)",
+    "hinMore": "Ohne HIN oder gleichwertige S/MIME-Verschlüsselung dürfen Patientendaten nur mit expliziter schriftlicher Einwilligung per E-Mail versandt werden.",
+    "smtpHelp": "Für interne Spital- und Labor-SMTP-Server sowie externe Standard-Provider. Unterstützt STARTTLS (Port 587) und SSL/TLS (Port 465). Empfohlen für Produktionsumgebungen.",
+    "gmailHelp": "Nur für Entwicklung und Tests empfohlen — nicht für medizinische Produktionsumgebungen geeignet. Gmail unterliegt Versandlimits (500 E-Mails/Tag) und ist kein medizinisch zertifizierter Mail-Provider.",
+    "contactHint": "Bei Konfigurationsproblemen wenden Sie sich an:"
   },
   "deeplink": {
     "error": {

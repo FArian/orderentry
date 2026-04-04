@@ -194,23 +194,40 @@ const WADL = `<?xml version="1.0" encoding="UTF-8"?>
       </method>
     </resource>
 
-    <!-- ── Mail ─────────────────────────────────────────────────────── -->
+    <!-- ── Mail (Admin) ─────────────────────────────────────────────── -->
+    <!-- Preferred paths: /v1/admin/mail/status and /v1/admin/mail/test  -->
 
-    <resource path="/mail/test">
+    <resource path="/admin/mail/status">
+      <method name="GET" id="getMailStatus">
+        <doc>
+          Returns the current mail provider configuration status.
+          No credentials or secrets are ever included in the response.
+          Admin role required.
+        </doc>
+        <response status="200">
+          <doc>{ configured: boolean, provider?: string, authType?: string, host?: string, port?: number, from?: string }</doc>
+        </response>
+        <response status="401"><doc>Not authenticated.</doc></response>
+        <response status="403"><doc>Admin role required.</doc></response>
+      </method>
+    </resource>
+
+    <resource path="/admin/mail/test">
       <method name="POST" id="testMail">
         <doc>
-          Tests the configured mail server connection (MAIL_PROVIDER + MAIL_AUTH_TYPE).
-          Optionally sends a real test email. Always returns HTTP 200;
-          use the "ok" field to determine success. Admin role required.
-          Body (optional): { sendEmail?: boolean; to?: string }
+          Verifies the configured SMTP connection (MAIL_PROVIDER + MAIL_AUTH_TYPE).
+          If "to" is provided, a real test email is also sent.
+          Admin role required.
         </doc>
         <request>
           <representation mediaType="application/json">
-            <param name="sendEmail" style="plain" type="xsd:boolean" required="false"/>
-            <param name="to"        style="plain" type="xsd:string"  required="false"/>
+            <param name="to" style="plain" type="xsd:string" required="false"
+                   description="Recipient address — if provided, a test email is sent after SMTP verify"/>
           </representation>
         </request>
-        <response status="200"><doc>{ ok: boolean, message: string, provider?: string, from?: string }</doc></response>
+        <response status="200"><doc>{ ok: true,  message: string, provider?: string, from?: string, durationMs?: number }</doc></response>
+        <response status="502"><doc>{ ok: false, message: string, provider?: string, durationMs?: number } — SMTP unreachable</doc></response>
+        <response status="503"><doc>{ ok: false, message: string } — MAIL_PROVIDER not configured</doc></response>
         <response status="401"><doc>Not authenticated.</doc></response>
         <response status="403"><doc>Admin role required.</doc></response>
       </method>

@@ -70,6 +70,39 @@ services:
     profiles:
       - pgadmin    # nur mit: docker compose ... --profile pgadmin up -d
 
+  # ── Mailpit — Fake SMTP Server für lokale Entwicklung ────────────────────
+  # Fängt alle ausgehenden Mails ab — kein echter Mail-Server nötig.
+  # Web-UI: http://localhost:8025
+  # SMTP:   localhost:1025  (kein Auth, kein TLS)
+  #
+  # ENV für die App:
+  #   MAIL_PROVIDER=smtp
+  #   MAIL_AUTH_TYPE=NONE
+  #   MAIL_HOST=mailpit   (oder localhost wenn App ausserhalb Docker läuft)
+  #   MAIL_PORT=1025
+  #   MAIL_FROM=test@localhost
+  #
+  # Start: docker compose -f src/infrastructure/db/docker/docker-compose.yml \
+  #          --profile mail-test up -d
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: zetlab-mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # Web-UI
+    environment:
+      MP_MAX_MESSAGES: 500          # max gespeicherte Mails
+      MP_SMTP_AUTH_ACCEPT_ANY: 1    # beliebige Auth-Daten akzeptieren
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+    profiles:
+      - mail-test
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8025"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
 volumes:
   zetlab-pg-data:
     name: zetlab-pg-data

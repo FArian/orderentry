@@ -743,7 +743,21 @@
     "reference": "Référence de configuration",
     "referenceDesc": "Sélectionnez le fournisseur et la méthode d'authentification pour voir les variables ENV requises.",
     "allProviders": "Tous les fournisseurs",
-    "securityNotice": "Les identifiants (mots de passe, jetons OAuth2, secrets client) ne doivent jamais être modifiés via l'interface Admin. Ils doivent être définis directement comme variables d'environnement."
+    "securityNotice": "Les identifiants (mots de passe, jetons OAuth2, secrets client) ne doivent jamais être modifiés via l'interface Admin. Ils doivent être définis directement comme variables d'environnement.",
+    "serverPresetLabel": "Sélectionner le serveur de messagerie",
+    "serverPresetChoose": "— Sélectionner un serveur ou saisir le vôtre —",
+    "serverHostPlaceholder": "p.ex. mail.entreprise.com",
+    "hinConfigured": "Configuré et actif",
+    "hinConfiguredText": "HIN est configuré comme fournisseur de messagerie. Les données patients et les résultats de laboratoire sont transmis de manière chiffrée conformément à la nLPD.",
+    "hinNdsgTitle": "Obligation nLPD : chiffrement requis",
+    "hinNdsgText": "Conformément à la loi révisée sur la protection des données (nLPD, en vigueur depuis le 1er sept. 2023), les données patients et les résultats de laboratoire doivent être transmis de manière chiffrée. HIN (Health Info Net) est la norme reconnue dans le système de santé suisse.",
+    "hinOption1": "Infomaniak Mail + certificat HIN (recommandé — compatible SMTP, CHF 50–200/mois)",
+    "hinOption2": "SeppMail HIN Connector (solution gateway, transparent pour nodemailer)",
+    "hinOption3": "HIN Mail Gateway direct (licence entreprise, contact : hin.ch)",
+    "hinMore": "Sans HIN ou chiffrement S/MIME équivalent, les données patients ne peuvent être envoyées par e-mail qu'avec le consentement écrit explicite du patient.",
+    "smtpHelp": "Pour les serveurs SMTP internes des hôpitaux et laboratoires ainsi que les prestataires externes standard. Prend en charge STARTTLS (port 587) et SSL/TLS (port 465). Recommandé pour les environnements de production.",
+    "gmailHelp": "Recommandé uniquement pour le développement et les tests — non adapté aux environnements médicaux de production. Gmail est soumis à des limites d'envoi (500 e-mails/jour) et n'est pas un fournisseur de messagerie certifié médical.",
+    "contactHint": "Pour les problèmes de configuration, contactez :"
   },
   "deeplink": {
     "error": {

@@ -20,15 +20,6 @@ import {
 } from "@opentelemetry/semantic-conventions";
 
 export async function register(): Promise<void> {
-  // ── Run DB migrations before the first request ───────────────────────────────
-  try {
-    const { runMigrations } = await import("@/infrastructure/db/runMigrations");
-    await runMigrations();
-  } catch (err) {
-    console.error("[db] Migration failed — server will not start:", err);
-    process.exit(1);
-  }
-
   // ── OpenTelemetry tracing (optional) ─────────────────────────────────────────
   if ((process.env.ENABLE_TRACING ?? "").trim().toLowerCase() !== "true") return;
 
