@@ -76,6 +76,14 @@ interface UserFormModalProps {
   t: (k: string) => string;
 }
 
+function inferPtype(profile?: UserResponseDto["profile"]): string {
+  if (profile?.ptype) return profile.ptype;
+  // Legacy users (created before ptype was mandatory): infer from profile shape.
+  // JUR users always have `organization` set and no firstName/lastName.
+  if (profile?.organization && !profile?.firstName && !profile?.lastName) return "JUR";
+  return "";
+}
+
 function UserFormModal({ mode, initial, catalog, onSave, onClose, saving, error, t }: UserFormModalProps) {
   const [username,     setUsername]     = useState(initial?.username     ?? "");
   const [password,     setPassword]     = useState("");
@@ -87,7 +95,7 @@ function UserFormModal({ mode, initial, catalog, onSave, onClose, saving, error,
   const [lastName,     setLastName]     = useState(initial?.profile?.lastName    ?? "");
   const [email,        setEmail]        = useState(initial?.profile?.email       ?? "");
   const [gln,          setGln]          = useState(initial?.profile?.gln         ?? "");
-  const [ptype,        setPtype]        = useState(initial?.profile?.ptype       ?? "");
+  const [ptype,        setPtype]        = useState(() => inferPtype(initial?.profile));
   const [roleTypes,    setRoleTypes]    = useState<string[]>(initial?.profile?.roleTypes ?? []);
   const [glnError,      setGlnError]     = useState<string | null>(null);
   const [ahv,           setAhv]          = useState(initial?.profile?.ahv          ?? "");
