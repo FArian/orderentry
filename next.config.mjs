@@ -5,29 +5,35 @@ const nextConfig = {
   output: process.env.VERCEL ? undefined : "standalone",
 
   /**
-   * Tell Next.js NOT to bundle these packages — they are required as external
-   * Node.js modules at runtime.  This prevents webpack from inlining OTel
-   * into the server bundle and, crucially, prevents Vercel's Edge analyser
-   * from following their transitive imports into @opentelemetry/api.
+   * Mark all @opentelemetry/* and @grpc/* packages as Node.js externals.
+   *
+   * This tells Next.js (and Vercel's build pipeline) not to bundle these
+   * packages. They are loaded at runtime from node_modules on the Node.js
+   * server. The Edge bundle never receives a reference because:
+   *
+   *   1. serverExternalPackages excludes them from bundling analysis.
+   *   2. instrumentation.ts guards the dynamic import with process.env.VERCEL,
+   *      which the bundler constant-folds to "1" on Vercel builds, making the
+   *      import statically dead code (see instrumentation.ts for details).
    */
   serverExternalPackages: [
+    "@opentelemetry/api",
     "@opentelemetry/sdk-node",
     "@opentelemetry/exporter-trace-otlp-http",
     "@opentelemetry/auto-instrumentations-node",
     "@opentelemetry/resources",
     "@opentelemetry/semantic-conventions",
-    "@opentelemetry/api",
+    "@grpc/grpc-js",
+    "@grpc/proto-loader",
   ],
 
   /**
-   * Exclude the entire @opentelemetry/* and @grpc/* package namespaces from
-   * Webpack bundling. These packages use Node.js built-ins (fs, stream, tls,
-   * net, http, path, zlib) that Webpack cannot resolve for the browser bundle.
+   * Webpack externals for the Node.js server bundle.
    *
-   * instrumentation.ts is a server-only Next.js hook — the OTel SDK must only
-   * run in the Node.js runtime. Using a webpack externals function covers all
-   * transitive dependencies automatically, which is why we use this approach
-   * instead of a static serverExternalPackages list (whack-a-mole otherwise).
+   * serverExternalPackages handles the module exclusion at the Next.js level.
+   * This webpack function provides a complementary regex-based exclusion that
+   * catches all transitive @opentelemetry/* and @grpc/* sub-packages that are
+   * not listed explicitly above (e.g. @opentelemetry/instrumentation-http).
    */
   webpack(config, { isServer }) {
     if (isServer) {
@@ -40,12 +46,6 @@ const nextConfig = {
       config.externals = [
         ...prior,
         ({ request }, callback) => {
-          // Exclude server-only packages that use Node.js built-ins
-          // (stream, fs, tls, net, http, path, zlib, …).
-          // These are only used in instrumentation.ts (OTel SDK) and API routes —
-          // they must never enter the Webpack client bundle.
-          //   @opentelemetry/* — OTLP exporters, auto-instrumentations
-          //   @grpc/*          — gRPC transport (transitive OTel dep)
           if (/^(@opentelemetry|@grpc)\//.test(request)) {
             return callback(null, `commonjs ${request}`);
           }
