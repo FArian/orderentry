@@ -259,6 +259,192 @@ Pro Klinik ein eigener API-Key — Revocation möglich ohne andere Kliniken zu b
 
 ---
 
+## Vorschläge / Offene Punkte (noch nicht eingeplant)
+
+Die folgenden Punkte fehlen noch im aktuellen Design und sollten vor oder während
+Phase 3 entschieden werden.
+
+---
+
+### A. Offline-Puffer (Resilienz)
+
+**Problem:** Was passiert, wenn die Cloud vorübergehend nicht erreichbar ist?
+
+**Vorschlag:** Agent puffert ADT-Dateien lokal in einem Warteverzeichnis:
+
+```
+/var/adt/pending/    ← neue ADT-Dateien vom PIS
+/var/adt/sent/       ← erfolgreich hochgeladen (behalten für Audit)
+/var/adt/failed/     ← nach N Retries → manuell prüfen
+```
+
+- Retry-Logik: exponentielles Backoff (5s → 30s → 5min)
+- Nach Wiederherstellung der Verbindung: Pending-Queue automatisch abarbeiten
+- Timeout pro Datei konfigurierbar (`AGENT_RETRY_MAX_HOURS=24`)
+
+**Warum wichtig:** Kliniken arbeiten rund um die Uhr. Kurze Cloud-Ausfälle (Update,
+Netzwerkproblem) dürfen den lokalen Ablauf nicht unterbrechen.
+
+---
+
+### B. Datei-Deduplizierung (Doppel-Upload verhindern)
+
+**Problem:** Dir-Watcher könnte dieselbe HL7-Datei zweimal senden (Neustart,
+Crash, Retry).
+
+**Vorschlag:** Gelesene Dateien mit SHA-256 Hash in einer lokalen SQLite-DB
+(oder `.sent`-Datei) markieren:
+
+```
+/var/adt/sent.db    ← Tabelle: (filename, sha256, uploaded_at)
+```
+
+- Vor Upload: Hash prüfen → wenn bekannt, überspringen + loggen
+- Hash wird nach erfolgreichem Upload gespeichert
+- DB-Grösse begrenzen: Einträge älter als 30 Tage löschen
+
+---
+
+### C. Health Endpoint (lokale Überwachung)
+
+**Vorschlag:** Agent öffnet einen lokalen HTTP-Port nur für Health-Checks:
+
+```
+GET http://localhost:7890/health   → 200 { status: "ok", version: "1.2.0", lastPoll: "..." }
+GET http://localhost:7890/metrics  → Prometheus text (optional)
+```
+
+- Nur lokal erreichbar (`127.0.0.1`) — kein Netzwerkzugang von aussen
+- Erlaubt Docker `HEALTHCHECK` und systemd/Windows-Service-Monitor
+- OrderEntry `/api/v1/agent/status` bleibt der Cloud-seitige Check
+
+**ENV:** `AGENT_HEALTH_PORT=7890` (0 = deaktiviert)
+
+---
+
+### D. Agent Auto-Update
+
+**Vorschlag:** Agent vergleicht beim `/api/v1/agent/status` Poll seine eigene
+Version mit der vom Server gemeldeten Mindestversion:
+
+```json
+{ "minAgentVersion": "1.3.0", "latestAgentVersion": "1.4.2" }
+```
+
+- Wenn `minAgentVersion > current` → Agent loggt kritische Warnung, Admin-Mail
+- Wenn `latestAgentVersion > current` → optionaler Auto-Download + Neustart
+- Download-URL: `AGENT_UPDATE_URL` (default: GitHub Releases oder interner Server)
+
+**Warum wichtig:** Kliniken installieren selten manuell. Auto-Update verhindert
+veraltete Agents im Feld.
+
+---
+
+### E. `X-Clinic-ID` Header (Multi-Tenant Logging)
+
+**Vorschlag:** Agent sendet bei jedem Request einen zusätzlichen Header:
+
+```
+X-Clinic-ID: org-123
+X-Agent-Version: 1.2.0
+```
+
+- OrderEntry loggt `clinicId` in jedem strukturierten Log-Eintrag
+- Ermöglicht spätere Auswertung: welche Klinik sendet wie viele ADT/ORU?
+- `X-Clinic-ID` = FHIR Organization ID (aus Agent-Config)
+
+---
+
+### F. Startup-Validierung
+
+**Vorschlag:** Beim Start prüft der Agent alle Voraussetzungen bevor er in den
+Polling-Loop eintritt:
+
+```
+[ ] AGENT_ORDERENTRY_URL erreichbar (HTTP 200/401)
+[ ] API-Key gültig (GET /api/v1/agent/status → 200)
+[ ] ADT_WATCH_DIR existiert und ist lesbar
+[ ] ORU_OUTPUT_DIR existiert und ist schreibbar
+[ ] PDF_OUTPUT_DIR existiert und ist schreibbar
+[ ] Drucker erreichbar (CUPS-Abfrage oder TCP-Ping auf Zebra-IP)
+```
+
+- Bei kritischem Fehler: Agent beendet sich mit Exit-Code 1 (systemd/Windows
+  Service startet nicht → sofortige Fehlermeldung statt stilles Versagen)
+- Nicht-kritische Fehler (Drucker fehlt): Warnung loggen, Agent startet trotzdem
+
+---
+
+### G. Graceful Shutdown
+
+**Vorschlag:** SIGTERM / SIGINT abfangen — laufenden Job fertig verarbeiten,
+dann sauber beenden:
+
+```
+SIGTERM empfangen
+  → polling-Loop stoppen
+  → aktuellen Job (ORU schreiben / Druckjob) abschliessen
+  → pending ADT-Dateien in Queue schieben (nicht verlieren)
+  → Exit 0
+```
+
+Wichtig für:
+- Windows-Service-Stop (SCM wartet auf sauberes Exit)
+- Docker `docker stop` (sendet SIGTERM, wartet 10s, dann SIGKILL)
+- systemd `systemctl stop`
+
+---
+
+### H. Audit Log (lokal)
+
+**Vorschlag:** Agent schreibt ein lokales Audit-Log (append-only):
+
+```
+/var/log/zetlab-agent.log
+2026-04-04T14:32:01Z  ADT  SENT     patient_123.hl7  sha256:abc123
+2026-04-04T14:32:06Z  ORU  WRITTEN  oru_456.hl7      → /var/oru/
+2026-04-04T14:32:07Z  PDF  PRINTED  job_789.pdf      → HP_LaserJet
+2026-04-04T14:35:00Z  ADT  RETRY    patient_124.hl7  attempt=2
+```
+
+- Format: structured JSON oder TSV (maschinenlesbar)
+- Rotation: täglich, max. 30 Tage aufbewahren
+- Wichtig für Datenschutz-Audit (nDSG): was wurde wann übertragen?
+
+**ENV:** `AGENT_LOG_FILE=/var/log/zetlab-agent.log`, `AGENT_LOG_RETENTION_DAYS=30`
+
+---
+
+### I. Watchdog / Hang Detection
+
+**Problem:** Job-Poller könnte bei einem fehlerhaften Druckjob oder einem
+blockierten Netzwerk-Call hängen bleiben.
+
+**Vorschlag:** Jeder Job-Lauf hat ein konfigurierbares Timeout:
+
+```
+AGENT_JOB_TIMEOUT_MS=30000   # 30 Sekunden pro Job
+```
+
+- Wenn ein Job nicht innerhalb Timeout abgeschlossen: abbrechen, als `failed`
+  markieren, nächster Poll-Zyklus beginnt
+- Separater Watchdog-Thread: wenn Haupt-Loop > 5× Polling-Intervall keine
+  Aktivität → Alert loggen + optional Neustart
+
+---
+
+## Auth-Konzept
+
+```
+Klinik registriert sich → erhält API-Key (PAT)
+Agent konfiguriert API-Key → sendet bei jedem Request als Bearer Token
+OrderEntry validiert Bearer Token → identifiziert Klinik
+```
+
+Pro Klinik ein eigener API-Key — Revocation möglich ohne andere Kliniken zu beeinflussen.
+
+---
+
 ## Referenzen
 
 - `CLAUDE.md` → Abschnitt "Orchestra Integration"
