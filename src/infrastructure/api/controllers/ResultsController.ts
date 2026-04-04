@@ -52,15 +52,8 @@ export class ResultsController {
       orgGln,
     } = query;
 
-    // Org access is required — no org means no result data.
-    if (!orgFhirId && !orgGln) {
-      return buildOperationOutcome(
-        "error",
-        "forbidden",
-        "Kein Organisationszugang. Bitte Organisations-GLN im Profil hinterlegen.",
-        403,
-      );
-    }
+    // No org filter = internal lab user (ZLZ/ZetLab Systembetreiber) → sees all results.
+    // External Auftraggeber always have orgGln/orgFhirId configured → filtered to their org.
 
     const safePage     = Math.max(1, page);
     const safePageSize = Math.max(1, pageSize);

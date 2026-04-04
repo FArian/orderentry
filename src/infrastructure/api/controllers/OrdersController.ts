@@ -49,15 +49,8 @@ export class OrdersController {
   async list(query: ListOrdersQueryDto = {}): Promise<OrdersBundleResponse> {
     const { orgFhirId, orgGln } = query;
 
-    // Org access is required — no org means no order data.
-    if (!orgFhirId && !orgGln) {
-      return buildOperationOutcome(
-        "error",
-        "forbidden",
-        "Kein Organisationszugang. Bitte Organisations-GLN im Profil hinterlegen.",
-        403,
-      );
-    }
+    // No org filter = internal lab user (ZLZ/ZetLab Systembetreiber) → sees all orders.
+    // External Auftraggeber always have orgGln/orgFhirId configured → filtered to their org.
 
     this.log.debug("list ServiceRequests", { orgFhirId, orgGln });
     try {
