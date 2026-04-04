@@ -9,6 +9,7 @@
  */
 
 import { FHIR_BASE } from "@/infrastructure/fhir/FhirClient";
+import { EnvConfig } from "@/infrastructure/config/EnvConfig";
 import { createLogger, type Logger } from "@/infrastructure/logging/Logger";
 import { OrderStatus } from "@/domain/entities/Order";
 import {
@@ -58,7 +59,7 @@ export class OrdersController {
       if (orgFhirId) {
         url.searchParams.set("subject:Patient.organization", `Organization/${orgFhirId}`);
       } else if (orgGln) {
-        url.searchParams.set("subject:Patient.organization:identifier", `https://www.gs1.org/gln|${orgGln}`);
+        url.searchParams.set("subject:Patient.organization:identifier", `${EnvConfig.fhirSystems.gln}|${orgGln}`);
       }
       url.searchParams.set("_sort", "-_lastUpdated");
       url.searchParams.set("_count", "50");

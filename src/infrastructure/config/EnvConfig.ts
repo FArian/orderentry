@@ -34,6 +34,26 @@ export const EnvConfig = {
     "http://localhost:8080/fhir",
   ),
 
+  /**
+   * FHIR identifier system URIs for Swiss and global registries.
+   * All values can be overridden via environment variables.
+   * Defaults are the current official system URIs — correct as of 2025.
+   */
+  fhirSystems: {
+    /** GS1 Global Location Number — https://www.gs1.org/standards/id-keys/gln */
+    gln:  str(process.env.FHIR_SYSTEM_GLN,  "https://www.gs1.org/gln"),
+    /** Swiss AHV/AVS Social Security Number */
+    ahv:  str(process.env.FHIR_SYSTEM_AHV,  "urn:oid:2.16.756.5.32"),
+    /** Swiss VeKa insurance card number */
+    veka: str(process.env.FHIR_SYSTEM_VEKA, "urn:oid:2.16.756.5.30.1.123.100.1.1"),
+    /** santésuisse Zahlstellenregister (ZSR) */
+    zsr:  str(process.env.FHIR_SYSTEM_ZSR,  "urn:oid:2.16.756.5.30.1.123.100.2.1.1"),
+    /** Swiss Unternehmens-Identifikation (UID / CHE-number) */
+    uid:  str(process.env.FHIR_SYSTEM_UID,  "urn:oid:2.16.756.5.35"),
+    /** Swiss Betriebseinheitsnummer BFS (BUR) */
+    bur:  str(process.env.FHIR_SYSTEM_BUR,  "urn:oid:2.16.756.5.45"),
+  },
+
   // ── Auth ──────────────────────────────────────────────────────────────────
   /** HMAC secret used to sign session cookies. Must be ≥32 chars in production. */
   authSecret: str(process.env.AUTH_SECRET, "dev-secret-change-me"),

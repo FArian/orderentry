@@ -6,6 +6,7 @@
  */
 
 import { FHIR_BASE } from "@/infrastructure/fhir/FhirClient";
+import { EnvConfig } from "@/infrastructure/config/EnvConfig";
 import { createLogger, type Logger } from "@/infrastructure/logging/Logger";
 import {
   buildOperationOutcome,
@@ -64,7 +65,7 @@ export class ResultsController {
       if (orgFhirId) {
         u.searchParams.set("subject:Patient.organization", `Organization/${orgFhirId}`);
       } else if (orgGln) {
-        u.searchParams.set("subject:Patient.organization:identifier", `https://www.gs1.org/gln|${orgGln}`);
+        u.searchParams.set("subject:Patient.organization:identifier", `${EnvConfig.fhirSystems.gln}|${orgGln}`);
       }
     };
 

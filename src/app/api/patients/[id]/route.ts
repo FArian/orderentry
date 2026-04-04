@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { FHIR_BASE, FHIR_SYSTEMS } from "@/lib/fhir";
+import { EnvConfig } from "@/infrastructure/config/EnvConfig";
 
 export async function GET(
   _request: Request,
@@ -86,9 +87,9 @@ export async function PUT(
     // Build updated identifiers
     const updated: FhirIdentifier[] = [...kept];
     if (body.ahv)
-      updated.push({ system: "urn:oid:2.16.756.5.32", value: body.ahv });
+      updated.push({ system: EnvConfig.fhirSystems.ahv, value: body.ahv });
     if (body.veka)
-      updated.push({ system: "urn:oid:2.16.756.5.30.1.123.100.1.1", value: body.veka });
+      updated.push({ system: EnvConfig.fhirSystems.veka, value: body.veka });
     if (body.ik)
       updated.push({
         system: FHIR_SYSTEMS.ik,

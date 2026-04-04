@@ -15,12 +15,11 @@
  */
 
 import { FHIR_BASE } from "@/infrastructure/fhir/FhirClient";
+import { EnvConfig } from "@/infrastructure/config/EnvConfig";
 import { fhirOrganizationsController, type FhirOrganization } from "./FhirOrganizationsController";
 import { fhirPractitionersController, type FhirPractitioner, type FhirPractitionerRole as FhirRole } from "./FhirPractitionersController";
 import type { FhirOrganizationDto, FhirPractitionerDto } from "../dto/FhirRegistryDto";
 import type { FhirBundle } from "@/infrastructure/fhir/FhirTypes";
-
-const GLN_SYSTEM = "https://www.gs1.org/gln";
 
 // ── DTOs ───────────────────────────────────────────────────────────────────────
 
@@ -67,7 +66,7 @@ function parseOrgBundle(bundle: FhirBundle<FhirOrganization>): FhirOrganizationD
     .map((org) => ({
       id:   org.id!,
       name: org.name ?? "",
-      gln:  org.identifier?.find((i) => i.system === GLN_SYSTEM)?.value ?? "",
+      gln:  org.identifier?.find((i) => i.system === EnvConfig.fhirSystems.gln)?.value ?? "",
     }));
 }
 
@@ -101,7 +100,7 @@ function parsePractBundle(
         id:                 pract?.id ?? practId,
         firstName:          name?.given?.[0] ?? "",
         lastName:           name?.family ?? "",
-        gln:                pract?.identifier?.find((i) => i.system === GLN_SYSTEM)?.value ?? "",
+        gln:                pract?.identifier?.find((i) => i.system === EnvConfig.fhirSystems.gln)?.value ?? "",
         organizationId:     orgId,
         organizationName:   "",
         roleCode:           (role.code?.[0] as { coding?: Array<{ code?: string }> } | undefined)?.coding?.[0]?.code ?? "",

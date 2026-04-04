@@ -14,17 +14,17 @@
 
 import { FHIR_BASE } from "@/infrastructure/fhir/FhirClient";
 import { createLogger, type Logger } from "@/infrastructure/logging/Logger";
+import { EnvConfig } from "@/infrastructure/config/EnvConfig";
 import type { ManagedUserProfile } from "@/domain/entities/ManagedUser";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const GLN_SYSTEM      = "https://www.gs1.org/gln";
 const LOCAL_ID_SYSTEM = "https://www.zetlab.ch/fhir/identifier/local-id";
-const ZSR_SYSTEM      = "urn:oid:2.16.756.5.30.1.123.100.2.1.1"; // santésuisse Zahlstellenregister
-const UID_SYSTEM      = "urn:oid:2.16.756.5.35";                  // Swiss Unternehmens-ID (UID/CHE)
-const BUR_SYSTEM      = "urn:oid:2.16.756.5.45";                  // Swiss Betriebseinheitsnummer (BUR)
 const ROLE_SYSTEM     = "urn:oid:2.51.1.3.roleType";
 const LAB_ORG_ID      = process.env.NEXT_PUBLIC_LAB_ORG_ID ?? "zlz"; // Auftragnehmer (Labor)
+
+// FHIR system URIs — configurable via ENV (FHIR_SYSTEM_GLN, FHIR_SYSTEM_ZSR, etc.)
+const { gln: GLN_SYSTEM, zsr: ZSR_SYSTEM, uid: UID_SYSTEM, bur: BUR_SYSTEM } = EnvConfig.fhirSystems;
 
 // ── Result type ───────────────────────────────────────────────────────────────
 

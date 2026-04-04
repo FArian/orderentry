@@ -1,22 +1,21 @@
 import { NextResponse } from "next/server";
 import { getSessionFromCookies } from "@/lib/auth";
 import { fhirGet } from "@/infrastructure/fhir/FhirClient";
+import { EnvConfig } from "@/infrastructure/config/EnvConfig";
 
 /**
  * GET /api/fhir/gln-search?gln={13-digit-gln}[&resourceType=Organization]
  *
  * Searches the FHIR server for a Practitioner or Organization by GLN.
  * Standard FHIR R4 identifier search:
- *   Practitioner?identifier=https://www.gs1.org/gln|{gln}&_count=1
- *   Organization?identifier=https://www.gs1.org/gln|{gln}&_count=1
+ *   Practitioner?identifier={FHIR_SYSTEM_GLN}|{gln}&_count=1
+ *   Organization?identifier={FHIR_SYSTEM_GLN}|{gln}&_count=1
  *
  * If resourceType=Organization is passed, only Organizations are searched.
  * Otherwise Practitioner is tried first, then Organization.
  *
  * Requires session auth (not admin-only).
  */
-
-const GLN_SYSTEM = "https://www.gs1.org/gln";
 
 interface FhirName {
   use?: string;
@@ -46,7 +45,7 @@ export interface GlnSearchResult {
 }
 
 async function searchFhir(resourceType: "Practitioner" | "Organization", gln: string): Promise<FhirResource | null> {
-  const identifier = `${GLN_SYSTEM}|${gln}`;
+  const identifier = `${EnvConfig.fhirSystems.gln}|${gln}`;
   try {
     const bundle = await fhirGet<FhirBundle>(`/${resourceType}`, {
       identifier,
