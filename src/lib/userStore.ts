@@ -16,6 +16,7 @@ import { userRepository } from "@/infrastructure/repositories/PrismaUserReposito
 
 export type UserProfile = {
   gln?:         string;
+  ahv?:         string;
   localId?:     string;
   ptype?:       string;
   roleType?:    string;

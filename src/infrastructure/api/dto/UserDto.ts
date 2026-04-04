@@ -11,6 +11,7 @@ import type { UserFhirSyncStatus, UserProviderType, UserRole, UserStatus } from 
 
 export interface UserProfileDto {
   gln?: string;
+  ahv?: string;
   localId?: string;
   ptype?: string;
   roleType?: string;    // single — backward compat

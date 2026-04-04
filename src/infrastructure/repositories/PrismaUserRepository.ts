@@ -85,6 +85,10 @@ export class PrismaUserRepository implements IUserRepository {
     // Convert string dates to Date objects for Prisma
     if (typeof data["fhirSyncedAt"] === "string") data["fhirSyncedAt"] = new Date(data["fhirSyncedAt"] as string);
     if (typeof data["apiTokenCreatedAt"] === "string") data["apiTokenCreatedAt"] = new Date(data["apiTokenCreatedAt"] as string);
+    // Serialize profile object to JSON string (SQLite stores profile as TEXT)
+    if (data["profile"] !== undefined && data["profile"] !== null && typeof data["profile"] === "object") {
+      data["profile"] = JSON.stringify(data["profile"]);
+    }
     // Remove undefined keys
     for (const key of Object.keys(data)) {
       if (data[key] === undefined) delete data[key];

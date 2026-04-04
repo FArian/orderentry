@@ -90,15 +90,27 @@ function UserFormModal({ mode, initial, catalog, onSave, onClose, saving, error,
   const [ptype,        setPtype]        = useState(initial?.profile?.ptype       ?? "");
   const [roleTypes,    setRoleTypes]    = useState<string[]>(initial?.profile?.roleTypes ?? []);
   const [glnError,     setGlnError]     = useState<string | null>(null);
+  const [ahv,          setAhv]          = useState(initial?.profile?.ahv        ?? "");
   const [orgFhirId,    setOrgFhirId]    = useState(initial?.profile?.orgFhirId  ?? "");
   const [orgGln,       setOrgGln]       = useState(initial?.profile?.orgGln     ?? "");
   const [orgName,      setOrgName]      = useState(initial?.profile?.orgName    ?? "");
   const [orgs,         setOrgs]         = useState<FhirOrganizationDto[]>([]);
 
   useEffect(() => {
+    const GLN_SYSTEMS = ["https://www.gs1.org/gln", "urn:oid:2.51.1.3"];
     fetch("/api/fhir/organizations", { cache: "no-store" })
       .then((r) => r.json())
-      .then((d: { organizations?: FhirOrganizationDto[] }) => setOrgs(d.organizations ?? []))
+      .then((bundle: { entry?: Array<{ resource?: { id?: string; name?: string; identifier?: Array<{ system?: string; value?: string }> } }> }) => {
+        const mapped: FhirOrganizationDto[] = (bundle.entry ?? [])
+          .map((e) => e.resource)
+          .filter((r): r is NonNullable<typeof r> => !!r?.id)
+          .map((r) => ({
+            id:   r.id!,
+            name: r.name ?? r.id!,
+            gln:  r.identifier?.find((i) => GLN_SYSTEMS.includes(i.system ?? ""))?.value ?? "",
+          }));
+        setOrgs(mapped);
+      })
       .catch(() => { /* silently ignore — org select is optional */ });
   }, []);
 
@@ -114,8 +126,8 @@ function UserFormModal({ mode, initial, catalog, onSave, onClose, saving, error,
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    // GLN is required for NAT (Practitioner) type and must be valid if provided
-    if (ptype === "NAT" && !gln.trim()) {
+    // GLN is required for Practitioners (NAT) and Organisations (JUR)
+    if ((ptype === "NAT" || ptype === "JUR") && !gln.trim()) {
       setGlnError(t("roles.glnRequired"));
       return;
     }
@@ -130,6 +142,7 @@ function UserFormModal({ mode, initial, catalog, onSave, onClose, saving, error,
       ...(lastName             && { lastName }),
       ...(email                && { email }),
       ...(gln                  && { gln }),
+      ...(ahv                  && { ahv }),
       ...(ptype                && { ptype }),
       ...(roleTypes.length > 0 && { roleTypes }),
       ...(orgFhirId            && { orgFhirId }),
@@ -243,24 +256,33 @@ function UserFormModal({ mode, initial, catalog, onSave, onClose, saving, error,
                 <input type="email" className={fieldCls} value={email} onChange={(e) => setEmail(e.target.value)} />
               </div>
               <div>
-                <label className={labelCls}>
-                  {t("profile.gln")}{ptype === "NAT" ? " *" : ""}
-                </label>
+                <label className={labelCls}>{t("profile.gln")}</label>
                 <input
                   className={`${fieldCls}${glnError ? " border-zt-danger" : ""}`}
                   value={gln}
                   onChange={(e) => {
-                  const s = sanitizeGln(e.target.value);
-                  setGln(s);
-                  if (s.length === 13) { const v = validateGln(s); setGlnError(v.error ?? null); }
-                  else setGlnError(null);
-                }}
+                    const s = sanitizeGln(e.target.value);
+                    setGln(s);
+                    if (s.length === 13) { const v = validateGln(s); setGlnError(v.error ?? null); }
+                    else setGlnError(null);
+                  }}
                   placeholder="7601002145985"
                   maxLength={13}
                 />
                 {glnError && <p className="mt-1 text-[11px] text-zt-danger">{glnError}</p>}
                 {!glnError && gln.length === 13 && <p className="mt-1 text-[11px] text-zt-success">✓ Gültige GLN</p>}
-                <p className="mt-0.5 text-[10px] text-zt-text-tertiary">13 Stellen · EAN-13 · z.B. 7601002145985</p>
+                <p className="mt-0.5 text-[10px] text-zt-text-tertiary">Optional · 13 Stellen EAN-13 (nur für Practitioners)</p>
+              </div>
+              <div>
+                <label className={labelCls}>{t("profile.ahv")}</label>
+                <input
+                  className={fieldCls}
+                  value={ahv}
+                  onChange={(e) => setAhv(e.target.value)}
+                  placeholder="756.1234.5678.90"
+                  maxLength={16}
+                />
+                <p className="mt-0.5 text-[10px] text-zt-text-tertiary">Optional · Format: 756.XXXX.XXXX.XX</p>
               </div>
               <div>
                 <label className={labelCls}>{t("users.ptype")}</label>

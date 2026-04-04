@@ -212,6 +212,25 @@ export default function OrderCreatePage({ id, srId }: OrderCreatePageProps) {
       form.setSubmitMsg(`${tr("order.sent")}. IDs: ${ids.join(", ") || "ok"}`);
       form.setSubmitErr(null);
 
+      // Queue print job for Local Agent (fire-and-forget — does not block UI)
+      void fetch("/api/v1/agent/jobs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orgId:               AppConfig.labOrgId,
+          documentReferenceId: docId,
+          serviceRequestId:    activeSrId,
+          patientId:           id,
+          orderNumber,
+          specimens: specimensSource.map((s) => ({
+            materialCode: s.id,
+            materialName: s.label || s.code?.display || s.id,
+          })),
+        }),
+      }).catch(() => {
+        // Agent not available — browser print is the fallback
+      });
+
       // Print Begleitschein before clearing state so patient/order data is still available
       docs.printBegleitschein(orderNumber);
 

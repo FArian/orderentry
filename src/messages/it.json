@@ -198,6 +198,7 @@
     "copied": "Copiato!",
     "details": "Dettagli profilo",
     "gln": "Numero GLN",
+    "ahv": "Numero AVS",
     "glnNumber": "Numero GLN (13 cifre)",
     "glnPlaceholder": "7601002145985",
     "glnLookup": "Interroga GLN",

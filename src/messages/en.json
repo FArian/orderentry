@@ -198,6 +198,7 @@
     "copied": "Copied!",
     "details": "Profile details",
     "gln": "GLN Number",
+    "ahv": "AHV Number",
     "glnNumber": "GLN Number (13 digits)",
     "glnPlaceholder": "7601002145985",
     "glnLookup": "Look up GLN",
