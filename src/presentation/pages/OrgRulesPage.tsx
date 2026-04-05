@@ -255,7 +255,7 @@ function NumberConfigEditor({
     setRows(next);
     onChange(fromConfigRows(next));
     const remaining = ALL_SERVICE_TYPES.filter((st) => !new Set(next.map((r) => r.serviceType)).has(st));
-    if (remaining.length > 0) setAddType(remaining[0]);
+    if (remaining.length > 0 && remaining[0]) setAddType(remaining[0]);
   }
 
   const cell = "px-3 py-2 text-[12px]";

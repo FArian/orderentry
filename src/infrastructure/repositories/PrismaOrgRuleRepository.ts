@@ -83,10 +83,10 @@ export class PrismaOrgRuleRepository implements IOrgRuleRepository {
         hl7Msh6:            input.hl7Msh6,
         mibiPrefix:         input.mibiPrefix,
         mibiStart:          input.mibiStart,
-        mibiLength:         input.mibiLength ?? undefined,
+        mibiLength:         input.mibiLength ?? null,
         pocPrefix:          input.pocPrefix,
-        pocLength:          input.pocLength ?? undefined,
-        routineLength:      input.routineLength ?? undefined,
+        pocLength:          input.pocLength ?? null,
+        routineLength:      input.routineLength ?? null,
         serviceTypeMapping: JSON.stringify(input.serviceTypeMapping ?? {}),
       },
     });

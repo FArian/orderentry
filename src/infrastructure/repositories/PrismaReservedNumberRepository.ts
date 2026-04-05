@@ -16,7 +16,7 @@ function toReserved(row: {
     number:      row.number,
     serviceType: row.serviceType as ServiceType,
     status:      row.status as "available" | "used",
-    orgFhirId:   row.orgFhirId ?? undefined,
+    orgFhirId:   row.orgFhirId ?? null,
     ...(row.usedAt                  && { usedAt:                  row.usedAt.toISOString() }),
     ...(row.usedForPatientId        && { usedForPatientId:        row.usedForPatientId }),
     ...(row.usedForServiceRequestId && { usedForServiceRequestId: row.usedForServiceRequestId }),
