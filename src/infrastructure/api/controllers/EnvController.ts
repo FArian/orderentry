@@ -48,7 +48,7 @@ const ALLOWED_SERVER_KEYS = new Set([
   "TRACING_URL",
   "MONITORING_URL",
   "SASIS_API_BASE",
-  "GLN_API_BASE",
+  "REFDATA_SOAP_URL",
   "ALLOW_LOCAL_AUTH",
   // DB configuration — DATABASE_URL is intentionally excluded (may contain passwords;
   // use GET /api/health/db for a masked URL instead).
@@ -281,9 +281,9 @@ const ENV_SCHEMA: ReadonlyArray<{
     group:           "External APIs",
   },
   {
-    key:             "GLN_API_BASE",
-    description:     "GLN/Refdata partner lookup API base URL (via Orchestra middleware).",
-    default:         "http://orchestra:8019/middleware/gln/api/versionVal/refdata/partner/",
+    key:             "REFDATA_SOAP_URL",
+    description:     "RefData SOAP endpoint for GLN partner lookups. Default: production RefData web service. Override for staging or mock.",
+    default:         "https://refdatabase.refdata.ch/Service/Partner.asmx",
     required:        false,
     writable:        true,
     restartRequired: true,

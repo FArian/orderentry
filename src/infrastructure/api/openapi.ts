@@ -2472,11 +2472,76 @@ export const openApiSpec = {
         },
       },
     },
+    "/gln-lookup": {
+      get: {
+        tags: ["External — GLN"],
+        summary: "Look up a GLN in the RefData partner registry",
+        description:
+          "Queries the Swiss RefData SOAP service (`Partner.asmx`) for a 13-digit GLN.\n\n" +
+          "Returns the partner's name, address, and role type.\n\n" +
+          "**PTYPE logic:**\n" +
+          "- `NAT` (natural person): `DESCR1` = family name, `DESCR2` = given name\n" +
+          "- `JUR` (organisation): `DESCR1` = organisation name\n\n" +
+          "**ENV:** `REFDATA_SOAP_URL` (default: `https://refdatabase.refdata.ch/Service/Partner.asmx`)\n\n" +
+          "Replaces the former `GLN_API_BASE` / Orchestra REST middleware integration.",
+        operationId: "glnLookup",
+        security: [{ sessionCookie: [] }],
+        parameters: [
+          {
+            name: "gln",
+            in: "query",
+            required: true,
+            description: "13-digit GS1 Global Location Number",
+            schema: { type: "string", pattern: "^\\d{13}$", example: "7601000123456" },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "GLN found — partner data returned",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/GlnLookupResult" },
+                example: {
+                  gln: "7601000123456", ptype: "NAT", roleType: "HPC",
+                  organization: "", lastName: "Müller", firstName: "Hans",
+                  street: "Bahnhofstrasse", streetNo: "1",
+                  zip: "8001", city: "Zürich", canton: "ZH", country: "CH",
+                },
+              },
+            },
+          },
+          "400": { description: "GLN is not 13 digits (`error: invalidGln`)" },
+          "401": { description: "Not authenticated" },
+          "404": { description: "GLN not found in RefData (`error: glnNotFound`)" },
+          "502": { description: "SOAP call failed — network error or timeout" },
+          "503": { description: "`REFDATA_SOAP_URL` not configured (`error: noGlnApi`)" },
+        },
+      },
+    },
   },
 
   // ── Reusable schemas ───────────────────────────────────────────────────────
   components: {
     schemas: {
+      GlnLookupResult: {
+        type: "object",
+        required: ["gln", "ptype", "roleType", "organization", "lastName", "firstName", "street", "streetNo", "zip", "city", "canton", "country"],
+        description: "Partner data returned by the RefData GLN lookup (GET /api/gln-lookup).",
+        properties: {
+          gln:          { type: "string", description: "13-digit GLN as confirmed by RefData", example: "7601000123456" },
+          ptype:        { type: "string", enum: ["NAT", "JUR", ""], description: "NAT = natural person, JUR = juridical entity" },
+          roleType:     { type: "string", description: "RefData role type code (e.g. HPC, ORG)", example: "HPC" },
+          organization: { type: "string", description: "Organisation name — populated for JUR, empty for NAT" },
+          lastName:     { type: "string", description: "Family name — populated for NAT, empty for JUR" },
+          firstName:    { type: "string", description: "Given name — populated for NAT, empty for JUR" },
+          street:       { type: "string", description: "Street name from the primary ROLE" },
+          streetNo:     { type: "string", description: "Street number" },
+          zip:          { type: "string", description: "Postal code" },
+          city:         { type: "string", description: "City" },
+          canton:       { type: "string", description: "Swiss canton abbreviation (e.g. ZH, BE)", example: "ZH" },
+          country:      { type: "string", description: "Country code (e.g. CH)", example: "CH" },
+        },
+      },
       ServiceTypesResponse: {
         type: "object",
         required: ["types", "source"],
