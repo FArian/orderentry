@@ -8,7 +8,10 @@ WORKDIR /app
 RUN npm install -g npm@latest
 
 COPY package.json package-lock.json ./
-RUN npm ci
+# Use BuildKit cache mount to avoid re-downloading packages on repeated builds.
+# Increase fetch timeout for slow arm64 QEMU emulation environments.
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --fetch-retry-maxtimeout=300000 --fetch-timeout=300000
 
 # ---- Stage 2: Build ----
 FROM node:20-alpine AS builder
@@ -29,6 +32,8 @@ COPY . .
 #     --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) \
 #     --build-arg GIT_COUNT=$(git rev-list --count HEAD) \
 #     --build-arg NEXT_PUBLIC_LAB_ORG_ID=zlz \
+#     --build-arg NEXT_PUBLIC_LAB_NAME="ZLZ Zentrallabor AG" \
+#     --build-arg NEXT_PUBLIC_ORDER_SERVICE_TYPES=MIBI,ROUTINE,POC \
 #     ...
 ARG GIT_COMMIT=
 ARG GIT_BRANCH=
@@ -46,11 +51,16 @@ RUN if [ -n "$GIT_COMMIT" ]; then \
 # NEXT_PUBLIC_* vars must be baked into the client bundle at build time.
 # Runtime docker-compose env vars are ignored for these by the browser bundle.
 ARG NEXT_PUBLIC_LAB_ORG_ID=zlz
-RUN printf "NEXT_PUBLIC_LAB_ORG_ID=%s\n" "$NEXT_PUBLIC_LAB_ORG_ID" >> .env.local
+ARG NEXT_PUBLIC_LAB_NAME=ZLZ Zentrallabor AG
+ARG NEXT_PUBLIC_ORDER_SERVICE_TYPES=MIBI,ROUTINE,POC
+RUN printf "NEXT_PUBLIC_LAB_ORG_ID=%s\n" "$NEXT_PUBLIC_LAB_ORG_ID" >> .env.local && \
+    printf "NEXT_PUBLIC_LAB_NAME=%s\n" "$NEXT_PUBLIC_LAB_NAME" >> .env.local && \
+    printf "NEXT_PUBLIC_ORDER_SERVICE_TYPES=%s\n" "$NEXT_PUBLIC_ORDER_SERVICE_TYPES" >> .env.local
 
 # write-version.mjs runs as prebuild hook; skips git gracefully if .git is absent.
 # If .env.local was pre-written above, prebuild updates it in-place (same key).
-RUN npm run build
+RUN --mount=type=cache,target=/app/.next/cache \
+    npm run build
 
 # ---- Stage 3: Production runner ----
 FROM node:20-alpine AS runner
@@ -60,17 +70,17 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
-# Default FHIR (kann überschrieben werden)
-ENV FHIR_BASE_URL=http://hapi.fhir.org/baseR4
 
 # Runtime environment variables — override via docker run -e or docker-compose
-# AUTH_SECRET=<strong-secret>
-# FHIR_BASE_URL=https://your-fhir-server/fhir
-# SASIS_API_BASE=http://orchestra:8019/api/v1/in/sasis
+# ORDERENTRY_AUTH__SECRET=<strong-secret>
+# ORDERENTRY_FHIR__BASE_URL=https://your-fhir-server/fhir
+# ORDERENTRY_FHIR__AUTH_TYPE=none
+# ORDERENTRY_FHIR__SEED_ENABLED=true
+# ORDERENTRY_FHIR__SEED_DEMO=false
+# ORDERENTRY_FHIR__SEED_CATALOG=false
+# ORDERENTRY_AUTH__ALLOW_LOCAL=false
 # NEXT_PUBLIC_SASIS_ENABLED=true
-# GLN_API_BASE=http://orchestra:8019/middleware/gln/api/v1/refdata/partner/
 # NEXT_PUBLIC_GLN_ENABLED=true
-# ALLOW_LOCAL_AUTH=true
 
 RUN addgroup --system --gid 1001 nodejs && \
     adduser  --system --uid 1001 nextjs
@@ -104,6 +114,10 @@ COPY --from=builder /app/seed /app/seed
 # Copy FHIR seed bootstrap script
 COPY --from=builder /app/scripts/fhir-seed.mjs /app/scripts/fhir-seed.mjs
 
+# Copy Flyway SQL migration files — required by SqliteMigrationRunner at startup
+# (reads flyway/migrations/sqlite/V*.sql to initialise the SQLite DB schema)
+COPY --from=builder /app/flyway ./flyway
+
 USER nextjs
 
 EXPOSE 3000
@@ -120,6 +134,7 @@ EXPOSE 3000
 #   docker compose up orderentry
 #
 # Seed ENV vars:
-#   ORDERENTRY_FHIR__SEED_ENABLED=true   (default: true)
-#   ORDERENTRY_FHIR__SEED_DEMO=false     (default: false)
+#   ORDERENTRY_FHIR__SEED_ENABLED=true    (default: true)
+#   ORDERENTRY_FHIR__SEED_DEMO=false      (default: false)
+#   ORDERENTRY_FHIR__SEED_CATALOG=false   (default: false — set true for dev/demo)
 CMD ["sh", "-c", "node /app/scripts/fhir-seed.mjs; node server.js"]
