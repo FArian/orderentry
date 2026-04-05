@@ -139,7 +139,15 @@
     "page": "Page",
     "of": "sur",
     "showing": "Affichage",
-    "personalData": "Données personnelles"
+    "personalData": "Données personnelles",
+    "statusActive": "Actif",
+    "statusInactive": "Inactif",
+    "statusAll": "Tous",
+    "noAddress": "Pas d'adresse",
+    "colStatus": "Statut",
+    "showingActive": "Affichage de {n} patients actifs",
+    "showingInactive": "Affichage de {n} patients inactifs",
+    "showingAll": "Affichage de {n} patients (tous)"
   },
   "insurance": {
     "title": "Données d'assurance",

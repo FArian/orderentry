@@ -139,7 +139,15 @@
     "page": "Page",
     "of": "of",
     "showing": "Showing",
-    "personalData": "Personal Data"
+    "personalData": "Personal Data",
+    "statusActive": "Active",
+    "statusInactive": "Inactive",
+    "statusAll": "All",
+    "noAddress": "No address",
+    "colStatus": "Status",
+    "showingActive": "Showing {n} active patients",
+    "showingInactive": "Showing {n} inactive patients",
+    "showingAll": "Showing {n} patients (all)"
   },
   "insurance": {
     "title": "Insurance data",

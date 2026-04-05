@@ -139,7 +139,15 @@
     "page": "Siite",
     "of": "vo",
     "showing": "Zeigt",
-    "personalData": "Persönlichi Date"
+    "personalData": "Persönlichi Date",
+    "statusActive": "Aktiv",
+    "statusInactive": "Inaktiv",
+    "statusAll": "All",
+    "noAddress": "Kei Adress",
+    "colStatus": "Status",
+    "showingActive": "Zeige {n} aktivi Patiente",
+    "showingInactive": "Zeige {n} inaktivi Patiente",
+    "showingAll": "Zeige {n} Patiente (alli)"
   },
   "insurance": {
     "title": "Versicherigsdaten",

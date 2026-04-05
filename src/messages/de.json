@@ -139,7 +139,15 @@
     "page": "Seite",
     "of": "von",
     "showing": "Zeige",
-    "personalData": "Persönliche Daten"
+    "personalData": "Persönliche Daten",
+    "statusActive": "Aktiv",
+    "statusInactive": "Inaktiv",
+    "statusAll": "Alle",
+    "noAddress": "Keine Adresse",
+    "colStatus": "Status",
+    "showingActive": "Zeige {n} aktive Patienten",
+    "showingInactive": "Zeige {n} inaktive Patienten",
+    "showingAll": "Zeige {n} Patienten (alle)"
   },
   "insurance": {
     "title": "Versicherungsdaten",
