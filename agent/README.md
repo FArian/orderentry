@@ -390,10 +390,40 @@ GOOS=darwin  GOARCH=arm64  go build → zetlab-agent-mac-m1       (Mac Apple Sil
 | **ZPL Druck** | TCP:9100 | TCP:9100 | TCP:9100 | TCP:9100 |
 | **Installer** | `.msi` (geplant) | `.deb`/`.rpm` (geplant) | `.pkg` (geplant) | `docker pull` |
 
-#### Zu klären
+#### Entscheidungen
 
-- [ ] Config: ENV only oder auch YAML/TOML Config-Datei für Windows-User?
-- [ ] Auto-Update: Watchtower-ähnlich oder manuelles Update?
+**Config:** Option C — YAML + ENV Override
+```
+Priorität: ENV Variable > config.yaml > Default
+```
+```yaml
+# config.yaml (für Windows/Mac Benutzer ohne ENV-Kenntnisse)
+orderentry_url: https://orderentry.zlz.ch
+api_key: abc123
+poll_interval_ms: 5000
+adt_watch_dir: C:\adt\
+printer_name: HP_LaserJet
+zebra_ip: 192.168.1.100
+```
+```bash
+# ENV Override (für Docker / Linux)
+AGENT_ORDERENTRY_URL=https://orderentry.zlz.ch
+AGENT_API_KEY=abc123
+```
+
+**Auto-Update:** Option B — Agent prüft selbst
+```
+Beim Status-Poll → Server meldet aktuelle Version
+    ↓
+Agent vergleicht mit eigener Version
+    ↓
+Neue Version verfügbar?
+    → Binary herunterladen (GitHub Releases)
+    → Checksumme prüfen (SHA-256)
+    → Altes Binary ersetzen
+    → Service neu starten
+```
+
 - [ ] Installer: Wann werden `.msi` / `.pkg` Installer gebaut?
 
 ---
