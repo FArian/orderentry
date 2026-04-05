@@ -98,14 +98,28 @@ RUN mkdir -p /app/data && chown nextjs:nodejs /app/data
 # Ensure the logs directory exists for optional file logging (LOG_FILE=/app/logs/zetlab.log)
 RUN mkdir -p /app/logs && chown nextjs:nodejs /app/logs
 
+# Copy FHIR seed bundles — embedded in the image, applied on first startup
+COPY --from=builder /app/seed /app/seed
+
+# Copy FHIR seed bootstrap script
+COPY --from=builder /app/scripts/fhir-seed.mjs /app/scripts/fhir-seed.mjs
+
 USER nextjs
 
 EXPOSE 3000
 
+# Startup sequence:
+#   1. fhir-seed.mjs — waits for FHIR, applies masterdata + optional demo data (idempotent)
+#   2. server.js     — Next.js production server
+#
 # SQLite migrations run automatically at startup via SqliteMigrationRunner
 # (reads flyway/migrations/sqlite/*.sql — same files as the Flyway Docker service).
 #
 # PostgreSQL/MSSQL: run the Flyway service BEFORE starting this container:
 #   docker compose --profile flyway up flyway
 #   docker compose up orderentry
-CMD ["node", "server.js"]
+#
+# Seed ENV vars:
+#   ORDERENTRY_FHIR__SEED_ENABLED=true   (default: true)
+#   ORDERENTRY_FHIR__SEED_DEMO=false     (default: false)
+CMD ["sh", "-c", "node /app/scripts/fhir-seed.mjs; node server.js"]

@@ -181,10 +181,11 @@ export class UsersController {
       if (!existing) return { error: "User not found", httpStatus: 404 };
 
       const patch: Partial<User> = {};
-      if (body.role       !== undefined) patch.role       = body.role       as UserRole;
-      if (body.status     !== undefined) patch.status     = body.status     as UserStatus;
-      if (body.externalId !== undefined) patch.externalId = body.externalId;
-      if (body.profile    !== undefined) patch.profile    = { ...existing.profile, ...body.profile };
+      if (body.role                !== undefined) patch.role                = body.role       as UserRole;
+      if (body.status              !== undefined) patch.status              = body.status     as UserStatus;
+      if (body.externalId          !== undefined) patch.externalId          = body.externalId;
+      if (body.profile             !== undefined) patch.profile             = { ...existing.profile, ...body.profile };
+      if (body.fhirPractitionerId  !== undefined) patch.fhirPractitionerId  = body.fhirPractitionerId;
 
       const updated = await updateUser(id, patch);
       this.log.info("User updated", { id });

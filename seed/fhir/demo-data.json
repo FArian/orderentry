@@ -1,0 +1,523 @@
+{
+  "resourceType": "Bundle",
+  "id": "orderentry-demo-data-v1",
+  "type": "transaction",
+  "entry": [
+
+    {
+      "fullUrl": "Patient/demo-001",
+      "resource": {
+        "resourceType": "Patient",
+        "id": "demo-001",
+        "meta": {
+          "profile": ["http://hl7.org/fhir/StructureDefinition/Patient"],
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "demo-v1",
+              "display": "OrderEntry demo v1"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "use": "usual",
+            "system": "https://www.hirslanden.ch/pid",
+            "value": "PID-DEMO-001"
+          }
+        ],
+        "active": true,
+        "name": [
+          {
+            "use": "official",
+            "family": "Muster",
+            "given": ["Anna"]
+          }
+        ],
+        "telecom": [
+          {
+            "system": "phone",
+            "value": "+41 79 100 00 01",
+            "use": "mobile"
+          },
+          {
+            "system": "email",
+            "value": "anna.muster@example.ch",
+            "use": "home"
+          }
+        ],
+        "gender": "female",
+        "birthDate": "1975-06-12",
+        "address": [
+          {
+            "use": "home",
+            "line": ["Musterstrasse 1"],
+            "city": "Zürich",
+            "postalCode": "8001",
+            "country": "CH"
+          }
+        ],
+        "managingOrganization": {
+          "reference": "Organization/klinik-hirslanden",
+          "display": "Klinik Hirslanden"
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Patient/demo-001"
+      }
+    },
+
+    {
+      "fullUrl": "Patient/demo-002",
+      "resource": {
+        "resourceType": "Patient",
+        "id": "demo-002",
+        "meta": {
+          "profile": ["http://hl7.org/fhir/StructureDefinition/Patient"],
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "demo-v1",
+              "display": "OrderEntry demo v1"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "use": "usual",
+            "system": "https://www.hirslanden.ch/pid",
+            "value": "PID-DEMO-002"
+          }
+        ],
+        "active": true,
+        "name": [
+          {
+            "use": "official",
+            "family": "Schreiber",
+            "given": ["Beat"]
+          }
+        ],
+        "telecom": [
+          {
+            "system": "phone",
+            "value": "+41 79 100 00 02",
+            "use": "mobile"
+          }
+        ],
+        "gender": "male",
+        "birthDate": "1962-11-28",
+        "address": [
+          {
+            "use": "home",
+            "line": ["Bahnhofstrasse 42"],
+            "city": "Winterthur",
+            "postalCode": "8400",
+            "country": "CH"
+          }
+        ],
+        "managingOrganization": {
+          "reference": "Organization/klinik-hirslanden",
+          "display": "Klinik Hirslanden"
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Patient/demo-002"
+      }
+    },
+
+    {
+      "fullUrl": "Patient/demo-003",
+      "resource": {
+        "resourceType": "Patient",
+        "id": "demo-003",
+        "meta": {
+          "profile": ["http://hl7.org/fhir/StructureDefinition/Patient"],
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "demo-v1",
+              "display": "OrderEntry demo v1"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "use": "usual",
+            "system": "https://www.hirslanden.ch/pid",
+            "value": "PID-DEMO-003"
+          }
+        ],
+        "active": true,
+        "name": [
+          {
+            "use": "official",
+            "family": "Weber",
+            "given": ["Claudia"]
+          }
+        ],
+        "telecom": [
+          {
+            "system": "phone",
+            "value": "+41 79 100 00 03",
+            "use": "mobile"
+          }
+        ],
+        "gender": "female",
+        "birthDate": "1989-03-05",
+        "address": [
+          {
+            "use": "home",
+            "line": ["Seestrasse 78"],
+            "city": "Küsnacht",
+            "postalCode": "8700",
+            "country": "CH"
+          }
+        ],
+        "managingOrganization": {
+          "reference": "Organization/klinik-hirslanden",
+          "display": "Klinik Hirslanden"
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Patient/demo-003"
+      }
+    },
+
+    {
+      "fullUrl": "ServiceRequest/demo-sr-001",
+      "resource": {
+        "resourceType": "ServiceRequest",
+        "id": "demo-sr-001",
+        "meta": {
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "demo-v1",
+              "display": "OrderEntry demo v1"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "https://www.zetlab.ch/fhir/order-number",
+            "value": "7004003001"
+          }
+        ],
+        "status": "completed",
+        "intent": "order",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "https://www.zetlab.ch/fhir/category",
+                "code": "ROUTINE",
+                "display": "Routine"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.zetlab.ch/fhir/lis-code",
+              "code": "#AAUG",
+              "display": "Grosse Hämatologie"
+            }
+          ],
+          "text": "Grosse Hämatologie"
+        },
+        "subject": {
+          "reference": "Patient/demo-001",
+          "display": "Anna Muster"
+        },
+        "requester": {
+          "reference": "Practitioner/prac-001",
+          "display": "Dr. med. Hans Müller"
+        },
+        "performer": [
+          {
+            "reference": "Organization/zlz",
+            "display": "ZLZ Zentrallabor AG"
+          }
+        ],
+        "authoredOn": "2026-04-01T08:00:00+02:00",
+        "note": [
+          {
+            "text": "Demo-Auftrag — Routine Hämatologie"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ServiceRequest/demo-sr-001"
+      }
+    },
+
+    {
+      "fullUrl": "ServiceRequest/demo-sr-002",
+      "resource": {
+        "resourceType": "ServiceRequest",
+        "id": "demo-sr-002",
+        "meta": {
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "demo-v1",
+              "display": "OrderEntry demo v1"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "https://www.zetlab.ch/fhir/order-number",
+            "value": "MI40030020"
+          }
+        ],
+        "status": "active",
+        "intent": "order",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "https://www.zetlab.ch/fhir/category",
+                "code": "MIBI",
+                "display": "Mikrobiologie"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.zetlab.ch/fhir/lis-code",
+              "code": "#BKULT",
+              "display": "Blutkultur aerob/anaerob"
+            }
+          ],
+          "text": "Blutkultur aerob/anaerob"
+        },
+        "subject": {
+          "reference": "Patient/demo-002",
+          "display": "Beat Schreiber"
+        },
+        "requester": {
+          "reference": "Practitioner/prac-001",
+          "display": "Dr. med. Hans Müller"
+        },
+        "performer": [
+          {
+            "reference": "Organization/zlz",
+            "display": "ZLZ Zentrallabor AG"
+          }
+        ],
+        "authoredOn": "2026-04-03T10:30:00+02:00",
+        "note": [
+          {
+            "text": "Demo-Auftrag — Mikrobiologie Blutkultur"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ServiceRequest/demo-sr-002"
+      }
+    },
+
+    {
+      "fullUrl": "ServiceRequest/demo-sr-003",
+      "resource": {
+        "resourceType": "ServiceRequest",
+        "id": "demo-sr-003",
+        "meta": {
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "demo-v1",
+              "display": "OrderEntry demo v1"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "https://www.zetlab.ch/fhir/order-number",
+            "value": "PO30003000"
+          }
+        ],
+        "status": "active",
+        "intent": "order",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "https://www.zetlab.ch/fhir/category",
+                "code": "POC",
+                "display": "Point of Care"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.zetlab.ch/fhir/lis-code",
+              "code": "#TROPI",
+              "display": "Troponin T hs (POC)"
+            }
+          ],
+          "text": "Troponin T hochsensitiv"
+        },
+        "subject": {
+          "reference": "Patient/demo-003",
+          "display": "Claudia Weber"
+        },
+        "requester": {
+          "reference": "Practitioner/prac-001",
+          "display": "Dr. med. Hans Müller"
+        },
+        "performer": [
+          {
+            "reference": "Organization/zlz",
+            "display": "ZLZ Zentrallabor AG"
+          }
+        ],
+        "authoredOn": "2026-04-05T07:15:00+02:00",
+        "priority": "stat",
+        "note": [
+          {
+            "text": "Demo-Auftrag — POC Troponin STAT"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ServiceRequest/demo-sr-003"
+      }
+    },
+
+    {
+      "fullUrl": "DiagnosticReport/demo-dr-001",
+      "resource": {
+        "resourceType": "DiagnosticReport",
+        "id": "demo-dr-001",
+        "meta": {
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "demo-v1",
+              "display": "OrderEntry demo v1"
+            }
+          ]
+        },
+        "basedOn": [
+          {
+            "reference": "ServiceRequest/demo-sr-001"
+          }
+        ],
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v2-0074",
+                "code": "HM",
+                "display": "Hematology"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "58410-2",
+              "display": "CBC panel - Blood by Automated count"
+            }
+          ],
+          "text": "Grosse Hämatologie"
+        },
+        "subject": {
+          "reference": "Patient/demo-001",
+          "display": "Anna Muster"
+        },
+        "effectiveDateTime": "2026-04-01T10:45:00+02:00",
+        "issued": "2026-04-01T11:30:00+02:00",
+        "performer": [
+          {
+            "reference": "Organization/zlz",
+            "display": "ZLZ Zentrallabor AG"
+          }
+        ],
+        "conclusion": "Befund im Normbereich. Keine pathologischen Werte."
+      },
+      "request": {
+        "method": "PUT",
+        "url": "DiagnosticReport/demo-dr-001"
+      }
+    },
+
+    {
+      "fullUrl": "DiagnosticReport/demo-dr-002",
+      "resource": {
+        "resourceType": "DiagnosticReport",
+        "id": "demo-dr-002",
+        "meta": {
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "demo-v1",
+              "display": "OrderEntry demo v1"
+            }
+          ]
+        },
+        "basedOn": [
+          {
+            "reference": "ServiceRequest/demo-sr-003"
+          }
+        ],
+        "status": "preliminary",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v2-0074",
+                "code": "CH",
+                "display": "Chemistry"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "67151-1",
+              "display": "Troponin T.cardiac [Mass/volume] in Blood by High sensitivity method"
+            }
+          ],
+          "text": "Troponin T hochsensitiv"
+        },
+        "subject": {
+          "reference": "Patient/demo-003",
+          "display": "Claudia Weber"
+        },
+        "effectiveDateTime": "2026-04-05T07:30:00+02:00",
+        "issued": "2026-04-05T07:45:00+02:00",
+        "performer": [
+          {
+            "reference": "Organization/zlz",
+            "display": "ZLZ Zentrallabor AG"
+          }
+        ],
+        "conclusion": "Vorläufiger Befund. Troponin T erhöht — klinische Korrelation empfohlen."
+      },
+      "request": {
+        "method": "PUT",
+        "url": "DiagnosticReport/demo-dr-002"
+      }
+    }
+
+  ]
+}

@@ -3315,7 +3315,13 @@ export const openApiSpec = {
         properties: {
           role: { type: "string", enum: ["admin", "user"] },
           status: { type: "string", enum: ["active", "pending", "suspended"] },
+          externalId: { type: "string", description: "External IdP identifier" },
           profile: { $ref: "#/components/schemas/UserProfileSchema" },
+          fhirPractitionerId: {
+            type: "string",
+            description: "FHIR Practitioner ID linked to this user. Determines data access level (full/org/own) at next login via PractitionerRole lookup.",
+            example: "prac-von-rohr-anna",
+          },
         },
       },
 

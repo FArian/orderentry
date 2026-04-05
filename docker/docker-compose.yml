@@ -1,0 +1,138 @@
+# =============================================================================
+# z2Lab OrderEntry — Quick Start (Image Mode)
+# =============================================================================
+#
+# Uses the prebuilt image from Docker Hub.
+# No build step required.
+#
+# Usage:
+#   docker compose -f docker/docker-compose.yml up -d
+#
+# With build override:
+#   docker compose -f docker/docker-compose.yml -f docker/docker-compose.build.yml up -d
+#
+# With SQL Server:
+#   docker compose -f docker/docker-compose.yml -f docker/docker-compose.sqlserver.yml up -d
+#
+# Environment:
+#   Copy docker/.env.example to docker/.env and adjust values.
+#   docker compose -f docker/docker-compose.yml --env-file docker/.env up -d
+# =============================================================================
+
+networks:
+  orderentry-net:
+    name: orderentry-net
+    driver: bridge
+
+volumes:
+  orderentry-data:    # SQLite DB + config.json
+  orderentry-logs:    # Structured log files
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # ORDERENTRY — Next.js Application (SQLite, standalone)
+  # ---------------------------------------------------------------------------
+  orderentry:
+    image: ${IMAGE:-farian/orderentry:latest}
+    container_name: orderentry
+    restart: unless-stopped
+
+    ports:
+      - "${PORT:-3000}:3000"
+
+    environment:
+      # ── Framework (nicht umbenennbar) ────────────────────────────────────
+      NODE_ENV:                           ${NODE_ENV:-production}
+      DATABASE_URL:                       ${DATABASE_URL:-file:/app/data/orderentry.db}
+
+      # ── Bootstrap Admin (legacy — wird beim ersten Start erstellt) ───────
+      BOOTSTRAP_ADMIN_USER:               ${BOOTSTRAP_ADMIN_USER:-admin}
+      BOOTSTRAP_ADMIN_PASSWORD:           ${BOOTSTRAP_ADMIN_PASSWORD:-Admin1234!}
+
+      # ── Auth ─────────────────────────────────────────────────────────────
+      ORDERENTRY_AUTH__SECRET:            ${ORDERENTRY_AUTH__SECRET:-change-me-in-production-min-32-chars!!}
+      ORDERENTRY_AUTH__ALLOW_LOCAL:       ${ORDERENTRY_AUTH__ALLOW_LOCAL:-false}
+      ORDERENTRY_AUTH__SESSION_IDLE_TIMEOUT: ${ORDERENTRY_AUTH__SESSION_IDLE_TIMEOUT:-30}
+
+      # ── Datenbank ────────────────────────────────────────────────────────
+      ORDERENTRY_DB__PROVIDER:            ${ORDERENTRY_DB__PROVIDER:-sqlite}
+
+      # ── FHIR Server ──────────────────────────────────────────────────────
+      ORDERENTRY_FHIR__BASE_URL:          ${ORDERENTRY_FHIR__BASE_URL:-https://hapi.fhir.org/baseR4}
+
+      # ── FHIR Auth (optional — Standard: none) ────────────────────────────
+      ORDERENTRY_FHIR__AUTH_TYPE:         ${ORDERENTRY_FHIR__AUTH_TYPE:-none}
+      ORDERENTRY_FHIR__AUTH_TOKEN:        ${ORDERENTRY_FHIR__AUTH_TOKEN:-}
+      ORDERENTRY_FHIR__AUTH_USER:         ${ORDERENTRY_FHIR__AUTH_USER:-}
+      ORDERENTRY_FHIR__AUTH_PASSWORD:     ${ORDERENTRY_FHIR__AUTH_PASSWORD:-}
+
+      # ── FHIR Seed (Stammdaten beim Start laden) ───────────────────────────
+      ORDERENTRY_FHIR__SEED_ENABLED:      ${ORDERENTRY_FHIR__SEED_ENABLED:-true}
+      ORDERENTRY_FHIR__SEED_DEMO:         ${ORDERENTRY_FHIR__SEED_DEMO:-false}
+      ORDERENTRY_FHIR__SEED_CATALOG:      ${ORDERENTRY_FHIR__SEED_CATALOG:-false}
+
+      # ── FHIR Identifier-Systeme (optional — Schweizer Standards) ─────────
+      ORDERENTRY_FHIR__SYSTEM_GLN:        ${ORDERENTRY_FHIR__SYSTEM_GLN:-https://www.gs1.org/gln}
+      ORDERENTRY_FHIR__SYSTEM_AHV:        ${ORDERENTRY_FHIR__SYSTEM_AHV:-urn:oid:2.16.756.5.32}
+      ORDERENTRY_FHIR__SYSTEM_VEKA:       ${ORDERENTRY_FHIR__SYSTEM_VEKA:-urn:oid:2.16.756.5.30.1.123.100.1.1}
+      ORDERENTRY_FHIR__SYSTEM_CATEGORY:   ${ORDERENTRY_FHIR__SYSTEM_CATEGORY:-https://www.zetlab.ch/fhir/category}
+
+      # ── Orchestra / Launch (optional) ────────────────────────────────────
+      ORDERENTRY_ORCHESTRA__JWT_SECRET:   ${ORDERENTRY_ORCHESTRA__JWT_SECRET:-}
+      ORDERENTRY_ORCHESTRA__HL7_BASE:     ${ORDERENTRY_ORCHESTRA__HL7_BASE:-}
+      ORDERENTRY_ORCHESTRA__ORDER_API_URL: ${ORDERENTRY_ORCHESTRA__ORDER_API_URL:-}
+
+      # ── Labor / Organisation ─────────────────────────────────────────────
+      ORDERENTRY_LAB__ORG_ID:             ${ORDERENTRY_LAB__ORG_ID:-zlz}
+      ORDERENTRY_LAB__NAME:               ${ORDERENTRY_LAB__NAME:-ZLZ Zentrallabor AG}
+      ORDERENTRY_LAB__INTERNAL_ORG_IDS:   ${ORDERENTRY_LAB__INTERNAL_ORG_IDS:-zlz,zetlab,zlz-notfall}
+
+      # ── SNOMED Codes (Defaults korrekt für ZLZ — nur bei Bedarf überschreiben)
+      ORDERENTRY_SNOMED__ROLE_INTERNAL:   ${ORDERENTRY_SNOMED__ROLE_INTERNAL:-159418007,159011000}
+      ORDERENTRY_SNOMED__ROLE_ORG_ADMIN:  ${ORDERENTRY_SNOMED__ROLE_ORG_ADMIN:-224608005,394572006}
+      ORDERENTRY_SNOMED__ROLE_PHYSICIAN:  ${ORDERENTRY_SNOMED__ROLE_PHYSICIAN:-309343006,59058001,106289002}
+      ORDERENTRY_SNOMED__ORG_LABORATORY:  ${ORDERENTRY_SNOMED__ORG_LABORATORY:-708175003}
+      ORDERENTRY_SNOMED__ORG_HOSPITAL:    ${ORDERENTRY_SNOMED__ORG_HOSPITAL:-22232009}
+      ORDERENTRY_SNOMED__ORG_OUTPATIENT:  ${ORDERENTRY_SNOMED__ORG_OUTPATIENT:-33022008}
+      ORDERENTRY_SNOMED__ORG_HOLDING:     ${ORDERENTRY_SNOMED__ORG_HOLDING:-224891009}
+
+      # ── Logging ──────────────────────────────────────────────────────────
+      ORDERENTRY_LOG__LEVEL:              ${ORDERENTRY_LOG__LEVEL:-info}
+      ORDERENTRY_LOG__FILE:               ${ORDERENTRY_LOG__FILE:-/app/logs/zetlab.log}
+
+      # ── Observability (optional) ─────────────────────────────────────────
+      ORDERENTRY_TRACING__ENABLED:        ${ORDERENTRY_TRACING__ENABLED:-false}
+      ORDERENTRY_TRACING__URL:            ${ORDERENTRY_TRACING__URL:-}
+      ORDERENTRY_TRACING__LABEL:          ${ORDERENTRY_TRACING__LABEL:-}
+      ORDERENTRY_MONITORING__URL:         ${ORDERENTRY_MONITORING__URL:-}
+      ORDERENTRY_MONITORING__LABEL:       ${ORDERENTRY_MONITORING__LABEL:-}
+      ORDERENTRY_METRICS__TOKEN:          ${ORDERENTRY_METRICS__TOKEN:-}
+
+      # ── Mail (optional) ──────────────────────────────────────────────────
+      ORDERENTRY_MAIL__PROVIDER:          ${ORDERENTRY_MAIL__PROVIDER:-}
+      ORDERENTRY_MAIL__HOST:              ${ORDERENTRY_MAIL__HOST:-}
+      ORDERENTRY_MAIL__PORT:              ${ORDERENTRY_MAIL__PORT:-587}
+      ORDERENTRY_MAIL__USER:              ${ORDERENTRY_MAIL__USER:-}
+      ORDERENTRY_MAIL__PASSWORD:          ${ORDERENTRY_MAIL__PASSWORD:-}
+      ORDERENTRY_MAIL__FROM:              ${ORDERENTRY_MAIL__FROM:-}
+
+    volumes:
+      - orderentry-data:/app/data     # SQLite DB + runtime config
+      - orderentry-logs:/app/logs     # Structured log files
+
+    networks:
+      - orderentry-net
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf -o /dev/null -w '%{http_code}' http://localhost:3000/api/me | grep -qE '^(200|401)$'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s

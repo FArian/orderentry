@@ -1,0 +1,103 @@
+# =============================================================================
+# z2Lab OrderEntry — SQL Server Override
+# =============================================================================
+#
+# Extends docker-compose.yml with a SQL Server container.
+#
+# Usage (from frontend/zetlab/):
+#   docker compose \
+#     -f docker/docker-compose.yml \
+#     -f docker/docker-compose.sqlserver.yml \
+#     up -d
+#
+# Required ENV vars (add to docker/.env):
+#   MSSQL_SA_PASSWORD=YourStrong!Password   (min 8 chars, upper+lower+digit+special)
+#
+# First start:
+#   docker compose ... up -d
+#   # Wait ~30s for SQL Server to start, then:
+#   docker compose ... run --rm orderentry node -e "require('./dist/scripts/migrate').run()"
+#   # Or use Flyway: docker compose --profile flyway up flyway
+# =============================================================================
+
+volumes:
+  mssql-data:
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # SQL SERVER — Microsoft SQL Server 2022
+  # ---------------------------------------------------------------------------
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: orderentry-sqlserver
+    restart: unless-stopped
+    platform: linux/amd64
+
+    environment:
+      ACCEPT_EULA:         "Y"
+      MSSQL_SA_PASSWORD:   ${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in docker/.env}
+      MSSQL_PID:           Developer
+
+    volumes:
+      - mssql-data:/var/opt/mssql
+
+    networks:
+      - orderentry-net
+
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q 'SELECT 1' -b -o /dev/null"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  # ---------------------------------------------------------------------------
+  # SQL Server DB init — creates the orderentry database + user
+  # Runs once, exits. Safe to re-run (idempotent IF NOT EXISTS checks).
+  # ---------------------------------------------------------------------------
+  sqlserver-init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: orderentry-sqlserver-init
+    platform: linux/amd64
+    restart: "no"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - orderentry-net
+    environment:
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD}
+      ORDERENTRY_DB_PASSWORD: ${ORDERENTRY_DB_PASSWORD:-OrderEntry1!}
+    entrypoint: >
+      /bin/bash -c "
+      /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q \"
+        IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'orderentry')
+          CREATE DATABASE orderentry;
+        IF NOT EXISTS (SELECT name FROM sys.server_principals WHERE name = 'zetlab')
+        BEGIN
+          CREATE LOGIN zetlab WITH PASSWORD = '$$ORDERENTRY_DB_PASSWORD';
+        END
+        USE orderentry;
+        IF NOT EXISTS (SELECT name FROM sys.database_principals WHERE name = 'zetlab')
+        BEGIN
+          CREATE USER zetlab FOR LOGIN zetlab;
+          ALTER ROLE db_owner ADD MEMBER zetlab;
+        END
+      \" && echo 'SQL Server init complete'
+      "
+
+  # ---------------------------------------------------------------------------
+  # Override orderentry to use SQL Server
+  # ---------------------------------------------------------------------------
+  orderentry:
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      sqlserver-init:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      ORDERENTRY_DB__PROVIDER: sqlserver
+      DATABASE_URL: >-
+        sqlserver://sqlserver:1433;database=orderentry;user=zetlab;password=${ORDERENTRY_DB_PASSWORD:-OrderEntry1!};trustServerCertificate=true

@@ -1,0 +1,2036 @@
+{
+  "resourceType": "Bundle",
+  "id": "orderentry-masterdata-v1",
+  "type": "transaction",
+  "entry": [
+    {
+      "fullUrl": "Organization/zlz",
+      "resource": {
+        "resourceType": "Organization",
+        "id": "zlz",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/Organization"
+          ],
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "v1",
+              "display": "OrderEntry seed v1"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "https://www.gs1.org/gln",
+            "value": "7601009336904"
+          }
+        ],
+        "active": true,
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/organization-type",
+                "code": "laboratory",
+                "display": "Laboratory"
+              },
+              {
+                "system": "http://snomed.info/sct",
+                "code": "708175003",
+                "display": "Clinical pathology laboratory"
+              }
+            ],
+            "text": "Medizinisches Labor"
+          }
+        ],
+        "name": "ZLZ Zentrallabor AG",
+        "alias": [
+          "ZLZ"
+        ],
+        "telecom": [
+          {
+            "system": "phone",
+            "value": "+41 44 386 45 45",
+            "use": "work"
+          },
+          {
+            "system": "url",
+            "value": "https://zlz.ch",
+            "use": "work"
+          }
+        ],
+        "address": [
+          {
+            "use": "work",
+            "type": "physical",
+            "line": [
+              "Forchstrasse 454"
+            ],
+            "city": "Zollikon",
+            "state": "Zürich",
+            "postalCode": "8702",
+            "country": "CH"
+          }
+        ],
+        "partOf": {
+          "reference": "Organization/hirslanden-ag",
+          "display": "Hirslanden AG"
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Organization/zlz"
+      }
+    },
+    {
+      "fullUrl": "Organization/zetlab",
+      "resource": {
+        "resourceType": "Organization",
+        "id": "zetlab",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/Organization"
+          ],
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "v1",
+              "display": "OrderEntry seed v1"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "https://www.gs1.org/gln",
+            "value": "7601002149228"
+          }
+        ],
+        "active": true,
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/organization-type",
+                "code": "laboratory",
+                "display": "Laboratory"
+              },
+              {
+                "system": "http://snomed.info/sct",
+                "code": "708175003",
+                "display": "Clinical pathology laboratory"
+              }
+            ],
+            "text": "Medizinisches Labor"
+          }
+        ],
+        "name": "ZetLab AG",
+        "alias": [
+          "ZetLab"
+        ],
+        "telecom": [
+          {
+            "system": "phone",
+            "value": "+41 44 386 44 88",
+            "use": "work"
+          },
+          {
+            "system": "url",
+            "value": "https://zetlab.ch",
+            "use": "work"
+          }
+        ],
+        "address": [
+          {
+            "use": "work",
+            "type": "physical",
+            "line": [
+              "Forchstrasse 454"
+            ],
+            "city": "Zollikon",
+            "state": "Zürich",
+            "postalCode": "8702",
+            "country": "CH"
+          }
+        ],
+        "partOf": {
+          "reference": "Organization/zlz",
+          "display": "ZLZ Zentrallabor AG"
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Organization/zetlab"
+      }
+    },
+    {
+      "fullUrl": "Organization/zlz-notfall",
+      "resource": {
+        "resourceType": "Organization",
+        "id": "zlz-notfall",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/Organization"
+          ],
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "v1",
+              "display": "OrderEntry seed v1"
+            }
+          ]
+        },
+        "active": true,
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/organization-type",
+                "code": "laboratory",
+                "display": "Laboratory"
+              },
+              {
+                "system": "http://snomed.info/sct",
+                "code": "708175003",
+                "display": "Clinical pathology laboratory"
+              }
+            ],
+            "text": "Notfalllabor (intern)"
+          }
+        ],
+        "name": "ZLZ Notfalllabor",
+        "alias": [
+          "zlz-notfall"
+        ],
+        "partOf": {
+          "reference": "Organization/zlz",
+          "display": "ZLZ Zentrallabor AG"
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Organization/zlz-notfall"
+      }
+    },
+    {
+      "fullUrl": "Organization/hirslanden-ag",
+      "resource": {
+        "resourceType": "Organization",
+        "id": "hirslanden-ag",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/Organization"
+          ],
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "v1",
+              "display": "OrderEntry seed v1"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "https://www.gs1.org/gln",
+            "value": "7601002074810"
+          }
+        ],
+        "active": true,
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/organization-type",
+                "code": "prov",
+                "display": "Healthcare Provider"
+              },
+              {
+                "system": "http://snomed.info/sct",
+                "code": "224891009",
+                "display": "Healthcare organisation"
+              }
+            ],
+            "text": "Privatklinikgruppe"
+          }
+        ],
+        "name": "Hirslanden AG",
+        "alias": [
+          "Hirslanden"
+        ],
+        "telecom": [
+          {
+            "system": "phone",
+            "value": "+41 44 388 85 85",
+            "use": "work"
+          },
+          {
+            "system": "fax",
+            "value": "+41 44 388 85 88",
+            "use": "work"
+          },
+          {
+            "system": "url",
+            "value": "https://www.hirslanden.ch/",
+            "use": "work"
+          }
+        ],
+        "address": [
+          {
+            "use": "work",
+            "type": "physical",
+            "line": [
+              "Boulevard Lilienthal 2"
+            ],
+            "city": "Glattpark (Opfikon)",
+            "postalCode": "8152",
+            "country": "CH"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Organization/hirslanden-ag"
+      }
+    },
+    {
+      "fullUrl": "Organization/klinik-hirslanden",
+      "resource": {
+        "resourceType": "Organization",
+        "id": "klinik-hirslanden",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/Organization"
+          ],
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "v1",
+              "display": "OrderEntry seed v1"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "https://www.gs1.org/gln",
+            "value": "7601002118071"
+          }
+        ],
+        "active": true,
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/organization-type",
+                "code": "prov",
+                "display": "Healthcare Provider"
+              },
+              {
+                "system": "http://snomed.info/sct",
+                "code": "22232009",
+                "display": "Hospital"
+              }
+            ],
+            "text": "Klinik"
+          }
+        ],
+        "name": "Hirslanden Klinik Hirslanden",
+        "alias": [
+          "Klinik Hirslanden"
+        ],
+        "telecom": [
+          {
+            "system": "phone",
+            "value": "+41 44 387 21 11",
+            "use": "work"
+          },
+          {
+            "system": "url",
+            "value": "https://www.hirslanden.ch/klinik-hirslanden",
+            "use": "work"
+          }
+        ],
+        "address": [
+          {
+            "use": "work",
+            "type": "physical",
+            "line": [
+              "Witellikerstrasse 40"
+            ],
+            "city": "Zürich",
+            "state": "ZH",
+            "postalCode": "8032",
+            "country": "CH"
+          }
+        ],
+        "partOf": {
+          "reference": "Organization/hirslanden-ag",
+          "display": "Hirslanden AG"
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Organization/klinik-hirslanden"
+      }
+    },
+    {
+      "fullUrl": "Organization/klinik-im-park",
+      "resource": {
+        "resourceType": "Organization",
+        "id": "klinik-im-park",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/Organization"
+          ],
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "v1",
+              "display": "OrderEntry seed v1"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "https://www.gs1.org/gln",
+            "value": "7601002530767"
+          }
+        ],
+        "active": true,
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/organization-type",
+                "code": "prov",
+                "display": "Healthcare Provider"
+              },
+              {
+                "system": "http://snomed.info/sct",
+                "code": "22232009",
+                "display": "Hospital"
+              }
+            ],
+            "text": "Spital"
+          }
+        ],
+        "name": "Hirslanden AG - Klinik Im Park",
+        "alias": [
+          "Klinik im Park"
+        ],
+        "telecom": [
+          {
+            "system": "url",
+            "value": "https://www.hirslanden.ch/klinik-im-park",
+            "use": "work"
+          }
+        ],
+        "address": [
+          {
+            "use": "work",
+            "type": "physical",
+            "line": [
+              "Talstrasse 65"
+            ],
+            "city": "Zürich",
+            "postalCode": "8001",
+            "country": "CH"
+          }
+        ],
+        "partOf": {
+          "reference": "Organization/hirslanden-ag",
+          "display": "Hirslanden AG"
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Organization/klinik-im-park"
+      }
+    },
+    {
+      "fullUrl": "Organization/notfalllabor-klinik-im-park",
+      "resource": {
+        "resourceType": "Organization",
+        "id": "notfalllabor-klinik-im-park",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/Organization"
+          ],
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "v1",
+              "display": "OrderEntry seed v1"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "https://www.gs1.org/gln",
+            "value": "7601009417597"
+          }
+        ],
+        "active": true,
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/organization-type",
+                "code": "prov",
+                "display": "Healthcare Provider"
+              },
+              {
+                "system": "http://snomed.info/sct",
+                "code": "708175003",
+                "display": "Clinical pathology laboratory"
+              }
+            ],
+            "text": "Notfalllabor"
+          }
+        ],
+        "name": "ZLZ Notfalllabor Klinik Im Park",
+        "alias": [
+          "Notfalllabor Klinik im Park"
+        ],
+        "telecom": [
+          {
+            "system": "phone",
+            "value": "+41 44 209 28 50",
+            "use": "work"
+          },
+          {
+            "system": "fax",
+            "value": "+41 44 209 23 79",
+            "use": "work"
+          },
+          {
+            "system": "url",
+            "value": "https://www.hirslanden.ch/de/klinik-im-park/centers/notfallstation-klinik-im-park.html",
+            "use": "work"
+          }
+        ],
+        "address": [
+          {
+            "use": "work",
+            "type": "physical",
+            "line": [
+              "Bellariastrasse 38"
+            ],
+            "city": "Zürich",
+            "postalCode": "8038",
+            "country": "CH"
+          }
+        ],
+        "partOf": {
+          "reference": "Organization/zlz",
+          "display": "ZLZ Zentrallabor AG"
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Organization/notfalllabor-klinik-im-park"
+      }
+    },
+    {
+      "fullUrl": "Organization/versicherung-css",
+      "resource": {
+        "resourceType": "Organization",
+        "id": "versicherung-css",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/Organization"
+          ],
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "v1",
+              "display": "OrderEntry seed v1"
+            }
+          ]
+        },
+        "active": true,
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/organization-type",
+                "code": "ins",
+                "display": "Insurance Company"
+              }
+            ],
+            "text": "Krankenversicherung"
+          }
+        ],
+        "name": "CSS Versicherung AG",
+        "alias": [
+          "CSS"
+        ],
+        "telecom": [
+          {
+            "system": "url",
+            "value": "https://www.css.ch",
+            "use": "work"
+          }
+        ],
+        "address": [
+          {
+            "use": "work",
+            "type": "postal",
+            "line": [
+              "Tribschenstrasse 21"
+            ],
+            "city": "Luzern",
+            "postalCode": "6002",
+            "country": "CH"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Organization/versicherung-css"
+      }
+    },
+    {
+      "fullUrl": "Organization/spital-zollikerberg",
+      "resource": {
+        "resourceType": "Organization",
+        "id": "spital-zollikerberg",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/Organization"
+          ],
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "v1",
+              "display": "OrderEntry seed v1"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "https://www.gs1.org/gln",
+            "value": "7601002116954"
+          }
+        ],
+        "active": true,
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/organization-type",
+                "code": "prov",
+                "display": "Healthcare Provider"
+              },
+              {
+                "system": "http://snomed.info/sct",
+                "code": "22232009",
+                "display": "Hospital"
+              }
+            ],
+            "text": "Spital"
+          }
+        ],
+        "name": "Spital Zollikerberg",
+        "address": [
+          {
+            "use": "work",
+            "type": "physical",
+            "line": [
+              "Trichtenhauser Strasse 20"
+            ],
+            "city": "Zollikerberg",
+            "state": "ZH",
+            "postalCode": "8125",
+            "country": "CH"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Organization/spital-zollikerberg"
+      }
+    },
+    {
+      "fullUrl": "Organization/augenzentrum-zollikerberg",
+      "resource": {
+        "resourceType": "Organization",
+        "id": "augenzentrum-zollikerberg",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/Organization"
+          ],
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "v1",
+              "display": "OrderEntry seed v1"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "https://www.gs1.org/gln",
+            "value": "7601002739764"
+          }
+        ],
+        "active": true,
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/organization-type",
+                "code": "prov",
+                "display": "Healthcare Provider"
+              },
+              {
+                "system": "http://snomed.info/sct",
+                "code": "33022008",
+                "display": "Outpatient clinic"
+              }
+            ],
+            "text": "Ambulante ärztliche Institution"
+          }
+        ],
+        "name": "Spital Zollikerberg - Augenzentrum Zollikerberg",
+        "alias": [
+          "Augenzentrum Zollikerberg"
+        ],
+        "address": [
+          {
+            "use": "work",
+            "type": "physical",
+            "line": [
+              "Trichtenhauser Strasse 20"
+            ],
+            "city": "Zollikerberg",
+            "state": "ZH",
+            "postalCode": "8125",
+            "country": "CH"
+          }
+        ],
+        "partOf": {
+          "reference": "Organization/spital-zollikerberg",
+          "display": "Spital Zollikerberg"
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Organization/augenzentrum-zollikerberg"
+      }
+    },
+    {
+      "fullUrl": "OrganizationAffiliation/aff-zlz-spital-zollikerberg",
+      "resource": {
+        "resourceType": "OrganizationAffiliation",
+        "id": "aff-zlz-spital-zollikerberg",
+        "meta": {
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "v1",
+              "display": "OrderEntry seed v1"
+            }
+          ]
+        },
+        "active": true,
+        "period": {
+          "start": "2024-01-01"
+        },
+        "organization": {
+          "reference": "Organization/spital-zollikerberg",
+          "display": "Spital Zollikerberg"
+        },
+        "participatingOrganization": {
+          "reference": "Organization/zlz",
+          "display": "ZLZ Zentrallabor AG"
+        },
+        "code": [
+          {
+            "coding": [
+              {
+                "system": "http://hl7.org/fhir/organization-role",
+                "code": "diagnostics",
+                "display": "Diagnostics"
+              }
+            ],
+            "text": "Labordiagnostik"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "OrganizationAffiliation/aff-zlz-spital-zollikerberg"
+      }
+    },
+    {
+      "fullUrl": "OrganizationAffiliation/aff-zlz-augenzentrum-zollikerberg",
+      "resource": {
+        "resourceType": "OrganizationAffiliation",
+        "id": "aff-zlz-augenzentrum-zollikerberg",
+        "meta": {
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "v1",
+              "display": "OrderEntry seed v1"
+            }
+          ]
+        },
+        "active": true,
+        "period": {
+          "start": "2024-01-01"
+        },
+        "organization": {
+          "reference": "Organization/augenzentrum-zollikerberg",
+          "display": "Spital Zollikerberg - Augenzentrum Zollikerberg"
+        },
+        "participatingOrganization": {
+          "reference": "Organization/zlz",
+          "display": "ZLZ Zentrallabor AG"
+        },
+        "code": [
+          {
+            "coding": [
+              {
+                "system": "http://hl7.org/fhir/organization-role",
+                "code": "diagnostics",
+                "display": "Diagnostics"
+              }
+            ],
+            "text": "Labordiagnostik"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "OrganizationAffiliation/aff-zlz-augenzentrum-zollikerberg"
+      }
+    },
+    {
+      "fullUrl": "OrganizationAffiliation/aff-zlz-klinik-im-park",
+      "resource": {
+        "resourceType": "OrganizationAffiliation",
+        "id": "aff-zlz-klinik-im-park",
+        "meta": {
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "v1",
+              "display": "OrderEntry seed v1"
+            }
+          ]
+        },
+        "active": true,
+        "period": {
+          "start": "2024-01-01"
+        },
+        "organization": {
+          "reference": "Organization/klinik-im-park",
+          "display": "Hirslanden AG - Klinik Im Park"
+        },
+        "participatingOrganization": {
+          "reference": "Organization/zlz",
+          "display": "ZLZ Zentrallabor AG"
+        },
+        "code": [
+          {
+            "coding": [
+              {
+                "system": "http://hl7.org/fhir/organization-role",
+                "code": "diagnostics",
+                "display": "Diagnostics"
+              }
+            ],
+            "text": "Labordiagnostik"
+          }
+        ],
+        "specialty": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "394916005",
+                "display": "Pathology"
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "OrganizationAffiliation/aff-zlz-klinik-im-park"
+      }
+    },
+    {
+      "fullUrl": "OrganizationAffiliation/aff-zlz-klinik-hirslanden",
+      "resource": {
+        "resourceType": "OrganizationAffiliation",
+        "id": "aff-zlz-klinik-hirslanden",
+        "meta": {
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "v1",
+              "display": "OrderEntry seed v1"
+            }
+          ]
+        },
+        "active": true,
+        "period": {
+          "start": "2024-01-01"
+        },
+        "organization": {
+          "reference": "Organization/klinik-hirslanden",
+          "display": "Hirslanden Klinik Hirslanden"
+        },
+        "participatingOrganization": {
+          "reference": "Organization/zlz",
+          "display": "ZLZ Zentrallabor AG"
+        },
+        "code": [
+          {
+            "coding": [
+              {
+                "system": "http://hl7.org/fhir/organization-role",
+                "code": "diagnostics",
+                "display": "Diagnostics"
+              }
+            ],
+            "text": "Labordiagnostik"
+          }
+        ],
+        "specialty": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "394916005",
+                "display": "Pathology"
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "OrganizationAffiliation/aff-zlz-klinik-hirslanden"
+      }
+    },
+    {
+      "fullUrl": "Practitioner/prac-suavant-gilles",
+      "resource": {
+        "resourceType": "Practitioner",
+        "id": "prac-suavant-gilles",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/Practitioner"
+          ],
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "v1",
+              "display": "OrderEntry seed v1"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "https://www.gs1.org/gln",
+            "value": "7601000233349"
+          }
+        ],
+        "active": true,
+        "name": [
+          {
+            "use": "official",
+            "family": "Suavant",
+            "given": [
+              "Gilles"
+            ],
+            "prefix": [
+              "Dr. med."
+            ]
+          }
+        ],
+        "gender": "male",
+        "qualification": [
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0360",
+                  "code": "MD",
+                  "display": "Doctor of Medicine"
+                }
+              ],
+              "text": "Arzt"
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Practitioner/prac-suavant-gilles"
+      }
+    },
+    {
+      "fullUrl": "PractitionerRole/role-suavant-klinik-hirslanden",
+      "resource": {
+        "resourceType": "PractitionerRole",
+        "id": "role-suavant-klinik-hirslanden",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/PractitionerRole"
+          ],
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "v1",
+              "display": "OrderEntry seed v1"
+            }
+          ]
+        },
+        "active": true,
+        "period": {
+          "start": "2024-01-01"
+        },
+        "practitioner": {
+          "reference": "Practitioner/prac-suavant-gilles",
+          "display": "Dr. med. Gilles Suavant"
+        },
+        "organization": {
+          "reference": "Organization/klinik-hirslanden",
+          "display": "Klinik Hirslanden"
+        },
+        "code": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "309343006",
+                "display": "Physician"
+              }
+            ],
+            "text": "Arzt"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "PractitionerRole/role-suavant-klinik-hirslanden"
+      }
+    },
+    {
+      "fullUrl": "Organization/praxis-4i",
+      "resource": {
+        "resourceType": "Organization",
+        "id": "praxis-4i",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/Organization"
+          ],
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "v1",
+              "display": "OrderEntry seed v1"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "https://www.gs1.org/gln",
+            "value": "7601009299681"
+          }
+        ],
+        "active": true,
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/organization-type",
+                "code": "prov",
+                "display": "Healthcare Provider"
+              },
+              {
+                "system": "http://snomed.info/sct",
+                "code": "33022008",
+                "display": "Outpatient clinic"
+              }
+            ],
+            "text": "Arztpraxis"
+          }
+        ],
+        "name": "4i Praxis AG",
+        "address": [
+          {
+            "use": "work",
+            "type": "physical",
+            "line": [
+              "Engelstrasse 6"
+            ],
+            "city": "Zürich",
+            "state": "ZH",
+            "postalCode": "8004",
+            "country": "CH"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Organization/praxis-4i"
+      }
+    },
+    {
+      "fullUrl": "OrganizationAffiliation/aff-zlz-praxis-4i",
+      "resource": {
+        "resourceType": "OrganizationAffiliation",
+        "id": "aff-zlz-praxis-4i",
+        "meta": {
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "v1",
+              "display": "OrderEntry seed v1"
+            }
+          ]
+        },
+        "active": true,
+        "period": {
+          "start": "2024-01-01"
+        },
+        "organization": {
+          "reference": "Organization/praxis-4i",
+          "display": "4i Praxis AG"
+        },
+        "participatingOrganization": {
+          "reference": "Organization/zlz",
+          "display": "ZLZ Zentrallabor AG"
+        },
+        "code": [
+          {
+            "coding": [
+              {
+                "system": "http://hl7.org/fhir/organization-role",
+                "code": "diagnostics",
+                "display": "Diagnostics"
+              }
+            ],
+            "text": "Labordiagnostik"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "OrganizationAffiliation/aff-zlz-praxis-4i"
+      }
+    },
+    {
+      "fullUrl": "Organization/universitaetsklinik-balgrist",
+      "resource": {
+        "resourceType": "Organization",
+        "id": "universitaetsklinik-balgrist",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/Organization"
+          ],
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "v1",
+              "display": "OrderEntry seed v1"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "https://www.gs1.org/gln",
+            "value": "7601002116992"
+          }
+        ],
+        "active": true,
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/organization-type",
+                "code": "prov",
+                "display": "Healthcare Provider"
+              },
+              {
+                "system": "http://snomed.info/sct",
+                "code": "22232009",
+                "display": "Hospital"
+              }
+            ],
+            "text": "Spital"
+          }
+        ],
+        "name": "Universitätsklinik Balgrist",
+        "address": [
+          {
+            "use": "work",
+            "type": "physical",
+            "line": [
+              "Forchstrasse 340"
+            ],
+            "city": "Zürich",
+            "state": "ZH",
+            "postalCode": "8008",
+            "country": "CH"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Organization/universitaetsklinik-balgrist"
+      }
+    },
+    {
+      "fullUrl": "OrganizationAffiliation/aff-zlz-balgrist",
+      "resource": {
+        "resourceType": "OrganizationAffiliation",
+        "id": "aff-zlz-balgrist",
+        "meta": {
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "v1",
+              "display": "OrderEntry seed v1"
+            }
+          ]
+        },
+        "active": true,
+        "period": {
+          "start": "2024-01-01"
+        },
+        "organization": {
+          "reference": "Organization/universitaetsklinik-balgrist",
+          "display": "Universitätsklinik Balgrist"
+        },
+        "participatingOrganization": {
+          "reference": "Organization/zlz",
+          "display": "ZLZ Zentrallabor AG"
+        },
+        "code": [
+          {
+            "coding": [
+              {
+                "system": "http://hl7.org/fhir/organization-role",
+                "code": "diagnostics",
+                "display": "Diagnostics"
+              }
+            ],
+            "text": "Labordiagnostik"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "OrganizationAffiliation/aff-zlz-balgrist"
+      }
+    },
+    {
+      "fullUrl": "Organization/schulthess-klinik",
+      "resource": {
+        "resourceType": "Organization",
+        "id": "schulthess-klinik",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/Organization"
+          ],
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "v1",
+              "display": "OrderEntry seed v1"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "https://www.gs1.org/gln",
+            "value": "7601002114950"
+          }
+        ],
+        "active": true,
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/organization-type",
+                "code": "prov",
+                "display": "Healthcare Provider"
+              },
+              {
+                "system": "http://snomed.info/sct",
+                "code": "22232009",
+                "display": "Hospital"
+              }
+            ],
+            "text": "Spital"
+          }
+        ],
+        "name": "Schulthess Klinik",
+        "address": [
+          {
+            "use": "work",
+            "type": "physical",
+            "line": [
+              "Lengghalde 2"
+            ],
+            "city": "Zürich",
+            "state": "ZH",
+            "postalCode": "8008",
+            "country": "CH"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Organization/schulthess-klinik"
+      }
+    },
+    {
+      "fullUrl": "OrganizationAffiliation/aff-zlz-schulthess-klinik",
+      "resource": {
+        "resourceType": "OrganizationAffiliation",
+        "id": "aff-zlz-schulthess-klinik",
+        "meta": {
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "v1",
+              "display": "OrderEntry seed v1"
+            }
+          ]
+        },
+        "active": true,
+        "period": {
+          "start": "2024-01-01"
+        },
+        "organization": {
+          "reference": "Organization/schulthess-klinik",
+          "display": "Schulthess Klinik"
+        },
+        "participatingOrganization": {
+          "reference": "Organization/zlz",
+          "display": "ZLZ Zentrallabor AG"
+        },
+        "code": [
+          {
+            "coding": [
+              {
+                "system": "http://hl7.org/fhir/organization-role",
+                "code": "diagnostics",
+                "display": "Diagnostics"
+              }
+            ],
+            "text": "Labordiagnostik"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "OrganizationAffiliation/aff-zlz-schulthess-klinik"
+      }
+    },
+    {
+      "fullUrl": "Practitioner/prac-drescher-eva",
+      "resource": {
+        "resourceType": "Practitioner",
+        "id": "prac-drescher-eva",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/Practitioner"
+          ],
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "v1",
+              "display": "OrderEntry seed v1"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "https://www.gs1.org/gln",
+            "value": "7601000528391"
+          }
+        ],
+        "active": true,
+        "name": [
+          {
+            "use": "official",
+            "family": "Drescher",
+            "given": [
+              "Eva"
+            ],
+            "prefix": [
+              "Dr. med."
+            ]
+          }
+        ],
+        "gender": "female",
+        "address": [
+          {
+            "use": "work",
+            "city": "Wetzikon",
+            "state": "ZH",
+            "postalCode": "8620",
+            "country": "CH"
+          }
+        ],
+        "qualification": [
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0360",
+                  "code": "MD",
+                  "display": "Doctor of Medicine"
+                }
+              ],
+              "text": "Dr. med."
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Practitioner/prac-drescher-eva"
+      }
+    },
+    {
+      "fullUrl": "PractitionerRole/role-drescher-spital-zollikerberg",
+      "resource": {
+        "resourceType": "PractitionerRole",
+        "id": "role-drescher-spital-zollikerberg",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/PractitionerRole"
+          ],
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "v1",
+              "display": "OrderEntry seed v1"
+            }
+          ]
+        },
+        "active": true,
+        "period": {
+          "start": "2024-01-01"
+        },
+        "practitioner": {
+          "reference": "Practitioner/prac-drescher-eva",
+          "display": "Dr. med. Eva Drescher"
+        },
+        "organization": {
+          "reference": "Organization/spital-zollikerberg",
+          "display": "Spital Zollikerberg"
+        },
+        "code": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "309343006",
+                "display": "Physician"
+              }
+            ],
+            "text": "Ärztin"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "PractitionerRole/role-drescher-spital-zollikerberg"
+      }
+    },
+    {
+      "fullUrl": "Practitioner/prac-von-rohr-anna",
+      "resource": {
+        "resourceType": "Practitioner",
+        "id": "prac-von-rohr-anna",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/Practitioner"
+          ],
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "v1",
+              "display": "OrderEntry seed v1"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "https://www.gs1.org/gln",
+            "value": "7601000977335"
+          }
+        ],
+        "active": true,
+        "name": [
+          {
+            "use": "official",
+            "family": "von Rohr",
+            "given": [
+              "Anna"
+            ],
+            "prefix": [
+              "Dr. med."
+            ]
+          }
+        ],
+        "gender": "female",
+        "qualification": [
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0360",
+                  "code": "MD",
+                  "display": "Doctor of Medicine"
+                }
+              ],
+              "text": "Dr. med."
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Practitioner/prac-von-rohr-anna"
+      }
+    },
+    {
+      "fullUrl": "PractitionerRole/role-von-rohr-schulthess",
+      "resource": {
+        "resourceType": "PractitionerRole",
+        "id": "role-von-rohr-schulthess",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/PractitionerRole"
+          ],
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "v1",
+              "display": "OrderEntry seed v1"
+            }
+          ]
+        },
+        "active": true,
+        "period": {
+          "start": "2024-01-01"
+        },
+        "practitioner": {
+          "reference": "Practitioner/prac-von-rohr-anna",
+          "display": "Dr. med. Anna von Rohr"
+        },
+        "organization": {
+          "reference": "Organization/schulthess-klinik",
+          "display": "Schulthess Klinik"
+        },
+        "code": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "309343006",
+                "display": "Physician"
+              }
+            ],
+            "text": "Ärztin"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "PractitionerRole/role-von-rohr-schulthess"
+      }
+    },
+    {
+      "fullUrl": "PractitionerRole/role-von-rohr-balgrist",
+      "resource": {
+        "resourceType": "PractitionerRole",
+        "id": "role-von-rohr-balgrist",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/PractitionerRole"
+          ],
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "v1",
+              "display": "OrderEntry seed v1"
+            }
+          ]
+        },
+        "active": true,
+        "period": {
+          "start": "2024-01-01"
+        },
+        "practitioner": {
+          "reference": "Practitioner/prac-von-rohr-anna",
+          "display": "Dr. med. Anna von Rohr"
+        },
+        "organization": {
+          "reference": "Organization/universitaetsklinik-balgrist",
+          "display": "Universitätsklinik Balgrist"
+        },
+        "code": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "309343006",
+                "display": "Physician"
+              }
+            ],
+            "text": "Ärztin"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "PractitionerRole/role-von-rohr-balgrist"
+      }
+    },
+    {
+      "fullUrl": "Practitioner/prac-dede-ersin",
+      "resource": {
+        "resourceType": "Practitioner",
+        "id": "prac-dede-ersin",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/Practitioner"
+          ],
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "v1",
+              "display": "OrderEntry seed v1"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "https://www.gs1.org/gln",
+            "value": "7601001619241"
+          }
+        ],
+        "active": true,
+        "name": [
+          {
+            "use": "official",
+            "family": "Dede",
+            "given": [
+              "Ersin"
+            ]
+          }
+        ],
+        "qualification": [
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "http://snomed.info/sct",
+                  "code": "159418007",
+                  "display": "Medical laboratory technician"
+                }
+              ],
+              "text": "Biomedizinischer Analytiker"
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Practitioner/prac-dede-ersin"
+      }
+    },
+    {
+      "fullUrl": "PractitionerRole/role-dede-zlz",
+      "resource": {
+        "resourceType": "PractitionerRole",
+        "id": "role-dede-zlz",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/PractitionerRole"
+          ],
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "v1",
+              "display": "OrderEntry seed v1"
+            }
+          ]
+        },
+        "active": true,
+        "period": {
+          "start": "2024-01-01"
+        },
+        "practitioner": {
+          "reference": "Practitioner/prac-dede-ersin",
+          "display": "Ersin Dede"
+        },
+        "organization": {
+          "reference": "Organization/zlz",
+          "display": "ZLZ Zentrallabor AG"
+        },
+        "code": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "159418007",
+                "display": "Medical laboratory technician"
+              }
+            ],
+            "text": "Biomedizinischer Analytiker"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "PractitionerRole/role-dede-zlz"
+      }
+    },
+    {
+      "fullUrl": "PractitionerRole/role-dede-zetlab",
+      "resource": {
+        "resourceType": "PractitionerRole",
+        "id": "role-dede-zetlab",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/PractitionerRole"
+          ],
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "v1",
+              "display": "OrderEntry seed v1"
+            }
+          ]
+        },
+        "active": true,
+        "period": {
+          "start": "2024-01-01"
+        },
+        "practitioner": {
+          "reference": "Practitioner/prac-dede-ersin",
+          "display": "Ersin Dede"
+        },
+        "organization": {
+          "reference": "Organization/zetlab",
+          "display": "ZetLab AG"
+        },
+        "code": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "159418007",
+                "display": "Medical laboratory technician"
+              }
+            ],
+            "text": "Biomedizinischer Analytiker"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "PractitionerRole/role-dede-zetlab"
+      }
+    },
+    {
+      "fullUrl": "PractitionerRole/role-von-rohr-praxis-4i",
+      "resource": {
+        "resourceType": "PractitionerRole",
+        "id": "role-von-rohr-praxis-4i",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/PractitionerRole"
+          ],
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "v1",
+              "display": "OrderEntry seed v1"
+            }
+          ]
+        },
+        "active": true,
+        "period": {
+          "start": "2024-01-01"
+        },
+        "practitioner": {
+          "reference": "Practitioner/prac-von-rohr-anna",
+          "display": "Dr. med. Anna von Rohr"
+        },
+        "organization": {
+          "reference": "Organization/praxis-4i",
+          "display": "4i Praxis AG"
+        },
+        "code": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "309343006",
+                "display": "Physician"
+              }
+            ],
+            "text": "Ärztin"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "PractitionerRole/role-von-rohr-praxis-4i"
+      }
+    },
+    {
+      "fullUrl": "Practitioner/prac-keller-petra",
+      "resource": {
+        "resourceType": "Practitioner",
+        "id": "prac-keller-petra",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/Practitioner"
+          ],
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "v1",
+              "display": "OrderEntry seed v1"
+            }
+          ]
+        },
+        "active": true,
+        "name": [
+          {
+            "use": "official",
+            "family": "Keller",
+            "given": [
+              "Petra"
+            ]
+          }
+        ],
+        "gender": "female",
+        "address": [
+          {
+            "use": "work",
+            "city": "Zürich",
+            "state": "ZH",
+            "postalCode": "8001",
+            "country": "CH"
+          }
+        ],
+        "qualification": [
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "http://snomed.info/sct",
+                  "code": "224608005",
+                  "display": "Administrative officer"
+                }
+              ],
+              "text": "Praxismanagerin"
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Practitioner/prac-keller-petra"
+      }
+    },
+    {
+      "fullUrl": "PractitionerRole/role-keller-klinik-im-park",
+      "resource": {
+        "resourceType": "PractitionerRole",
+        "id": "role-keller-klinik-im-park",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/PractitionerRole"
+          ],
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "v1",
+              "display": "OrderEntry seed v1"
+            }
+          ]
+        },
+        "active": true,
+        "period": {
+          "start": "2024-01-01"
+        },
+        "practitioner": {
+          "reference": "Practitioner/prac-keller-petra",
+          "display": "Petra Keller"
+        },
+        "organization": {
+          "reference": "Organization/klinik-im-park",
+          "display": "Hirslanden AG - Klinik Im Park"
+        },
+        "code": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "224608005",
+                "display": "Administrative officer"
+              }
+            ],
+            "text": "Praxismanagerin"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "PractitionerRole/role-keller-klinik-im-park"
+      }
+    },
+    {
+      "fullUrl": "ActivityDefinition/service-type-mibi",
+      "resource": {
+        "resourceType": "ActivityDefinition",
+        "id": "service-type-mibi",
+        "meta": {
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "v1",
+              "display": "OrderEntry seed v1"
+            }
+          ]
+        },
+        "status": "active",
+        "name": "MikrobiologieServiceType",
+        "title": "Mikrobiologie",
+        "description": "Mikrobielle Untersuchungen (Kultur, Resistenz, Serologie)",
+        "topic": [
+          {
+            "coding": [
+              {
+                "system": "https://www.zetlab.ch/fhir/category",
+                "code": "MIBI",
+                "display": "Mikrobiologie"
+              }
+            ],
+            "text": "Mikrobiologie"
+          }
+        ],
+        "kind": "ServiceRequest",
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.zetlab.ch/fhir/category",
+              "code": "MIBI"
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ActivityDefinition/service-type-mibi"
+      }
+    },
+    {
+      "fullUrl": "ActivityDefinition/service-type-routine",
+      "resource": {
+        "resourceType": "ActivityDefinition",
+        "id": "service-type-routine",
+        "meta": {
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "v1",
+              "display": "OrderEntry seed v1"
+            }
+          ]
+        },
+        "status": "active",
+        "name": "RoutineServiceType",
+        "title": "Routine",
+        "description": "Routine-Laboruntersuchungen (Hämatologie, Klinische Chemie, Gerinnung)",
+        "topic": [
+          {
+            "coding": [
+              {
+                "system": "https://www.zetlab.ch/fhir/category",
+                "code": "ROUTINE",
+                "display": "Routine"
+              }
+            ],
+            "text": "Routine"
+          }
+        ],
+        "kind": "ServiceRequest",
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.zetlab.ch/fhir/category",
+              "code": "ROUTINE"
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ActivityDefinition/service-type-routine"
+      }
+    },
+    {
+      "fullUrl": "ActivityDefinition/service-type-poc",
+      "resource": {
+        "resourceType": "ActivityDefinition",
+        "id": "service-type-poc",
+        "meta": {
+          "tag": [
+            {
+              "system": "https://www.zetlab.ch/fhir/seed",
+              "code": "v1",
+              "display": "OrderEntry seed v1"
+            }
+          ]
+        },
+        "status": "active",
+        "name": "PocServiceType",
+        "title": "Point of Care",
+        "description": "Point-of-Care Schnelltests (BGA, Glucosemessung, Troponin)",
+        "topic": [
+          {
+            "coding": [
+              {
+                "system": "https://www.zetlab.ch/fhir/category",
+                "code": "POC",
+                "display": "Point of Care"
+              }
+            ],
+            "text": "Point of Care"
+          }
+        ],
+        "kind": "ServiceRequest",
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.zetlab.ch/fhir/category",
+              "code": "POC"
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ActivityDefinition/service-type-poc"
+      }
+    }
+  ]
+}

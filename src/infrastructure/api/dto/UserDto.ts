@@ -67,6 +67,8 @@ export interface UpdateUserRequestDto {
   status?: UserStatus;
   externalId?: string;
   profile?: UserProfileDto;
+  /** FHIR Practitioner ID linked to this user — used for access level resolution at login. */
+  fhirPractitionerId?: string;
 }
 
 // ── Response DTOs ─────────────────────────────────────────────────────────────

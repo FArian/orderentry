@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { validateCredentials, verifyUser, ensureBootstrapAdmin } from "@/lib/userStore";
 import { signSession, ONE_DAY, cookieName } from "@/lib/auth";
 import { logAuth } from "@/lib/logAuth";
+import { classifyPrismaError, isSchemaError, isConnectionError } from "@/infrastructure/db/prismaError";
+import { FhirAccessResolver } from "@/application/services/FhirAccessResolver";
+import { EnvConfig } from "@/infrastructure/config/EnvConfig";
 
 export async function POST(req: Request) {
   try {
@@ -24,18 +27,42 @@ export async function POST(req: Request) {
     let user;
     try {
       user = await verifyUser(username, password);
-    } catch (fsErr) {
-      // userStore.ensureDataFile() throws when the filesystem is read-only
-      // (Vercel, Docker with a ro mount, etc.). Surface this as 503 with a
-      // clear diagnostic rather than swallowing it as "Invalid request".
-      const message = fsErr instanceof Error ? fsErr.message : String(fsErr);
+    } catch (dbErr) {
+      const message = dbErr instanceof Error ? dbErr.message : String(dbErr);
       logAuth("LOGIN_FS_ERROR", { username, error: message });
+
+      const diagnosis = classifyPrismaError(dbErr);
+
+      if (isSchemaError(dbErr)) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: "Datenbank-Schema veraltet",
+            diagnosis,
+            hint: "GET /api/health/db für Details aufrufen. Kurz: Dev-Server stoppen → `npx prisma generate` → `.next` löschen → neu starten.",
+          },
+          { status: 503 },
+        );
+      }
+
+      if (isConnectionError(dbErr)) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: "Datenbank nicht erreichbar",
+            diagnosis,
+            hint: "GET /api/health/db für Details aufrufen.",
+          },
+          { status: 503 },
+        );
+      }
+
       return NextResponse.json(
         {
           ok: false,
-          error:
-            "User store unavailable (read-only filesystem). " +
-            "Set NEXT_PUBLIC_FORCE_LOCAL_AUTH=true to use browser-local auth.",
+          error: "Datenbankfehler — Login nicht möglich",
+          diagnosis,
+          hint: "GET /api/health/db für Details aufrufen.",
         },
         { status: 503 },
       );
@@ -46,7 +73,30 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "Invalid credentials" }, { status: 401 });
     }
 
-    const token = signSession(user.id, user.username, ONE_DAY);
+    // Resolve FHIR-based access level (fail-safe: bootstrap admin bypasses this)
+    const resolver = new FhirAccessResolver({
+      fhirBaseUrl:       EnvConfig.fhirBaseUrl,
+      internalOrgIds:    EnvConfig.labInternalOrgIds,
+      internalRoleCodes: EnvConfig.snomedRoleInternal,
+      orgAdminRoleCodes: EnvConfig.snomedRoleOrgAdmin,
+    });
+
+    let accessExtras = {};
+    try {
+      const access = await resolver.resolve(user.fhirPractitionerId ?? undefined, user.role ?? "user");
+      accessExtras = {
+        accessLevel:        access.level,
+        practitionerFhirId: access.practitionerFhirId,
+        isInternal:         access.isInternal,
+        allowedOrgIds:      access.allowedOrgIds,
+      };
+    } catch (accessErr) {
+      const accessMsg = accessErr instanceof Error ? accessErr.message : String(accessErr);
+      logAuth("LOGIN_ACCESS_DENIED", { username, error: accessMsg });
+      return NextResponse.json({ ok: false, error: accessMsg }, { status: 403 });
+    }
+
+    const token = signSession(user.id, user.username, ONE_DAY, accessExtras);
     const res = NextResponse.json(
       { ok: true, user: { id: user.id, username: user.username } },
       { status: 200 },
@@ -73,6 +123,10 @@ export async function POST(req: Request) {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     logAuth("LOGIN_ERROR", { error: message });
-    return NextResponse.json({ ok: false, error: "Invalid request" }, { status: 400 });
+    const diagnosis = classifyPrismaError(err);
+    return NextResponse.json(
+      { ok: false, error: "Serverfehler beim Login", diagnosis },
+      { status: 500 },
+    );
   }
 }

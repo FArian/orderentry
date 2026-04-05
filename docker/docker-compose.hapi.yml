@@ -1,0 +1,183 @@
+# =============================================================================
+# z2Lab OrderEntry — Vollständiger Stack mit lokalem HAPI FHIR (H2-Datenbank)
+# =============================================================================
+#
+# Enthält:
+#   - HAPI FHIR R4 Server (eingebettete H2-DB — kein PostgreSQL nötig)
+#   - OrderEntry (SQLite — kein externer DB-Server nötig)
+#
+# Keine externen Abhängigkeiten — läuft vollständig standalone.
+#
+# Usage:
+#   docker compose -f docker/docker-compose.hapi.yml up -d
+#
+# Stop:
+#   docker compose -f docker/docker-compose.hapi.yml down
+#
+# Logs:
+#   docker compose -f docker/docker-compose.hapi.yml logs -f
+#
+# URLs:
+#   OrderEntry:  http://localhost:3000
+#   HAPI FHIR:   http://localhost:8080/fhir
+#   HAPI UI:     http://localhost:8080
+#
+# Hinweis:
+#   H2 ist eine eingebettete Java-Datenbank — persistent via Volume.
+#   Geeignet für Entwicklung, Tests und Demo.
+#   Für Produktion: docker-compose.yml (mit externem HAPI + PostgreSQL).
+# =============================================================================
+
+networks:
+  orderentry-net:
+    name: orderentry-net-hapi
+    driver: bridge
+
+volumes:
+  hapi-data:        # H2-Datenbankdateien (persistent)
+  orderentry-data:  # SQLite DB + config.json
+  orderentry-logs:  # Structured log files
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # HAPI FHIR — R4 Server mit eingebetteter H2-Datenbank
+  # Keine externe DB nötig — H2 wird direkt von HAPI verwaltet.
+  # ---------------------------------------------------------------------------
+  hapi-fhir:
+    image: hapiproject/hapi:latest
+    container_name: orderentry-hapi
+    restart: unless-stopped
+
+    ports:
+      - "8080:8080"
+
+    environment:
+      # H2 eingebettet — Datei im Volume (persistent)
+      spring.datasource.url:           jdbc:h2:file:/data/hapi;DB_CLOSE_ON_EXIT=FALSE;DB_CLOSE_DELAY=-1
+      spring.datasource.driver-class-name: org.h2.Driver
+      spring.datasource.username:      sa
+      spring.datasource.password:      ""
+      spring.jpa.properties.hibernate.dialect: ca.uhn.fhir.jpa.model.dialect.HapiFhirH2Dialect
+
+      # FHIR R4
+      hapi.fhir.fhir_version:          R4
+      hapi.fhir.server_address:        http://localhost:8080/fhir
+
+      # Validierung deaktivieren (schnellerer Start, kein Internet nötig)
+      hapi.fhir.validation.requests_enabled:  false
+      hapi.fhir.validation.responses_enabled: false
+
+      # Subscription deaktivieren (nicht benötigt)
+      hapi.fhir.subscription.resthook_enabled: false
+      hapi.fhir.subscription.websocket_enabled: false
+
+      # Expunge erlauben (für idempotente Seed-Updates)
+      hapi.fhir.expunge_enabled: "true"
+
+    volumes:
+      - hapi-data:/data
+
+    networks:
+      - orderentry-net
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/fhir/metadata -o /dev/null"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ---------------------------------------------------------------------------
+  # ORDERENTRY — Next.js Application (SQLite, lokal HAPI)
+  # ---------------------------------------------------------------------------
+  orderentry:
+    image: ${IMAGE:-farian/orderentry:latest}
+    container_name: orderentry
+    restart: unless-stopped
+
+    depends_on:
+      hapi-fhir:
+        condition: service_healthy
+
+    ports:
+      - "${PORT:-3000}:3000"
+
+    environment:
+      # ── Framework ────────────────────────────────────────────────────────
+      NODE_ENV:                           development
+      DATABASE_URL:                       file:/app/data/orderentry.db
+
+      # ── Bootstrap Admin ──────────────────────────────────────────────────
+      BOOTSTRAP_ADMIN_USER:               ${BOOTSTRAP_ADMIN_USER:-admin}
+      BOOTSTRAP_ADMIN_PASSWORD:           ${BOOTSTRAP_ADMIN_PASSWORD:-Admin1234!}
+
+      # ── Auth ─────────────────────────────────────────────────────────────
+      ORDERENTRY_AUTH__SECRET:            ${ORDERENTRY_AUTH__SECRET:-change-me-in-production-min-32-chars!!}
+      ORDERENTRY_AUTH__ALLOW_LOCAL:       ${ORDERENTRY_AUTH__ALLOW_LOCAL:-false}
+      ORDERENTRY_AUTH__SESSION_IDLE_TIMEOUT: ${ORDERENTRY_AUTH__SESSION_IDLE_TIMEOUT:-30}
+
+      # ── Datenbank (SQLite — eingebettet) ──────────────────────────────────
+      ORDERENTRY_DB__PROVIDER:            sqlite
+
+      # ── FHIR Server — lokaler HAPI (kein Internet nötig) ─────────────────
+      ORDERENTRY_FHIR__BASE_URL:          http://hapi-fhir:8080/fhir
+      ORDERENTRY_FHIR__AUTH_TYPE:         none
+
+      # ── FHIR Seed ────────────────────────────────────────────────────────
+      ORDERENTRY_FHIR__SEED_ENABLED:      true
+      ORDERENTRY_FHIR__SEED_DEMO:         ${ORDERENTRY_FHIR__SEED_DEMO:-false}
+      ORDERENTRY_FHIR__SEED_CATALOG:      ${ORDERENTRY_FHIR__SEED_CATALOG:-true}
+
+      # ── FHIR Identifier-Systeme ───────────────────────────────────────────
+      ORDERENTRY_FHIR__SYSTEM_GLN:        https://www.gs1.org/gln
+      ORDERENTRY_FHIR__SYSTEM_AHV:        urn:oid:2.16.756.5.32
+      ORDERENTRY_FHIR__SYSTEM_VEKA:       urn:oid:2.16.756.5.30.1.123.100.1.1
+      ORDERENTRY_FHIR__SYSTEM_CATEGORY:   https://www.zetlab.ch/fhir/category
+
+      # ── Labor / Organisation ─────────────────────────────────────────────
+      ORDERENTRY_LAB__ORG_ID:             ${ORDERENTRY_LAB__ORG_ID:-zlz}
+      ORDERENTRY_LAB__NAME:               ${ORDERENTRY_LAB__NAME:-ZLZ Zentrallabor AG}
+      ORDERENTRY_LAB__INTERNAL_ORG_IDS:   ${ORDERENTRY_LAB__INTERNAL_ORG_IDS:-zlz,zetlab,zlz-notfall}
+
+      # ── SNOMED Codes ──────────────────────────────────────────────────────
+      ORDERENTRY_SNOMED__ROLE_INTERNAL:   ${ORDERENTRY_SNOMED__ROLE_INTERNAL:-159418007,159011000}
+      ORDERENTRY_SNOMED__ROLE_ORG_ADMIN:  ${ORDERENTRY_SNOMED__ROLE_ORG_ADMIN:-224608005,394572006}
+      ORDERENTRY_SNOMED__ROLE_PHYSICIAN:  ${ORDERENTRY_SNOMED__ROLE_PHYSICIAN:-309343006,59058001,106289002}
+      ORDERENTRY_SNOMED__ORG_LABORATORY:  ${ORDERENTRY_SNOMED__ORG_LABORATORY:-708175003}
+      ORDERENTRY_SNOMED__ORG_HOSPITAL:    ${ORDERENTRY_SNOMED__ORG_HOSPITAL:-22232009}
+      ORDERENTRY_SNOMED__ORG_OUTPATIENT:  ${ORDERENTRY_SNOMED__ORG_OUTPATIENT:-33022008}
+      ORDERENTRY_SNOMED__ORG_HOLDING:     ${ORDERENTRY_SNOMED__ORG_HOLDING:-224891009}
+
+      # ── Logging ──────────────────────────────────────────────────────────
+      ORDERENTRY_LOG__LEVEL:              ${ORDERENTRY_LOG__LEVEL:-info}
+      ORDERENTRY_LOG__FILE:               /app/logs/zetlab.log
+
+      # ── Observability (optional) ─────────────────────────────────────────
+      ORDERENTRY_TRACING__ENABLED:        false
+
+    volumes:
+      - orderentry-data:/app/data
+      - orderentry-logs:/app/logs
+
+    networks:
+      - orderentry-net
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf -o /dev/null -w '%{http_code}' http://localhost:3000/api/me | grep -qE '^(200|401)$'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s

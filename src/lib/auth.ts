@@ -10,6 +10,14 @@ type SessionPayload = {
   username: string;
   iat: number; // issued at (seconds)
   exp: number; // expires at (seconds)
+  /** Access level determined at login via FhirAccessResolver. */
+  accessLevel?: "full" | "org" | "own";
+  /** FHIR Practitioner ID linked to this user (e.g. "prac-von-rohr-anna"). */
+  practitionerFhirId?: string;
+  /** True when the practitioner belongs to an internal org (ZLZ/ZetLab). */
+  isInternal?: boolean;
+  /** Org IDs the user may access (Level org — managingOrganization filter). */
+  allowedOrgIds?: string[];
 };
 
 const COOKIE_NAME = "session";
@@ -27,12 +35,23 @@ function b64url(input: Buffer | string) {
     .replace(/\//g, "_");
 }
 
-export function signSession(userId: string, username: string, ttlSeconds = ONE_DAY_SECONDS): string {
+export interface SessionExtras {
+  accessLevel?: "full" | "org" | "own";
+  practitionerFhirId?: string;
+  isInternal?: boolean;
+  allowedOrgIds?: string[];
+}
+
+export function signSession(userId: string, username: string, ttlSeconds = ONE_DAY_SECONDS, extras: SessionExtras = {}): string {
   const payload: SessionPayload = {
     sub: userId,
     username,
     iat: Math.floor(Date.now() / 1000),
     exp: Math.floor(Date.now() / 1000) + ttlSeconds,
+    ...(extras.accessLevel        !== undefined && { accessLevel:        extras.accessLevel }),
+    ...(extras.practitionerFhirId !== undefined && { practitionerFhirId: extras.practitionerFhirId }),
+    ...(extras.isInternal         !== undefined && { isInternal:         extras.isInternal }),
+    ...(extras.allowedOrgIds      !== undefined && { allowedOrgIds:      extras.allowedOrgIds }),
   };
   const json = JSON.stringify(payload);
   const body = b64url(json);
@@ -120,14 +139,22 @@ export async function getAdminFromRequest(req: Request): Promise<SessionPayload 
 
 /** Full session user including org context — used by API routes to enforce org-scoped access. */
 export type SessionUserWithOrg = {
-  sub:              string;
-  username:         string;
-  role:             string;
-  orgGln?:          string;
-  orgFhirId?:       string;
-  orgName?:         string;
+  sub:                  string;
+  username:             string;
+  role:                 string;
+  orgGln?:              string;
+  orgFhirId?:           string;
+  orgName?:             string;
   /** Individual permissions granted beyond the base role. */
-  extraPermissions: string[];
+  extraPermissions:     string[];
+  /** Access level from FhirAccessResolver — "full" | "org" | "own". Undefined = legacy admin. */
+  accessLevel?:         "full" | "org" | "own";
+  /** FHIR Practitioner ID — used for "own" filter (ServiceRequest.requester). */
+  practitionerFhirId?:  string;
+  /** True when practitioner is internal (ZLZ/ZetLab) — same as accessLevel "full". */
+  isInternal?:          boolean;
+  /** Org IDs allowed for "org" level filter (managingOrganization IN ...). */
+  allowedOrgIds?:       string[];
 };
 
 /**
@@ -148,6 +175,10 @@ export async function getSessionUserWithOrg(): Promise<SessionUserWithOrg | null
     ...(user?.profile?.orgGln    !== undefined && { orgGln:    user.profile.orgGln }),
     ...(user?.profile?.orgFhirId !== undefined && { orgFhirId: user.profile.orgFhirId }),
     ...(user?.profile?.orgName   !== undefined && { orgName:   user.profile.orgName }),
+    ...(session.accessLevel        !== undefined && { accessLevel:        session.accessLevel }),
+    ...(session.practitionerFhirId !== undefined && { practitionerFhirId: session.practitionerFhirId }),
+    ...(session.isInternal         !== undefined && { isInternal:         session.isInternal }),
+    ...(session.allowedOrgIds      !== undefined && { allowedOrgIds:      session.allowedOrgIds }),
   };
 }
 

@@ -12,7 +12,7 @@
  *   - Stats row: Total / Admins / Pending sync / Errors
  */
 
-import { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { AppSidebar } from "@/components/AppSidebar";
 import { BackButton } from "@/components/BackButton";
@@ -109,9 +109,10 @@ function UserFormModal({ mode, initial, catalog, onSave, onClose, saving, error,
   const [zsr,           setZsr]          = useState(initial?.profile?.zsr          ?? "");
   const [uid,           setUid]          = useState(initial?.profile?.uid          ?? "");
   const [bur,           setBur]          = useState(initial?.profile?.bur          ?? "");
-  const [locationName,  setLocationName] = useState(initial?.profile?.locationName ?? "");
-  const [orgs,          setOrgs]         = useState<FhirOrganizationDto[]>([]);
-  const [locations,     setLocations]    = useState<{ id: string; name: string }[]>([]);
+  const [locationName,        setLocationName]        = useState(initial?.profile?.locationName ?? "");
+  const [fhirPractitionerId,  setFhirPractitionerId]  = useState(initial?.fhirPractitionerId   ?? "");
+  const [orgs,                setOrgs]                = useState<FhirOrganizationDto[]>([]);
+  const [locations,           setLocations]           = useState<{ id: string; name: string }[]>([]);
 
   const GLN_SYSTEMS = ["https://www.gs1.org/gln", "urn:oid:2.51.1.3"];
 
@@ -225,7 +226,13 @@ function UserFormModal({ mode, initial, catalog, onSave, onClose, saving, error,
         ...(Object.keys(profile).length > 0 && { profile }),
       } as CreateUserRequestDto);
     } else {
-      await onSave({ role, status, ...(externalId && { externalId }), profile } as UpdateUserRequestDto);
+      await onSave({
+        role,
+        status,
+        ...(externalId          && { externalId }),
+        ...(fhirPractitionerId  && { fhirPractitionerId }),
+        profile,
+      } as UpdateUserRequestDto);
     }
   }
 
@@ -496,6 +503,22 @@ function UserFormModal({ mode, initial, catalog, onSave, onClose, saving, error,
                   <span>GLN: <span className="font-mono text-zt-text-secondary">{orgGln}</span></span>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* FHIR Practitioner ID — nur im Edit-Mode, für Zugriffssteuerung */}
+          {mode === "edit" && (
+            <div className="pt-3 border-t border-zt-border">
+              <label className={labelCls}>FHIR Practitioner ID</label>
+              <input
+                className={fieldCls}
+                value={fhirPractitionerId}
+                onChange={(e) => setFhirPractitionerId(e.target.value)}
+                placeholder="prac-von-rohr-anna"
+              />
+              <p className="mt-1 text-[10px] text-zt-text-tertiary">
+                Verknüpft diesen Benutzer mit einem FHIR-Practitioner. Bestimmt den Datenzugang beim nächsten Login.
+              </p>
             </div>
           )}
         </div>
@@ -784,8 +807,8 @@ export default function UsersPage() {
                   const isSyncing  = syncingId  === u.id;
                   const displayName = [u.profile?.firstName, u.profile?.lastName].filter(Boolean).join(" ") || "—";
                   return (
-                    <>
-                    <tr key={u.id} className={`border-b border-zt-border/50 last:border-0 hover:bg-zt-bg-page transition-colors ${isDeleting ? "opacity-40" : ""}`}>
+                    <React.Fragment key={u.id}>
+                    <tr className={`border-b border-zt-border/50 last:border-0 hover:bg-zt-bg-page transition-colors ${isDeleting ? "opacity-40" : ""}`}>
                       {/* Username */}
                       <td className="px-4 py-[11px] align-middle">
                         <div className="text-[13px] font-medium text-zt-text-primary">{u.username}</div>
@@ -914,7 +937,7 @@ export default function UsersPage() {
                         </td>
                       </tr>
                     )}
-                    </>
+                    </React.Fragment>
                   );
                 })}
               </tbody>

@@ -1,0 +1,27 @@
+# =============================================================================
+# z2Lab OrderEntry — Build Override
+# =============================================================================
+#
+# Extends docker-compose.yml with a local build instead of pulling from Hub.
+#
+# Usage (from frontend/zetlab/):
+#   docker compose -f docker/docker-compose.yml -f docker/docker-compose.build.yml up -d
+#
+# Build args:
+#   NEXT_PUBLIC_LAB_ORG_ID — GLN of your lab (baked into client bundle)
+#   GIT_COMMIT             — auto-detected from git
+# =============================================================================
+
+services:
+  orderentry:
+    image: orderentry:local
+    environment:
+      NODE_ENV: development
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        NEXT_PUBLIC_LAB_ORG_ID: ${NEXT_PUBLIC_LAB_ORG_ID:-zlz}
+        GIT_COMMIT: ${GIT_COMMIT:-}
+        GIT_BRANCH: ${GIT_BRANCH:-}
+        GIT_COUNT:  ${GIT_COUNT:-}

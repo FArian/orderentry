@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ordersController } from "@/infrastructure/api/controllers/OrdersController";
 import { getSessionUserWithOrg } from "@/lib/auth";
 import { buildOperationOutcome } from "@/infrastructure/fhir/FhirTypes";
+import { resolveAccessFilter } from "@/infrastructure/api/middleware/AccessGuard";
 
 const FHIR_CONTENT_TYPE = "application/fhir+json";
 
@@ -14,11 +15,17 @@ export async function GET() {
     );
   }
 
-  const isInternalUser = sessionUser.role === "admin";
+  const access = resolveAccessFilter(sessionUser);
+  if (access.type === "deny") {
+    return NextResponse.json(
+      buildOperationOutcome("error", "forbidden", access.message, access.httpStatus),
+      { status: access.httpStatus, headers: { "content-type": FHIR_CONTENT_TYPE } },
+    );
+  }
 
   const result = await ordersController.list({
-    ...(!isInternalUser && sessionUser.orgFhirId !== undefined && { orgFhirId: sessionUser.orgFhirId }),
-    ...(!isInternalUser && sessionUser.orgGln    !== undefined && { orgGln:    sessionUser.orgGln }),
+    ...(access.type === "org" && { orgFhirId: access.orgFhirIds[0] }),
+    ...(access.type === "own" && { requesterFhirId: access.practitionerFhirId }),
   });
 
   const httpStatus = (result as { httpStatus?: number }).httpStatus ?? 200;

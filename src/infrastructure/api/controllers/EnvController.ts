@@ -15,6 +15,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { parseEnvFile, applyEnvUpdates } from "@/shared/utils/envParser";
+import { envKey } from "@/infrastructure/config/EnvConfig";
 import type {
   GetEnvResponseDto,
   UpdateEnvRequestDto,
@@ -25,44 +26,64 @@ import type {
 // ── Whitelist ─────────────────────────────────────────────────────────────────
 
 /**
- * Explicit whitelist of server-side keys that may be read and written.
- * NEXT_PUBLIC_* keys are always allowed (checked dynamically).
+ * Explicit whitelist of server-side keys that may be read and written via the API.
+ * Keys are built dynamically via envKey() so renaming APP_NAME updates them all.
+ * NEXT_PUBLIC_* keys are always allowed (checked dynamically in isAllowed()).
  *
  * To expose a new variable:
- *  1. Add it here.
+ *  1. Add envKey("SERVICE__KEY") here.
  *  2. Add the corresponding EnvConfig getter in infrastructure/config/EnvConfig.ts.
  *  3. Document it in the Environment Variables table in CLAUDE.md.
  */
 const ALLOWED_SERVER_KEYS = new Set([
-  "FHIR_BASE_URL",
-  // FHIR identifier system URIs — Swiss and global registries
-  "FHIR_SYSTEM_GLN",
-  "FHIR_SYSTEM_AHV",
-  "FHIR_SYSTEM_VEKA",
-  "FHIR_SYSTEM_ZSR",
-  "FHIR_SYSTEM_UID",
-  "FHIR_SYSTEM_BUR",
-  "LOG_LEVEL",
-  "LOG_FILE",
-  "ENABLE_TRACING",
-  "TRACING_URL",
-  "MONITORING_URL",
-  "SASIS_API_BASE",
-  "REFDATA_SOAP_URL",
-  "ALLOW_LOCAL_AUTH",
-  // DB configuration — DATABASE_URL is intentionally excluded (may contain passwords;
-  // use GET /api/health/db for a masked URL instead).
-  "DB_PROVIDER",
-  // Orchestra HL7 proxy — path variables are optional (defaults built into EnvConfig)
-  "ORCHESTRA_HL7_BASE",
-  "ORCHESTRA_HL7_INBOUND_PATH",
-  "ORCHESTRA_HL7_OUTBOUND_PATH",
-  // Order service types — drives GET /api/v1/config/service-types (priority 1)
-  "ORDER_SERVICE_TYPES",
-  // FHIR category system URI — used by ActivityDefinition.topic lookup
-  "FHIR_SYSTEM_CATEGORY",
+  // FHIR
+  envKey("FHIR__BASE_URL"),
+  envKey("FHIR__SYSTEM_GLN"),
+  envKey("FHIR__SYSTEM_AHV"),
+  envKey("FHIR__SYSTEM_VEKA"),
+  envKey("FHIR__SYSTEM_ZSR"),
+  envKey("FHIR__SYSTEM_UID"),
+  envKey("FHIR__SYSTEM_BUR"),
+  envKey("FHIR__SYSTEM_CATEGORY"),
+  envKey("FHIR__AUTH_TYPE"),
+  // Auth
+  envKey("AUTH__ALLOW_LOCAL"),
+  envKey("AUTH__SESSION_IDLE_TIMEOUT"),
+  // Database — DATABASE_URL excluded (may contain password; use /api/health/db instead)
+  envKey("DB__PROVIDER"),
+  // Logging
+  envKey("LOG__LEVEL"),
+  envKey("LOG__FILE"),
+  // Observability
+  envKey("TRACING__ENABLED"),
+  envKey("TRACING__URL"),
+  envKey("TRACING__LABEL"),
+  envKey("MONITORING__URL"),
+  envKey("MONITORING__LABEL"),
+  // External APIs
+  envKey("SASIS__API_BASE"),
+  envKey("REFDATA__SOAP_URL"),
+  // Orchestra HL7 proxy
+  envKey("ORCHESTRA__HL7_BASE"),
+  envKey("ORCHESTRA__HL7_INBOUND_PATH"),
+  envKey("ORCHESTRA__HL7_OUTBOUND_PATH"),
+  // Order service types
+  envKey("ORDER__SERVICE_TYPES"),
   // Security
-  "SESSION_IDLE_TIMEOUT_MINUTES",
+  envKey("AUTH__SESSION_IDLE_TIMEOUT"),
+  // Labor / Organisation
+  envKey("LAB__ORG_ID"),
+  envKey("LAB__NAME"),
+  envKey("LAB__INTERNAL_ORG_IDS"),
+  // SNOMED Codes — PractitionerRole
+  envKey("SNOMED__ROLE_INTERNAL"),
+  envKey("SNOMED__ROLE_ORG_ADMIN"),
+  envKey("SNOMED__ROLE_PHYSICIAN"),
+  // SNOMED Codes — Organization Type
+  envKey("SNOMED__ORG_LABORATORY"),
+  envKey("SNOMED__ORG_HOSPITAL"),
+  envKey("SNOMED__ORG_OUTPATIENT"),
+  envKey("SNOMED__ORG_HOLDING"),
 ]);
 
 /** Patterns in key names that are always blocked, regardless of whitelist. */
@@ -106,7 +127,7 @@ const ENV_SCHEMA: ReadonlyArray<{
 }> = [
   // ── FHIR ───────────────────────────────────────────────────────────────────
   {
-    key:             "FHIR_BASE_URL",
+    key:             envKey("FHIR__BASE_URL"),
     description:     "Base URL of the HAPI FHIR R4 server. Used by all FHIR proxy routes.",
     default:         "http://localhost:8080/fhir",
     required:        true,
@@ -117,7 +138,7 @@ const ENV_SCHEMA: ReadonlyArray<{
   },
   // ── FHIR Identifier Systems ────────────────────────────────────────────────
   {
-    key:             "FHIR_SYSTEM_GLN",
+    key:             envKey("FHIR__SYSTEM_GLN"),
     description:     "FHIR identifier system URI for GS1 Global Location Number (GLN). Used for Practitioner and Organization identifier searches.",
     default:         "https://www.gs1.org/gln",
     required:        false,
@@ -127,7 +148,7 @@ const ENV_SCHEMA: ReadonlyArray<{
     group:           "FHIR",
   },
   {
-    key:             "FHIR_SYSTEM_AHV",
+    key:             envKey("FHIR__SYSTEM_AHV"),
     description:     "FHIR identifier system URI for Swiss AHV/AVS Social Security Number.",
     default:         "urn:oid:2.16.756.5.32",
     required:        false,
@@ -137,7 +158,7 @@ const ENV_SCHEMA: ReadonlyArray<{
     group:           "FHIR",
   },
   {
-    key:             "FHIR_SYSTEM_VEKA",
+    key:             envKey("FHIR__SYSTEM_VEKA"),
     description:     "FHIR identifier system URI for Swiss VeKa insurance card number.",
     default:         "urn:oid:2.16.756.5.30.1.123.100.1.1",
     required:        false,
@@ -147,7 +168,7 @@ const ENV_SCHEMA: ReadonlyArray<{
     group:           "FHIR",
   },
   {
-    key:             "FHIR_SYSTEM_ZSR",
+    key:             envKey("FHIR__SYSTEM_ZSR"),
     description:     "FHIR identifier system URI for santésuisse Zahlstellenregister (ZSR).",
     default:         "urn:oid:2.16.756.5.30.1.123.100.2.1.1",
     required:        false,
@@ -157,7 +178,7 @@ const ENV_SCHEMA: ReadonlyArray<{
     group:           "FHIR",
   },
   {
-    key:             "FHIR_SYSTEM_UID",
+    key:             envKey("FHIR__SYSTEM_UID"),
     description:     "FHIR identifier system URI for Swiss Unternehmens-Identifikation (UID / CHE-number).",
     default:         "urn:oid:2.16.756.5.35",
     required:        false,
@@ -167,7 +188,7 @@ const ENV_SCHEMA: ReadonlyArray<{
     group:           "FHIR",
   },
   {
-    key:             "FHIR_SYSTEM_BUR",
+    key:             envKey("FHIR__SYSTEM_BUR"),
     description:     "FHIR identifier system URI for Swiss Betriebseinheitsnummer BFS (BUR).",
     default:         "urn:oid:2.16.756.5.45",
     required:        false,
@@ -176,9 +197,22 @@ const ENV_SCHEMA: ReadonlyArray<{
     secret:          false,
     group:           "FHIR",
   },
+  {
+    key:             envKey("FHIR__SYSTEM_CATEGORY"),
+    description:
+      "FHIR identifier system URI used in ActivityDefinition.topic.coding to identify " +
+      "ZetLab service categories (e.g. MIBI, ROUTINE, POC). " +
+      "Only codings matching this system are returned by GET /api/v1/config/service-types.",
+    default:         "https://www.zetlab.ch/fhir/category",
+    required:        false,
+    writable:        true,
+    restartRequired: true,
+    secret:          false,
+    group:           "FHIR",
+  },
   // ── Authentication ─────────────────────────────────────────────────────────
   {
-    key:             "AUTH_SECRET",
+    key:             envKey("AUTH__SECRET"),
     description:     "HMAC-SHA256 signing secret for session cookies. Must be ≥32 chars in production.",
     default:         "dev-secret-change-me",
     required:        true,
@@ -188,7 +222,7 @@ const ENV_SCHEMA: ReadonlyArray<{
     group:           "Authentication",
   },
   {
-    key:             "ALLOW_LOCAL_AUTH",
+    key:             envKey("AUTH__ALLOW_LOCAL"),
     description:     "Set true to allow the unsigned localSession cookie (browser-only auth fallback).",
     default:         "false",
     required:        false,
@@ -198,7 +232,17 @@ const ENV_SCHEMA: ReadonlyArray<{
     group:           "Authentication",
   },
   {
-    key:             "ORCHESTRA_JWT_SECRET",
+    key:             envKey("AUTH__SESSION_IDLE_TIMEOUT"),
+    description:     "Automatische Abmeldung nach Inaktivität (Minuten). 0 = deaktiviert. Empfehlung für Medizinsoftware: 15–30 Minuten.",
+    default:         "30",
+    required:        false,
+    writable:        true,
+    restartRequired: true,
+    secret:          false,
+    group:           "Authentication",
+  },
+  {
+    key:             envKey("ORCHESTRA__JWT_SECRET"),
     description:     "Shared HS256 secret for /api/launch JWT validation from Orchestra. Generate: openssl rand -hex 32",
     default:         "",
     required:        false,
@@ -207,9 +251,20 @@ const ENV_SCHEMA: ReadonlyArray<{
     secret:          true,
     group:           "Authentication",
   },
+  // ── Database ───────────────────────────────────────────────────────────────
+  {
+    key:             envKey("DB__PROVIDER"),
+    description:     "Database engine: sqlite (default) | postgresql | sqlserver. DATABASE_URL must match the provider.",
+    default:         "sqlite",
+    required:        false,
+    writable:        true,
+    restartRequired: true,
+    secret:          false,
+    group:           "Database",
+  },
   // ── Logging ────────────────────────────────────────────────────────────────
   {
-    key:             "LOG_LEVEL",
+    key:             envKey("LOG__LEVEL"),
     description:     "Minimum log level. Accepted values: debug | info | warn | error | silent",
     default:         "info",
     required:        false,
@@ -219,7 +274,7 @@ const ENV_SCHEMA: ReadonlyArray<{
     group:           "Logging",
   },
   {
-    key:             "LOG_FILE",
+    key:             envKey("LOG__FILE"),
     description:     "Absolute path to append structured JSON log lines. Empty = file logging disabled.",
     default:         "",
     required:        false,
@@ -230,8 +285,8 @@ const ENV_SCHEMA: ReadonlyArray<{
   },
   // ── Observability ──────────────────────────────────────────────────────────
   {
-    key:             "ENABLE_TRACING",
-    description:     "Set true to activate OpenTelemetry distributed tracing. Requires TRACING_URL.",
+    key:             envKey("TRACING__ENABLED"),
+    description:     "Set true to activate OpenTelemetry distributed tracing. Requires TRACING__URL.",
     default:         "false",
     required:        false,
     writable:        true,
@@ -240,8 +295,8 @@ const ENV_SCHEMA: ReadonlyArray<{
     group:           "Observability",
   },
   {
-    key:             "TRACING_URL",
-    description:     "OTLP/HTTP collector base URL for distributed tracing (e.g. http://jaeger:4318 or http://tempo:4318). Active only when ENABLE_TRACING=true.",
+    key:             envKey("TRACING__URL"),
+    description:     "OTLP/HTTP collector base URL for distributed tracing (e.g. http://jaeger:4318). Active only when TRACING__ENABLED=true.",
     default:         "",
     required:        false,
     writable:        true,
@@ -250,7 +305,17 @@ const ENV_SCHEMA: ReadonlyArray<{
     group:           "Observability",
   },
   {
-    key:             "MONITORING_URL",
+    key:             envKey("TRACING__LABEL"),
+    description:     "Display label for the tracing system shown in Admin → System (e.g. Jaeger, Tempo).",
+    default:         "",
+    required:        false,
+    writable:        true,
+    restartRequired: true,
+    secret:          false,
+    group:           "Observability",
+  },
+  {
+    key:             envKey("MONITORING__URL"),
     description:     "Monitoring dashboard base URL displayed in the Settings page (e.g. http://grafana:3000). Display-only link.",
     default:         "",
     required:        false,
@@ -260,7 +325,17 @@ const ENV_SCHEMA: ReadonlyArray<{
     group:           "Observability",
   },
   {
-    key:             "METRICS_TOKEN",
+    key:             envKey("MONITORING__LABEL"),
+    description:     "Display label for the monitoring system shown in Admin → System (e.g. Grafana, Prometheus).",
+    default:         "",
+    required:        false,
+    writable:        true,
+    restartRequired: true,
+    secret:          false,
+    group:           "Observability",
+  },
+  {
+    key:             envKey("METRICS__TOKEN"),
     description:     "Static Bearer token for the Prometheus scraper (GET /api/metrics). If not set, standard admin auth is used. Generate: openssl rand -hex 32",
     default:         "",
     required:        false,
@@ -271,7 +346,7 @@ const ENV_SCHEMA: ReadonlyArray<{
   },
   // ── External APIs ──────────────────────────────────────────────────────────
   {
-    key:             "SASIS_API_BASE",
+    key:             envKey("SASIS__API_BASE"),
     description:     "SASIS/OFAC VeKa card lookup API base URL (via Orchestra middleware). Empty = feature disabled.",
     default:         "",
     required:        false,
@@ -281,7 +356,7 @@ const ENV_SCHEMA: ReadonlyArray<{
     group:           "External APIs",
   },
   {
-    key:             "REFDATA_SOAP_URL",
+    key:             envKey("REFDATA__SOAP_URL"),
     description:     "RefData SOAP endpoint for GLN partner lookups. Default: production RefData web service. Override for staging or mock.",
     default:         "https://refdatabase.refdata.ch/Service/Partner.asmx",
     required:        false,
@@ -292,7 +367,7 @@ const ENV_SCHEMA: ReadonlyArray<{
   },
   // ── Orchestra / HL7 Proxy ─────────────────────────────────────────────────
   {
-    key:             "ORCHESTRA_HL7_BASE",
+    key:             envKey("ORCHESTRA__HL7_BASE"),
     description:     "Base URL of the Orchestra HL7 API (e.g. http://orchestra:8019). Empty = HL7 proxy disabled.",
     default:         "",
     required:        false,
@@ -302,7 +377,7 @@ const ENV_SCHEMA: ReadonlyArray<{
     group:           "Orchestra",
   },
   {
-    key:             "ORCHESTRA_HL7_INBOUND_PATH",
+    key:             envKey("ORCHESTRA__HL7_INBOUND_PATH"),
     description:     "Orchestra path for receiving inbound HL7 messages from the Edge agent.",
     default:         "/api/v1/in/hl7",
     required:        false,
@@ -312,7 +387,7 @@ const ENV_SCHEMA: ReadonlyArray<{
     group:           "Orchestra",
   },
   {
-    key:             "ORCHESTRA_HL7_OUTBOUND_PATH",
+    key:             envKey("ORCHESTRA__HL7_OUTBOUND_PATH"),
     description:     "Orchestra path for retrieving outbound HL7 result messages (ORU).",
     default:         "/api/v1/out/hl7",
     required:        false,
@@ -323,7 +398,7 @@ const ENV_SCHEMA: ReadonlyArray<{
   },
   // ── Order Service Types ───────────────────────────────────────────────────
   {
-    key:             "ORDER_SERVICE_TYPES",
+    key:             envKey("ORDER__SERVICE_TYPES"),
     description:
       "Comma-separated list of active order service types. " +
       "Overrides the FHIR ActivityDefinition.topic auto-discovery for GET /api/v1/config/service-types. " +
@@ -336,29 +411,131 @@ const ENV_SCHEMA: ReadonlyArray<{
     secret:          false,
     group:           "Order Service Types",
   },
+  // ── Labor / Organisation ──────────────────────────────────────────────────
   {
-    key:             "FHIR_SYSTEM_CATEGORY",
+    key:             envKey("LAB__ORG_ID"),
     description:
-      "FHIR identifier system URI used in ActivityDefinition.topic.coding to identify " +
-      "ZetLab service categories (e.g. MIBI, ROUTINE, POC). " +
-      "Only codings matching this system are returned by GET /api/v1/config/service-types.",
-    default:         "https://www.zetlab.ch/fhir/category",
-    required:        false,
+      "FHIR Resource-ID der Labororganisation. Wird serverseitig für Organization/-Referenzen verwendet. " +
+      "Format: FHIR-valide Zeichen [A-Za-z0-9\\-\\.]{1,64}. " +
+      "Empfehlung: <Kürzel>-<GLN> z.B. ZLZ-7601009336904. " +
+      "Fallback auf NEXT_PUBLIC_LAB_ORG_ID wenn nicht gesetzt.",
+    default:         "ZLZ-7601009336904",
+    required:        true,
     writable:        true,
     restartRequired: true,
     secret:          false,
-    group:           "Order Service Types",
+    group:           "Labor",
   },
-  // ── Security ──────────────────────────────────────────────────────────────
   {
-    key:             "SESSION_IDLE_TIMEOUT_MINUTES",
-    description:     "Automatische Abmeldung nach Inaktivität (Minuten). 0 = deaktiviert. Empfehlung für Medizinsoftware: 15–30 Minuten.",
-    default:         "30",
+    key:             envKey("LAB__NAME"),
+    description:
+      "Anzeigename des Labors für FHIR Organization.name, Begleitscheine und HL7-Nachrichten. " +
+      "Fallback auf NEXT_PUBLIC_LAB_NAME wenn nicht gesetzt.",
+    default:         "ZLZ Zentrallabor AG",
+    required:        true,
+    writable:        true,
+    restartRequired: true,
+    secret:          false,
+    group:           "Labor",
+  },
+  // ── Access Control ────────────────────────────────────────────────────────
+  {
+    key:             envKey("LAB__INTERNAL_ORG_IDS"),
+    description:
+      "Komma-getrennte FHIR Organization-IDs die als intern gelten (ZLZ/ZetLab). " +
+      "Practitioners mit einer PractitionerRole in einer dieser Orgs erhalten Level A (vollen Zugriff).",
+    default:         "zlz,zetlab,zlz-notfall",
     required:        false,
     writable:        true,
     restartRequired: true,
     secret:          false,
-    group:           "Security",
+    group:           "Zugriffssteuerung",
+  },
+  // ── SNOMED Codes — PractitionerRole ───────────────────────────────────────
+  {
+    key:             envKey("SNOMED__ROLE_INTERNAL"),
+    description:
+      "Komma-getrennte SNOMED CT Codes für interne Labor-Mitarbeiter (Level A — voller Zugriff). " +
+      "Standard: 159418007 (Medical laboratory technician), 159011000 (Pathologist).",
+    default:         "159418007,159011000",
+    required:        false,
+    writable:        true,
+    restartRequired: true,
+    secret:          false,
+    group:           "SNOMED Codes",
+  },
+  {
+    key:             envKey("SNOMED__ROLE_ORG_ADMIN"),
+    description:
+      "Komma-getrennte SNOMED CT Codes für Org-Admins (Level B — Zugriff auf alle Patienten der eigenen Org). " +
+      "Standard: 224608005 (Administrative officer), 394572006 (Medical secretary).",
+    default:         "224608005,394572006",
+    required:        false,
+    writable:        true,
+    restartRequired: true,
+    secret:          false,
+    group:           "SNOMED Codes",
+  },
+  {
+    key:             envKey("SNOMED__ROLE_PHYSICIAN"),
+    description:
+      "Komma-getrennte SNOMED CT Codes für externe Ärzte (Level C — nur eigene Patienten). " +
+      "Standard: 309343006 (Physician), 59058001 (General physician), 106289002 (Dental surgeon).",
+    default:         "309343006,59058001,106289002",
+    required:        false,
+    writable:        true,
+    restartRequired: true,
+    secret:          false,
+    group:           "SNOMED Codes",
+  },
+  // ── SNOMED Codes — Organization Type ─────────────────────────────────────
+  {
+    key:             envKey("SNOMED__ORG_LABORATORY"),
+    description:
+      "SNOMED CT Code für klinisches Labor (Organization.type). " +
+      "Standard: 708175003 (Clinical pathology laboratory).",
+    default:         "708175003",
+    required:        false,
+    writable:        true,
+    restartRequired: true,
+    secret:          false,
+    group:           "SNOMED Codes",
+  },
+  {
+    key:             envKey("SNOMED__ORG_HOSPITAL"),
+    description:
+      "SNOMED CT Code für Krankenhaus (Organization.type). " +
+      "Standard: 22232009 (Hospital).",
+    default:         "22232009",
+    required:        false,
+    writable:        true,
+    restartRequired: true,
+    secret:          false,
+    group:           "SNOMED Codes",
+  },
+  {
+    key:             envKey("SNOMED__ORG_OUTPATIENT"),
+    description:
+      "SNOMED CT Code für ambulante Klinik / Praxis (Organization.type). " +
+      "Standard: 33022008 (Outpatient clinic).",
+    default:         "33022008",
+    required:        false,
+    writable:        true,
+    restartRequired: true,
+    secret:          false,
+    group:           "SNOMED Codes",
+  },
+  {
+    key:             envKey("SNOMED__ORG_HOLDING"),
+    description:
+      "SNOMED CT Code für Konzern / Holding-Organisation (Organization.type). " +
+      "Standard: 224891009 (Healthcare organisation).",
+    default:         "224891009",
+    required:        false,
+    writable:        true,
+    restartRequired: true,
+    secret:          false,
+    group:           "SNOMED Codes",
   },
   // ── Build-time (NEXT_PUBLIC_*) ─────────────────────────────────────────────
   {
@@ -403,8 +580,18 @@ const ENV_SCHEMA: ReadonlyArray<{
   },
   {
     key:             "NEXT_PUBLIC_LAB_ORG_ID",
-    description:     "FHIR Organization ID of the laboratory used to filter the test catalog. Baked at build time — pass as Docker --build-arg.",
-    default:         "zlz",
+    description:     "GLN or FHIR Organization ID of the laboratory used to filter the test catalog. Baked at build time — pass as Docker --build-arg.",
+    default:         "7601009336904",
+    required:        false,
+    writable:        false,
+    restartRequired: false,
+    secret:          false,
+    group:           "Build-time",
+  },
+  {
+    key:             "NEXT_PUBLIC_LAB_NAME",
+    description:     "Display name of the laboratory shown in the UI and on documents (e.g. ZLZ Zentrallabor AG). Baked at build time.",
+    default:         "ZLZ Zentrallabor AG",
     required:        false,
     writable:        false,
     restartRequired: false,

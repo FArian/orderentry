@@ -288,6 +288,44 @@ export const EnvConfig = {
     .map((s) => s.trim())
     .filter(Boolean),
 
+  // ── Access Control ────────────────────────────────────────────────────────
+  /**
+   * Comma-separated FHIR Organization IDs that are considered internal (ZLZ/ZetLab).
+   * Practitioners with a PractitionerRole in one of these orgs get Level A (full) access.
+   * All other practitioners get Level B (org) or Level C (own) access.
+   * Example: ORDERENTRY_LAB__INTERNAL_ORG_IDS=zlz,zetlab,zlz-notfall
+   */
+  labInternalOrgIds: (env("LAB__INTERNAL_ORG_IDS") ?? "zlz,zetlab,zlz-notfall")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean),
+
+  // ── SNOMED Codes ──────────────────────────────────────────────────────────
+
+  /** SNOMED codes for internal lab staff → Level A (full access). */
+  snomedRoleInternal: (env("SNOMED__ROLE_INTERNAL") ?? "159418007,159011000")
+    .split(",").map((s) => s.trim()).filter(Boolean),
+
+  /** SNOMED codes for external org-admins → Level B (org filter). */
+  snomedRoleOrgAdmin: (env("SNOMED__ROLE_ORG_ADMIN") ?? "224608005,394572006")
+    .split(",").map((s) => s.trim()).filter(Boolean),
+
+  /** SNOMED codes for external physicians → Level C (own filter). */
+  snomedRolePhysician: (env("SNOMED__ROLE_PHYSICIAN") ?? "309343006,59058001,106289002")
+    .split(",").map((s) => s.trim()).filter(Boolean),
+
+  /** SNOMED code for clinical laboratory organization type. */
+  snomedOrgLaboratory: str(env("SNOMED__ORG_LABORATORY"), "708175003"),
+
+  /** SNOMED code for hospital organization type. */
+  snomedOrgHospital: str(env("SNOMED__ORG_HOSPITAL"), "22232009"),
+
+  /** SNOMED code for outpatient clinic organization type. */
+  snomedOrgOutpatient: str(env("SNOMED__ORG_OUTPATIENT"), "33022008"),
+
+  /** SNOMED code for healthcare holding/group organization type. */
+  snomedOrgHolding: str(env("SNOMED__ORG_HOLDING"), "224891009"),
+
   // ── Labor / Organisation ──────────────────────────────────────────────────
   /**
    * FHIR Resource-ID der Labororganisation.
@@ -317,6 +355,23 @@ export const EnvConfig = {
    * Never enable in production — exposes internal API details.
    */
   debugEnabled: bool(env("DEBUG__ENABLED")),
+
+  // ── FHIR Seed ──────────────────────────────────────────────────────────────
+  /**
+   * Enable FHIR seed bootstrap on container startup.
+   * When true, fhir-seed.mjs loads masterdata.json into the FHIR server
+   * on first start (idempotent — skipped if already at the expected version).
+   * Default: true.
+   */
+  fhirSeedEnabled: bool(env("FHIR__SEED_ENABLED"), true),
+
+  /**
+   * Also load demo-data.json on startup (Patients, ServiceRequests, DiagnosticReports).
+   * Only effective when fhirSeedEnabled=true.
+   * Never enable in production.
+   * Default: false.
+   */
+  fhirSeedDemo: bool(env("FHIR__SEED_DEMO"), false),
 
   // ── Number Pool ────────────────────────────────────────────────────────────
   /** Pool INFO email threshold (default: 30). */
