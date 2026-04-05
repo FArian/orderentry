@@ -30,6 +30,7 @@
     "@opentelemetry/semantic-conventions": "^1.40.0",
     "@prisma/client": "^5.22.0",
     "better-sqlite3": "^12.8.0",
+    "fast-xml-parser": "^5.5.10",
     "next": "^15.5.0",
     "nodemailer": "^8.0.4",
     "prisma": "^5.22.0",

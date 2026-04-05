@@ -74,10 +74,14 @@ export const EnvConfig = {
   /** SASIS base URL for VeKa card lookups. Empty string = disabled. */
   sasísApiBase: str(process.env.SASIS_API_BASE, ""),
 
-  /** GLN registry base URL (Orchestra middleware). */
-  glnApiBase: str(
-    process.env.GLN_API_BASE,
-    "http://orchestra:8019/middleware/gln/api/versionVal/refdata/partner/",
+  /**
+   * RefData SOAP endpoint URL for GLN lookups.
+   * Default: production RefData web service.
+   * Override via REFDATA_SOAP_URL for staging / mock.
+   */
+  refdataSoapUrl: str(
+    process.env.REFDATA_SOAP_URL,
+    "https://refdatabase.refdata.ch/Service/Partner.asmx",
   ),
 
   // ── Observability (integration-ready placeholders) ────────────────────────

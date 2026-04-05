@@ -226,11 +226,11 @@ export default function ProfilePage() {
     setGlnMsg(null);
     setGlnErr(null);
     try {
-      const res = await fetch(`/api/fhir/gln-search?gln=${encodeURIComponent(gln)}`);
+      const res = await fetch(`/api/gln-lookup?gln=${encodeURIComponent(gln)}`);
       let json: Record<string, string>;
       try { json = await res.json(); }
       catch { throw new Error(`HTTP ${res.status} – ungültige Antwort`); }
-      if (!res.ok || json.found === "false" || (json.found as unknown) === false) {
+      if (!res.ok) {
         const key = json.error === "glnNotFound" ? "profile.glnNotFound"
                   : json.error === "invalidGln"  ? "profile.invalidGln"
                   : null;
@@ -265,11 +265,11 @@ export default function ProfilePage() {
     setOrgGlnMsg(null);
     setOrgGlnErr(null);
     try {
-      const res = await fetch(`/api/fhir/gln-search?gln=${encodeURIComponent(gln)}&resourceType=Organization`);
+      const res = await fetch(`/api/gln-lookup?gln=${encodeURIComponent(gln)}`);
       let json: Record<string, string>;
       try { json = await res.json(); }
       catch { throw new Error(`HTTP ${res.status} – ungültige Antwort`); }
-      if (!res.ok || json.found === "false" || (json.found as unknown) === false) {
+      if (!res.ok) {
         const key = json.error === "glnNotFound" ? "profile.glnNotFound"
                   : json.error === "invalidGln"  ? "profile.invalidGln"
                   : null;
@@ -277,7 +277,7 @@ export default function ProfilePage() {
       }
       const name = json.organization || [json.lastName, json.firstName].filter(Boolean).join(", ") || gln;
       setOrgName(name);
-      setOrgFhirId(json.fhirId || "");
+      setOrgFhirId("");
       setOrgGlnMsg(`${t("profile.glnFound")}: ${name}`);
     } catch (e: unknown) {
       setOrgGlnErr(e instanceof Error ? e.message : String(e));
