@@ -15,9 +15,9 @@ import Link from "next/link";
 import { AppSidebar } from "@/components/AppSidebar";
 import { BackButton } from "@/components/BackButton";
 import { useTranslation } from "@/lib/i18n";
-import { useNumberPool } from "@/presentation/hooks/useNumberPool";
+import { useNumberPool }    from "@/presentation/hooks/useNumberPool";
+import { useServiceTypes }  from "@/presentation/hooks/useServiceTypes";
 import type { PoolThresholdDto } from "@/infrastructure/api/dto/NumberPoolDto";
-import { AppConfig } from "@/shared/config/AppConfig";
 
 interface FhirOrgResult { orgFhirId: string; orgGln: string; orgName: string; }
 
@@ -225,13 +225,15 @@ function OrgSearchField({
 
 function AddNumbersForm({
   onAdd,
+  serviceTypes,
   t,
 }: {
-  onAdd: (numbers: string[], serviceType: string, orgFhirId?: string | null) => Promise<{ added: number; skipped: number }>;
-  t:     (k: string) => string;
+  onAdd:        (numbers: string[], serviceType: string, orgFhirId?: string | null) => Promise<{ added: number; skipped: number }>;
+  serviceTypes: string[];
+  t:            (k: string) => string;
 }) {
   const [numbersText,  setNumbersText]  = useState("");
-  const [serviceType,  setServiceType]  = useState<string>(AppConfig.serviceTypes[0] ?? "");
+  const [serviceType,  setServiceType]  = useState<string>(serviceTypes[0] ?? "");
   const [isOrgSpecific, setIsOrgSpecific] = useState(false);
   const [selectedOrg,  setSelectedOrg]  = useState<FhirOrgResult | null>(null);
   const [busy,         setBusy]         = useState(false);
@@ -322,7 +324,7 @@ function AddNumbersForm({
             onChange={(e) => setServiceType(e.target.value as string)}
             className="w-full rounded-lg border border-zt-border bg-zt-bg-page px-3 py-1.5 text-[13px] text-zt-text-primary focus:outline-none focus:border-zt-primary"
           >
-            {AppConfig.serviceTypes.map((st) => (
+            {serviceTypes.map((st) => (
               <option key={st} value={st}>{st}</option>
             ))}
           </select>
@@ -353,6 +355,7 @@ function AddNumbersForm({
 
 export default function NumberPoolPage() {
   const { t } = useTranslation();
+  const { serviceTypes } = useServiceTypes();
   const {
     entries, stats, thresholds, loading, error,
     addNumbers, deleteEntry, updateThresholds,
@@ -424,7 +427,7 @@ export default function NumberPoolPage() {
             <>
               {/* Stats */}
               <div className="grid grid-cols-3 gap-4">
-                {AppConfig.serviceTypes.map((st) => {
+                {serviceTypes.map((st) => {
                   const s = stats[st] ?? { total: 0, available: 0, used: 0 };
                   return (
                     <StatsCard
@@ -450,7 +453,7 @@ export default function NumberPoolPage() {
               {/* Add numbers */}
               <div>
                 <h2 className="text-[14px] font-medium text-zt-text-primary mb-3">{t("pool.addTitle")}</h2>
-                <AddNumbersForm onAdd={addNumbers} t={t} />
+                <AddNumbersForm onAdd={addNumbers} serviceTypes={serviceTypes} t={t} />
               </div>
 
               {/* Pool table */}
@@ -465,7 +468,7 @@ export default function NumberPoolPage() {
                       className="rounded-lg border border-zt-border bg-zt-bg-page px-2 py-1 text-[12px] text-zt-text-primary focus:outline-none"
                     >
                       <option value="ALL">{t("common.all")}</option>
-                      {AppConfig.serviceTypes.map((st) => <option key={st} value={st}>{st}</option>)}
+                      {serviceTypes.map((st) => <option key={st} value={st}>{st}</option>)}
                     </select>
                     {/* Status filter */}
                     <select

@@ -51,7 +51,9 @@ export const EnvConfig = {
     /** Swiss Unternehmens-Identifikation (UID / CHE-number) */
     uid:  str(process.env.FHIR_SYSTEM_UID,  "urn:oid:2.16.756.5.35"),
     /** Swiss Betriebseinheitsnummer BFS (BUR) */
-    bur:  str(process.env.FHIR_SYSTEM_BUR,  "urn:oid:2.16.756.5.45"),
+    bur:      str(process.env.FHIR_SYSTEM_BUR,      "urn:oid:2.16.756.5.45"),
+    /** ZetLab service category system — used in ActivityDefinition.topic */
+    category: str(process.env.FHIR_SYSTEM_CATEGORY, "https://www.zetlab.ch/fhir/category"),
   },
 
   // ── Auth ──────────────────────────────────────────────────────────────────

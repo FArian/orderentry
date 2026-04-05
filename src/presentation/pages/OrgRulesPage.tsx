@@ -15,10 +15,9 @@ import Link from "next/link";
 import { AppSidebar } from "@/components/AppSidebar";
 import { BackButton } from "@/components/BackButton";
 import { useTranslation } from "@/lib/i18n";
-import { useOrgRules } from "@/presentation/hooks/useOrgRules";
-import type { OrgRuleDto } from "@/infrastructure/api/dto/OrgRuleDto";
-import { AppConfig } from "@/shared/config/AppConfig";
-import type { ServiceType } from "@/domain/strategies/IOrderNumberStrategy";
+import { useOrgRules }      from "@/presentation/hooks/useOrgRules";
+import { useServiceTypes }  from "@/presentation/hooks/useServiceTypes";
+import type { OrgRuleDto }  from "@/infrastructure/api/dto/OrgRuleDto";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -111,14 +110,16 @@ function OrgSearchField({
 function MappingEditor({
   value,
   onChange,
+  serviceTypes,
   t,
 }: {
-  value:    Record<string, string>;
-  onChange: (v: Record<string, string>) => void;
-  t:        (k: string) => string;
+  value:        Record<string, string>;
+  onChange:     (v: Record<string, string>) => void;
+  serviceTypes: string[];
+  t:            (k: string) => string;
 }) {
   const [newKey, setNewKey] = useState("");
-  const [newVal, setNewVal] = useState<string>(AppConfig.serviceTypes[0] ?? "");
+  const [newVal, setNewVal] = useState<string>(serviceTypes[0] ?? "");
 
   function handleAdd() {
     const k = newKey.trim().toUpperCase();
@@ -169,10 +170,10 @@ function MappingEditor({
         />
         <select
           value={newVal}
-          onChange={(e) => setNewVal(e.target.value as ServiceType)}
+          onChange={(e) => setNewVal(e.target.value)}
           className="w-28 rounded border border-zt-border bg-zt-bg-page px-2 py-1 text-[12px] focus:outline-none"
         >
-          {AppConfig.serviceTypes.map((s: string) => <option key={s}>{s}</option>)}
+          {serviceTypes.map((s) => <option key={s}>{s}</option>)}
         </select>
         <button
           type="button"
@@ -188,7 +189,6 @@ function MappingEditor({
 
 // ── NumberConfigEditor ────────────────────────────────────────────────────────
 
-const ALL_SERVICE_TYPES: string[] = [...AppConfig.serviceTypes];
 
 interface NumberConfigRow {
   serviceType: string;  // from AppConfig.serviceTypes — dynamic
@@ -225,17 +225,19 @@ function fromConfigRows(rows: NumberConfigRow[]): Partial<OrgRuleDto> {
 function NumberConfigEditor({
   form,
   onChange,
+  serviceTypes,
   t,
 }: {
-  form:     Partial<OrgRuleDto>;
-  onChange: (updates: Partial<OrgRuleDto>) => void;
-  t:        (k: string) => string;
+  form:         Partial<OrgRuleDto>;
+  onChange:     (updates: Partial<OrgRuleDto>) => void;
+  serviceTypes: string[];
+  t:            (k: string) => string;
 }) {
   const [rows, setRows] = useState<NumberConfigRow[]>(() => toConfigRows(form));
-  const [addType, setAddType] = useState<string>(ALL_SERVICE_TYPES[0] ?? "");
+  const [addType, setAddType] = useState<string>(serviceTypes[0] ?? "");
 
   const usedTypes = new Set(rows.map((r) => r.serviceType));
-  const availableTypes = ALL_SERVICE_TYPES.filter((st) => !usedTypes.has(st));
+  const availableTypes = serviceTypes.filter((st) => !usedTypes.has(st));
 
   function updateRow(index: number, patch: Partial<NumberConfigRow>) {
     const next = rows.map((r, i) => i === index ? { ...r, ...patch } : r);
@@ -254,7 +256,7 @@ function NumberConfigEditor({
     const next = [...rows, { serviceType: addType, prefix: "", start: "", length: "" }];
     setRows(next);
     onChange(fromConfigRows(next));
-    const remaining = ALL_SERVICE_TYPES.filter((st) => !new Set(next.map((r) => r.serviceType)).has(st));
+    const remaining = serviceTypes.filter((st) => !new Set(next.map((r) => r.serviceType)).has(st));
     if (remaining.length > 0 && remaining[0]) setAddType(remaining[0]);
   }
 
@@ -333,7 +335,7 @@ function NumberConfigEditor({
         <div className="flex items-center gap-2 pt-1">
           <select
             value={addType}
-            onChange={(e) => setAddType(e.target.value as ServiceType)}
+            onChange={(e) => setAddType(e.target.value)}
             className="rounded border border-zt-border bg-zt-bg-page px-2 py-1 text-[12px] font-mono text-zt-text-primary focus:outline-none"
           >
             {availableTypes.map((st) => <option key={st} value={st}>{st}</option>)}
@@ -359,14 +361,16 @@ function RuleForm({
   onCancel,
   busy,
   error,
+  serviceTypes,
   t,
 }: {
-  initial:  Partial<OrgRuleDto>;
-  onSave:   (data: Partial<OrgRuleDto>) => Promise<void>;
-  onCancel: () => void;
-  busy:     boolean;
-  error:    string | null;
-  t:        (k: string) => string;
+  initial:      Partial<OrgRuleDto>;
+  onSave:       (data: Partial<OrgRuleDto>) => Promise<void>;
+  onCancel:     () => void;
+  busy:         boolean;
+  error:        string | null;
+  serviceTypes: string[];
+  t:            (k: string) => string;
 }) {
   const [form, setForm] = useState<Partial<OrgRuleDto>>(initial);
 
@@ -427,6 +431,7 @@ function RuleForm({
         <NumberConfigEditor
           form={form}
           onChange={(updates) => setForm((prev) => ({ ...prev, ...updates }))}
+          serviceTypes={serviceTypes}
           t={t}
         />
       </div>
@@ -434,8 +439,9 @@ function RuleForm({
       {/* Service Type Mapping */}
       <div className="grid grid-cols-2 gap-4">
         <MappingEditor
-          value={(form.serviceTypeMapping as Record<string, ServiceType>) ?? {}}
+          value={(form.serviceTypeMapping as Record<string, string>) ?? {}}
           onChange={(v) => set("serviceTypeMapping", v)}
+          serviceTypes={serviceTypes}
           t={t}
         />
       </div>
@@ -522,6 +528,7 @@ function RuleRow({
 export default function OrgRulesPage() {
   const { t } = useTranslation();
   const { rules, loading, error, createRule, updateRule, deleteRule } = useOrgRules();
+  const { serviceTypes } = useServiceTypes();
 
   const [showForm,  setShowForm]  = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -613,6 +620,7 @@ export default function OrgRulesPage() {
                 onCancel={handleCancel}
                 busy={formBusy}
                 error={formError}
+                serviceTypes={serviceTypes}
                 t={t}
               />
             </div>
