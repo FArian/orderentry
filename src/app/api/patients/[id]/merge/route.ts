@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionFromCookies } from "@/lib/auth";
 import { fhirBase } from "@/config";
+import { createLogger } from "@/infrastructure/logging/Logger";
+
+const log = createLogger("patient-merge");
 
 /**
  * POST /api/patients/[id]/merge
@@ -52,8 +55,9 @@ export async function POST(
       return NextResponse.json({ merged: true, targetId, sourceId, method: "fhir-merge" });
     }
     // Any non-2xx → fall through to Patient.link fallback
-  } catch {
-    // network error on $merge — try fallback
+  } catch (err: unknown) {
+    // network error on $merge — try Patient.link fallback
+    log.debug("FHIR $merge failed, falling back to Patient.link", { sourceId, targetId, message: err instanceof Error ? err.message : String(err) });
   }
 
   // Strategy 2: Mark source patient as inactive and add Patient.link replaced-by → target

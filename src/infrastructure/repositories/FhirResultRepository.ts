@@ -13,6 +13,9 @@ import {
   DiagnosticReportMapper,
   type FhirDiagnosticReport,
 } from "@/infrastructure/fhir/DiagnosticReportMapper";
+import { createClientLogger } from "@/shared/utils/clientLogger";
+
+const log = createClientLogger("FhirResultRepository");
 
 /**
  * Repository implementation that delegates to the Next.js API route
@@ -62,7 +65,8 @@ export class FhirResultRepository implements IResultRepository {
       );
       const first = bundle.entry?.[0]?.resource;
       return first ? DiagnosticReportMapper.toDomain(first) : null;
-    } catch {
+    } catch (err: unknown) {
+      log.error("getById failed", { id, message: err instanceof Error ? err.message : String(err) });
       return null;
     }
   }

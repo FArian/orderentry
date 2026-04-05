@@ -8,6 +8,9 @@ import { OrderFactory } from "@/domain/factories/OrderFactory";
 import { HttpClient } from "@/infrastructure/api/HttpClient";
 import { type FhirBundle } from "@/infrastructure/fhir/FhirTypes";
 import { FHIR_SYSTEMS } from "@/lib/fhir";
+import { createClientLogger } from "@/shared/utils/clientLogger";
+
+const log = createClientLogger("FhirOrderRepository");
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -90,7 +93,8 @@ export class FhirOrderRepository implements IOrderRepository {
         `/api/service-requests/${encodeURIComponent(id)}`,
       );
       return res.data ?? null;
-    } catch {
+    } catch (err: unknown) {
+      log.error("getById failed", { id, message: err instanceof Error ? err.message : String(err) });
       return null;
     }
   }

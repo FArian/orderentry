@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { getSessionFromCookies } from "@/lib/auth";
 import { glnApiBase } from "@/config";
+import { createLogger } from "@/infrastructure/logging/Logger";
+
+const log = createLogger("gln-lookup");
 
 type GlnRole = {
   TYPE?: string;
@@ -55,12 +58,11 @@ export async function GET(req: NextRequest) {
     urlObj.searchParams.set("UUID", uuid);
     url = urlObj.toString();
   } catch {
-    console.error("[gln-lookup] invalid glnApiBase:", glnApiBase);
+    log.error("invalid glnApiBase", { glnApiBase });
     return NextResponse.json({ error: "invalidGlnApiBase" }, { status: 500 });
   }
 
-  console.log("[gln-lookup] base:", glnApiBase);
-  console.log("[gln-lookup] FINAL URL:", url);
+  log.debug("GLN lookup request", { base: glnApiBase, url });
 
   try {
     let upstream: Response;
@@ -72,22 +74,20 @@ export async function GET(req: NextRequest) {
       });
     } catch (fetchErr: unknown) {
       const msg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
-      console.error("[gln-lookup] fetch() failed:", msg);
+      log.error("fetch failed", { message: msg });
       return NextResponse.json({ error: `fetch failed: ${msg}` }, { status: 502 });
     }
 
-    console.log("[gln-lookup] HTTP status:", upstream.status);
-    console.log("[gln-lookup] content-type:", upstream.headers.get("content-type"));
+    log.debug("upstream response", { status: upstream.status, contentType: upstream.headers.get("content-type") });
 
-    // ✅ Clone wichtig, damit Stream nicht verloren geht
+    // Clone wichtig, damit Stream nicht verloren geht
     const clone = upstream.clone();
 
     const rawText = await clone.text().catch(() => "");
-    console.log("[gln-lookup] raw length:", rawText.length);
-    console.log("[gln-lookup] raw body:", rawText.slice(0, 500));
+    log.debug("upstream body received", { length: rawText.length, preview: rawText.slice(0, 200) });
 
     if (!rawText) {
-      console.error("[gln-lookup] empty response from upstream");
+      log.error("empty response from upstream", { status: upstream.status });
       return NextResponse.json(
         { error: `Empty response (status ${upstream.status})` },
         { status: 502 }
@@ -99,7 +99,7 @@ export async function GET(req: NextRequest) {
     try {
       data = JSON.parse(rawText) as GlnResponse;
     } catch {
-      console.error("[gln-lookup] JSON parse failed");
+      log.error("JSON parse failed", { status: upstream.status });
       return NextResponse.json(
         { error: `Invalid JSON (status ${upstream.status})` },
         { status: 502 }
@@ -150,9 +150,8 @@ export async function GET(req: NextRequest) {
       country:      role?.CNTRY  || "",
     });
   } catch (e: unknown) {
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Lookup failed" },
-      { status: 500 }
-    );
+    const message = e instanceof Error ? e.message : "Lookup failed";
+    log.error("GLN lookup failed", { message });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

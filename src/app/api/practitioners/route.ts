@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { FHIR_BASE } from "@/lib/fhir";
 import { getSessionFromCookies } from "@/lib/auth";
 import { getUserById } from "@/lib/userStore";
+import { createLogger } from "@/infrastructure/logging/Logger";
+
+const log = createLogger("practitioners");
 
 type FhirHumanName = {
   use?: string;
@@ -62,8 +65,9 @@ export async function GET(request: Request) {
         const isAdmin = user?.role === "admin";
         orgFhirId = isAdmin ? undefined : (user?.profile?.orgFhirId || undefined);
       }
-    } catch {
+    } catch (err: unknown) {
       // Session or store unavailable — fall back to unfiltered list
+      log.warn("session lookup failed, using unfiltered practitioner list", { message: err instanceof Error ? err.message : String(err) });
     }
   }
 

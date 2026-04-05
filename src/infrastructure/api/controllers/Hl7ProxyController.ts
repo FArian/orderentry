@@ -16,6 +16,9 @@
  */
 
 import { EnvConfig } from "@/infrastructure/config/EnvConfig";
+import { createLogger } from "@/infrastructure/logging/Logger";
+
+const log = createLogger("Hl7ProxyController");
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -108,6 +111,7 @@ export class Hl7ProxyController {
       };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
+      log.error("inbound proxy failed", { url, message: msg });
       return { error: "Orchestra unreachable", detail: msg, httpStatus: 502 };
     }
   }
@@ -160,6 +164,7 @@ export class Hl7ProxyController {
       };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
+      log.error("outbound proxy failed", { url, message: msg });
       return { error: "Orchestra unreachable", detail: msg, httpStatus: 502 };
     }
   }

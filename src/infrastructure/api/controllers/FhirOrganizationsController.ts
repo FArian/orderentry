@@ -16,6 +16,9 @@
 
 import { FHIR_BASE } from "@/infrastructure/fhir/FhirClient";
 import { getAdminSession, getAdminFromRequest } from "@/lib/auth";
+import { createLogger } from "@/infrastructure/logging/Logger";
+
+const log = createLogger("FhirOrganizationsController");
 import {
   buildOperationOutcome,
   buildSearchBundle,
@@ -61,6 +64,7 @@ export class FhirOrganizationsController {
 
       return buildSearchBundle(orgs, orgs.length);
     } catch (err: unknown) {
+      log.error("list failed", { message: err instanceof Error ? err.message : String(err) });
       return buildOperationOutcome("error", "exception", err instanceof Error ? err.message : "List failed", 500);
     }
   }
@@ -100,6 +104,7 @@ export class FhirOrganizationsController {
       }
       return org;
     } catch (err: unknown) {
+      log.error("create failed", { gln, message: err instanceof Error ? err.message : String(err) });
       return buildOperationOutcome("error", "exception", err instanceof Error ? err.message : "Create failed", 500);
     }
   }
@@ -130,6 +135,7 @@ export class FhirOrganizationsController {
       }
       return org;
     } catch (err: unknown) {
+      log.error("update failed", { id, message: err instanceof Error ? err.message : String(err) });
       return buildOperationOutcome("error", "exception", err instanceof Error ? err.message : "Update failed", 500);
     }
   }
@@ -150,6 +156,7 @@ export class FhirOrganizationsController {
       }
       return buildOperationOutcome("information", "informational", `Organization/${id} deleted`, 200);
     } catch (err: unknown) {
+      log.error("delete failed", { id, message: err instanceof Error ? err.message : String(err) });
       return buildOperationOutcome("error", "exception", err instanceof Error ? err.message : "Delete failed", 500);
     }
   }

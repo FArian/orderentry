@@ -11,6 +11,9 @@
 
 import crypto from "crypto";
 import { userRepository } from "@/infrastructure/repositories/PrismaUserRepository";
+import { createLogger } from "@/infrastructure/logging/Logger";
+
+const log = createLogger("userStore");
 
 // ── Re-exported types (kept here so callers don't need to change imports) ─────
 
@@ -188,7 +191,7 @@ export async function ensureBootstrapAdmin(): Promise<void> {
   const existing = await userRepository.findByUsername(bootstrapUsername);
   if (existing) {
     await userRepository.update(existing.id, { role: "admin", status: "active" });
-    console.warn(`[zetlab] Bootstrap: promoted "${existing.username}" to admin.`);
+    log.warn(`Bootstrap: promoted "${existing.username}" to admin`);
     return;
   }
 
@@ -200,13 +203,7 @@ export async function ensureBootstrapAdmin(): Promise<void> {
     { role: "admin", status: "active", providerType: "local", fhirSyncStatus: "not_synced" },
   );
 
-  const line = "═".repeat(51);
-  console.warn(
-    `\n╔${line}╗\n` +
-    `║  ⚠️  BOOTSTRAP ADMIN CREATED                       ║\n` +
-    `║  Username : ${bootstrapUsername.padEnd(38)}║\n` +
-    `║  Password : ${bootstrapPassword.padEnd(38)}║\n` +
-    `║  Change this password immediately after login!    ║\n` +
-    `╚${line}╝\n`,
-  );
+  log.warn("Bootstrap admin created — change password immediately", {
+    username: bootstrapUsername,
+  });
 }

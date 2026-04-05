@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { getSessionFromCookies } from "@/lib/auth";
 import { fhirGet } from "@/infrastructure/fhir/FhirClient";
 import { EnvConfig } from "@/infrastructure/config/EnvConfig";
+import { createLogger } from "@/infrastructure/logging/Logger";
+
+const log = createLogger("fhir-gln-search");
 
 /**
  * GET /api/fhir/gln-search?gln={13-digit-gln}[&resourceType=Organization]
@@ -52,7 +55,8 @@ async function searchFhir(resourceType: "Practitioner" | "Organization", gln: st
       _count: "1",
     });
     return bundle.entry?.[0]?.resource ?? null;
-  } catch {
+  } catch (err: unknown) {
+    log.warn("FHIR GLN search failed", { gln, resourceType, message: err instanceof Error ? err.message : String(err) });
     return null;
   }
 }

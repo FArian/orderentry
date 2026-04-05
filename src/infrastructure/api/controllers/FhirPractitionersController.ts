@@ -22,6 +22,9 @@ import {
   type FhirBundleEntry,
   type FhirOperationOutcome,
 } from "@/infrastructure/fhir/FhirTypes";
+import { createLogger } from "@/infrastructure/logging/Logger";
+
+const log = createLogger("FhirPractitionersController");
 import type {
   CreatePractitionerRequestDto,
   UpdatePractitionerRequestDto,
@@ -74,6 +77,7 @@ export class FhirPractitionersController {
       const bundle = (await res.json()) as FhirBundle<BundleResource>;
       return { ...bundle, type: "searchset" as const };
     } catch (err: unknown) {
+      log.error("list failed", { message: err instanceof Error ? err.message : String(err) });
       return buildOperationOutcome("error", "exception", err instanceof Error ? err.message : "List failed", 500);
     }
   }
@@ -148,6 +152,7 @@ export class FhirPractitionersController {
       }
       return practitionerRole;
     } catch (err: unknown) {
+      log.error("create failed", { message: err instanceof Error ? err.message : String(err) });
       return buildOperationOutcome("error", "exception", err instanceof Error ? err.message : "Create failed", 500);
     }
   }
@@ -214,6 +219,7 @@ export class FhirPractitionersController {
 
       return { ...updated, id: practitionerRoleId };
     } catch (err: unknown) {
+      log.error("update failed", { message: err instanceof Error ? err.message : String(err) });
       return buildOperationOutcome("error", "exception", err instanceof Error ? err.message : "Update failed", 500);
     }
   }

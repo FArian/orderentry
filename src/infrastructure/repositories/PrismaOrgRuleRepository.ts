@@ -5,6 +5,9 @@ import { isServiceType }                 from "@/domain/strategies/IOrderNumberS
 import { prisma }                         from "@/infrastructure/db/prismaClient";
 import type { OrgRule as PrismaOrgRule }  from "@prisma/client";
 import { randomUUID }                     from "crypto";
+import { createLogger }                   from "@/infrastructure/logging/Logger";
+
+const log = createLogger("PrismaOrgRuleRepository");
 
 function parseMapping(raw: string): Record<string, ServiceType> {
   try {
@@ -14,7 +17,8 @@ function parseMapping(raw: string): Record<string, ServiceType> {
       if (typeof v === "string" && isServiceType(v)) result[k] = v;
     }
     return result;
-  } catch {
+  } catch (err: unknown) {
+    log.warn("parseMapping: invalid JSON in mapping field", { message: err instanceof Error ? err.message : String(err) });
     return {};
   }
 }

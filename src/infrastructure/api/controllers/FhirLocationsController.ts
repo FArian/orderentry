@@ -10,6 +10,9 @@
 
 import { FHIR_BASE } from "@/infrastructure/fhir/FhirClient";
 import { getAdminFromRequest } from "@/lib/auth";
+import { createLogger } from "@/infrastructure/logging/Logger";
+
+const log = createLogger("FhirLocationsController");
 import {
   buildOperationOutcome,
   buildSearchBundle,
@@ -59,7 +62,8 @@ export class FhirLocationsController {
         .filter((r): r is FhirLocation => !!r && !!r.id);
 
       return buildSearchBundle(locations, locations.length) as unknown as FhirBundle<FhirLocation>;
-    } catch {
+    } catch (err: unknown) {
+      log.error("list failed", { message: err instanceof Error ? err.message : String(err) });
       return buildOperationOutcome("error", "exception", "Internal error", 500);
     }
   }

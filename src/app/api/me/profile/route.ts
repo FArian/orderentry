@@ -3,6 +3,9 @@ import { getSessionFromCookies } from "@/lib/auth";
 import { getUserById, updateUserProfile } from "@/lib/userStore";
 import type { UserProfile } from "@/lib/userStore";
 import { fhirBase } from "@/config";
+import { createLogger } from "@/infrastructure/logging/Logger";
+
+const log = createLogger("me-profile");
 
 export async function GET() {
   const session = await getSessionFromCookies();
@@ -57,8 +60,8 @@ export async function PUT(req: NextRequest) {
     const updated = await updateUserProfile(session.sub, clean);
 
     // Best-effort FHIR sync (non-blocking)
-    syncFhirResources(session.sub, clean).catch((e) => {
-      console.error("[profile] FHIR sync failed:", e);
+    syncFhirResources(session.sub, clean).catch((e: unknown) => {
+      log.error("FHIR sync failed", { message: e instanceof Error ? e.message : String(e) });
     });
 
     return NextResponse.json({ profile: updated.profile ?? {} });
@@ -249,6 +252,6 @@ async function syncFhirResources(userId: string, p: UserProfile) {
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    console.error(`[profile] FHIR Bundle POST failed ${res.status}:`, text.slice(0, 300));
+    log.error("FHIR Bundle POST failed", { status: res.status, body: text.slice(0, 300) });
   }
 }

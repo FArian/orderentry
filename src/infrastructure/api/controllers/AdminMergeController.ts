@@ -16,6 +16,9 @@
 
 import { FHIR_BASE } from "@/infrastructure/fhir/FhirClient";
 import { EnvConfig } from "@/infrastructure/config/EnvConfig";
+import { createLogger } from "@/infrastructure/logging/Logger";
+
+const log = createLogger("AdminMergeController");
 import { fhirOrganizationsController, type FhirOrganization } from "./FhirOrganizationsController";
 import { fhirPractitionersController, type FhirPractitioner, type FhirPractitionerRole as FhirRole } from "./FhirPractitionersController";
 import type { FhirOrganizationDto, FhirPractitionerDto } from "../dto/FhirRegistryDto";
@@ -227,7 +230,9 @@ export class AdminMergeController {
 
       return { merged: true };
     } catch (err: unknown) {
-      return { merged: false, error: err instanceof Error ? err.message : "Merge failed", httpStatus: 500 };
+      const message = err instanceof Error ? err.message : "Merge failed";
+      log.error("mergeOrgs failed", { keepId, deleteId, message });
+      return { merged: false, error: message, httpStatus: 500 };
     }
   }
 
@@ -286,7 +291,9 @@ export class AdminMergeController {
 
       return { merged: true };
     } catch (err: unknown) {
-      return { merged: false, error: err instanceof Error ? err.message : "Merge failed", httpStatus: 500 };
+      const message = err instanceof Error ? err.message : "Merge failed";
+      log.error("mergePracts failed", { keepPractitionerRoleId, deletePractitionerRoleId, message });
+      return { merged: false, error: message, httpStatus: 500 };
     }
   }
 }

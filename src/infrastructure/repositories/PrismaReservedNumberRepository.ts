@@ -4,6 +4,9 @@ import type { ServiceType }                              from "@/domain/strategi
 import type { PoolThresholdData }                        from "@/domain/valueObjects/PoolThreshold";
 import { prisma }                                        from "@/infrastructure/db/prismaClient";
 import { randomUUID }                                    from "crypto";
+import { createLogger }                                  from "@/infrastructure/logging/Logger";
+
+const log = createLogger("PrismaReservedNumberRepository");
 
 function toReserved(row: {
   id: string; number: string; serviceType: string; status: string;
@@ -82,7 +85,8 @@ export class PrismaReservedNumberRepository implements IReservedNumberRepository
         });
         count++;
       } catch {
-        // Unique constraint violation — duplicate number, skip silently.
+        // Unique constraint violation — duplicate number, skip.
+        log.debug("addNumbers: skipped duplicate number", { number: n.number });
       }
     }
     return count;

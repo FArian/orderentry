@@ -18,6 +18,9 @@ import {
   saveOverrides,
   type SupportedKey,
 } from "@/infrastructure/config/RuntimeConfig";
+import { createLogger } from "@/infrastructure/logging/Logger";
+
+const log = createLogger("ConfigController");
 import type {
   ConfigEntryDto,
   GetConfigResponseDto,
@@ -96,6 +99,7 @@ export class ConfigController {
       );
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
+      log.error("saveOverrides failed", { message: msg });
       return {
         ok: false,
         message: `Fehler beim Speichern: ${msg}`,
