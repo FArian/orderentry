@@ -93,6 +93,9 @@ export const V1_ROUTES: readonly RouteEntry[] = [
   // ── Order Numbers ────────────────────────────────────────────────────────────
   { method: "POST",   path: "/v1/orders/number",                         version: "v1", tag: "Orders",    auth: "public", summary: "Generate order number (Orchestra → Pool fallback)" },
 
+  // ── Config — Service Types ───────────────────────────────────────────────────
+  { method: "GET",    path: "/v1/config/service-types",                  version: "v1", tag: "Admin — Config", auth: "admin",  summary: "Get active order service types" },
+
   // ── Org Rules (admin) ────────────────────────────────────────────────────────
   { method: "GET",    path: "/v1/admin/org-rules",                       version: "v1", tag: "OrgRules",  auth: "admin",  summary: "List org rules" },
   { method: "POST",   path: "/v1/admin/org-rules",                       version: "v1", tag: "OrgRules",  auth: "admin",  summary: "Create org rule" },

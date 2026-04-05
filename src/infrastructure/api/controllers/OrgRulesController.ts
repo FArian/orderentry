@@ -6,8 +6,27 @@ const log = createLogger("OrgRulesController");
 
 export class OrgRulesController {
   async list() {
-    const data = await orgRuleRepository.findAll();
-    return { data, total: data.length };
+    try {
+      const data = await orgRuleRepository.findAll();
+      return { data, total: data.length };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      log.error("OrgRule list failed", { message });
+
+      // "Inconsistent column data" → V6 migration column-shift corruption.
+      // V7 migration cleans corrupt rows on next server restart.
+      if (message.includes("Inconsistent column data") || message.includes("Conversion failed")) {
+        return {
+          httpStatus: 500,
+          error:
+            "Datenbankfehler: Org-Regel-Tabelle enthält inkonsistente Spaltendaten. " +
+            "Bitte starten Sie den Server neu — die V7-Migration bereinigt die korrupten Zeilen automatisch.",
+          detail: message,
+        };
+      }
+
+      return { httpStatus: 500, error: "Org-Regeln konnten nicht geladen werden.", detail: message };
+    }
   }
 
   async getById(id: string) {

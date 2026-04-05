@@ -57,6 +57,10 @@ const ALLOWED_SERVER_KEYS = new Set([
   "ORCHESTRA_HL7_BASE",
   "ORCHESTRA_HL7_INBOUND_PATH",
   "ORCHESTRA_HL7_OUTBOUND_PATH",
+  // Order service types — drives GET /api/v1/config/service-types (priority 1)
+  "ORDER_SERVICE_TYPES",
+  // FHIR category system URI — used by ActivityDefinition.topic lookup
+  "FHIR_SYSTEM_CATEGORY",
   // Security
   "SESSION_IDLE_TIMEOUT_MINUTES",
 ]);
@@ -317,6 +321,34 @@ const ENV_SCHEMA: ReadonlyArray<{
     secret:          false,
     group:           "Orchestra",
   },
+  // ── Order Service Types ───────────────────────────────────────────────────
+  {
+    key:             "ORDER_SERVICE_TYPES",
+    description:
+      "Comma-separated list of active order service types. " +
+      "Overrides the FHIR ActivityDefinition.topic auto-discovery for GET /api/v1/config/service-types. " +
+      "Example: MIBI,ROUTINE,POC,CHEMO. If unset, service types are read live from FHIR (5-min cache) " +
+      "with fallback to built-in defaults [MIBI, ROUTINE, POC].",
+    default:         "",
+    required:        false,
+    writable:        true,
+    restartRequired: true,
+    secret:          false,
+    group:           "Order Service Types",
+  },
+  {
+    key:             "FHIR_SYSTEM_CATEGORY",
+    description:
+      "FHIR identifier system URI used in ActivityDefinition.topic.coding to identify " +
+      "ZetLab service categories (e.g. MIBI, ROUTINE, POC). " +
+      "Only codings matching this system are returned by GET /api/v1/config/service-types.",
+    default:         "https://www.zetlab.ch/fhir/category",
+    required:        false,
+    writable:        true,
+    restartRequired: true,
+    secret:          false,
+    group:           "Order Service Types",
+  },
   // ── Security ──────────────────────────────────────────────────────────────
   {
     key:             "SESSION_IDLE_TIMEOUT_MINUTES",
@@ -373,6 +405,20 @@ const ENV_SCHEMA: ReadonlyArray<{
     key:             "NEXT_PUBLIC_LAB_ORG_ID",
     description:     "FHIR Organization ID of the laboratory used to filter the test catalog. Baked at build time — pass as Docker --build-arg.",
     default:         "zlz",
+    required:        false,
+    writable:        false,
+    restartRequired: false,
+    secret:          false,
+    group:           "Build-time",
+  },
+  {
+    key:             "NEXT_PUBLIC_ORDER_SERVICE_TYPES",
+    description:
+      "Comma-separated list of service types baked into the client bundle as the initial UI default. " +
+      "The UI updates dynamically at runtime via GET /api/v1/config/service-types. " +
+      "Only required if you need a different default before the API response arrives. " +
+      "Baked at build time — pass as Docker --build-arg.",
+    default:         "MIBI,ROUTINE,POC",
     required:        false,
     writable:        false,
     restartRequired: false,

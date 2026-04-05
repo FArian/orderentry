@@ -2423,11 +2423,83 @@ export const openApiSpec = {
         },
       },
     },
+
+    // ── Service Types ─────────────────────────────────────────────────────────
+
+    "/config/service-types": {
+      get: {
+        tags: ["Admin — Config"],
+        summary: "Get active order service types",
+        description:
+          "Returns the list of active order service types used across the application " +
+          "(number pool, org rules, order entry).\n\n" +
+          "**Priority order:**\n" +
+          "1. `ORDER_SERVICE_TYPES` environment variable (explicit override — takes effect after restart)\n" +
+          "2. Distinct `ActivityDefinition.topic.coding.code` values from the FHIR server " +
+          "   (system: `FHIR_SYSTEM_CATEGORY`, 5-minute in-process cache)\n" +
+          "3. Built-in fallback: `[\"MIBI\", \"ROUTINE\", \"POC\"]`\n\n" +
+          "The response includes a `source` field indicating which tier was used:\n" +
+          "`env` | `fhir` | `fhir-cached` | `fallback`\n\n" +
+          "The UI reads this endpoint on mount and updates all service type dropdowns " +
+          "dynamically — no rebuild required when new service types are added to FHIR.",
+        operationId: "getServiceTypes",
+        security: [{ bearerAuth: [] }, { sessionCookie: [] }],
+        responses: {
+          "200": {
+            description: "Active service types",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ServiceTypesResponse" },
+                examples: {
+                  env: {
+                    summary: "Overridden via ORDER_SERVICE_TYPES env var",
+                    value: { types: ["MIBI", "ROUTINE", "POC", "CHEMO"], source: "env" },
+                  },
+                  fhir: {
+                    summary: "Auto-discovered from FHIR ActivityDefinition.topic",
+                    value: { types: ["MIBI", "Routine"], source: "fhir" },
+                  },
+                  fallback: {
+                    summary: "FHIR unreachable — built-in defaults used",
+                    value: { types: ["MIBI", "ROUTINE", "POC"], source: "fallback" },
+                  },
+                },
+              },
+            },
+          },
+          "401": { description: "Not authenticated" },
+          "403": { description: "Admin role required" },
+        },
+      },
+    },
   },
 
   // ── Reusable schemas ───────────────────────────────────────────────────────
   components: {
     schemas: {
+      ServiceTypesResponse: {
+        type: "object",
+        required: ["types", "source"],
+        properties: {
+          types: {
+            type: "array",
+            items: { type: "string" },
+            description: "Ordered list of active service type codes (e.g. MIBI, ROUTINE, POC)",
+            example: ["MIBI", "ROUTINE", "POC"],
+          },
+          source: {
+            type: "string",
+            enum: ["env", "fhir", "fhir-cached", "fallback"],
+            description:
+              "Which resolution tier produced this list. " +
+              "`env` = ORDER_SERVICE_TYPES override; " +
+              "`fhir` = freshly fetched from FHIR; " +
+              "`fhir-cached` = served from 5-min in-process cache; " +
+              "`fallback` = FHIR unavailable, built-in defaults used.",
+          },
+        },
+      },
+
       ResultResponse: {
         type: "object",
         required: [
