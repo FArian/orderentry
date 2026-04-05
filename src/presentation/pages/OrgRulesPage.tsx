@@ -17,6 +17,7 @@ import { BackButton } from "@/components/BackButton";
 import { useTranslation } from "@/lib/i18n";
 import { useOrgRules } from "@/presentation/hooks/useOrgRules";
 import type { OrgRuleDto } from "@/infrastructure/api/dto/OrgRuleDto";
+import { SERVICE_TYPES } from "@/domain/strategies/IOrderNumberStrategy";
 import type { ServiceType } from "@/domain/strategies/IOrderNumberStrategy";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -188,7 +189,7 @@ function MappingEditor({
 
 // ── NumberConfigEditor ────────────────────────────────────────────────────────
 
-const ALL_SERVICE_TYPES: ServiceType[] = ["MIBI", "ROUTINE", "POC"];
+const ALL_SERVICE_TYPES: ServiceType[] = [...SERVICE_TYPES];
 
 interface NumberConfigRow {
   serviceType: ServiceType;

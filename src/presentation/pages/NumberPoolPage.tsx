@@ -17,9 +17,8 @@ import { BackButton } from "@/components/BackButton";
 import { useTranslation } from "@/lib/i18n";
 import { useNumberPool } from "@/presentation/hooks/useNumberPool";
 import type { PoolThresholdDto } from "@/infrastructure/api/dto/NumberPoolDto";
-
-const SERVICE_TYPES = ["MIBI", "ROUTINE", "POC"] as const;
-type ServiceType = typeof SERVICE_TYPES[number];
+import { SERVICE_TYPES } from "@/domain/strategies/IOrderNumberStrategy";
+import type { ServiceType } from "@/domain/strategies/IOrderNumberStrategy";
 
 interface FhirOrgResult { orgFhirId: string; orgGln: string; orgName: string; }
 
