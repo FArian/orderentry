@@ -43,11 +43,11 @@ export class GlnLookupController {
       }
       if (err instanceof GlnLookupError) {
         log.error(`API ${apiVersion} GLN lookup failed`, { gln, message: err.message });
-        return { ok: false, status: 502, error: err.message };
+        return { ok: false, status: 502, error: "glnUnavailable" };
       }
       const message = err instanceof Error ? err.message : "Lookup failed";
       log.error(`API ${apiVersion} unexpected error`, { gln, message });
-      return { ok: false, status: 500, error: message };
+      return { ok: false, status: 500, error: "glnError" };
     }
   }
 }

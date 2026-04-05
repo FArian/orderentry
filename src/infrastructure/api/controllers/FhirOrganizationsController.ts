@@ -28,6 +28,12 @@ import {
 
 const GLN_SYSTEM = "urn:oid:2.51.1.3";
 
+export interface OrgReferenceDto {
+  resourceType: string;
+  id:           string;
+  display:      string;
+}
+
 // ── FHIR Organization type ────────────────────────────────────────────────────
 
 export interface FhirOrganization {
@@ -148,17 +154,61 @@ export class FhirOrganizationsController {
         cache: "no-store",
       });
       if (res.status === 404) {
-        return buildOperationOutcome("error", "not-found", "Organization not found", 404);
+        return buildOperationOutcome("error", "not-found", "orgNotFound", 404);
+      }
+      if (res.status === 409) {
+        // HAPI rejects delete when the resource is still referenced by other resources
+        log.warn("delete conflict — org still referenced", { id });
+        return buildOperationOutcome("error", "conflict", "orgHasReferences", 409);
       }
       if (!res.ok) {
-        const text = await res.text().catch(() => "");
-        return buildOperationOutcome("error", "exception", `FHIR ${res.status}: ${text.slice(0, 200)}`, 502);
+        log.error("delete non-2xx", { id, status: res.status });
+        return buildOperationOutcome("error", "exception", "orgDeleteFailed", 502);
       }
       return buildOperationOutcome("information", "informational", `Organization/${id} deleted`, 200);
     } catch (err: unknown) {
       log.error("delete failed", { id, message: err instanceof Error ? err.message : String(err) });
       return buildOperationOutcome("error", "exception", err instanceof Error ? err.message : "Delete failed", 500);
     }
+  }
+
+  /**
+   * Returns a list of FHIR resources that still reference this organization.
+   * Used to explain a 409 conflict to the admin user.
+   */
+  async references(id: string): Promise<OrgReferenceDto[]> {
+    const ref = `Organization/${id}`;
+    const searchParams = [
+      { type: "Patient",          param: `organization=${ref}` },
+      { type: "PractitionerRole", param: `organization=${ref}` },
+      { type: "ServiceRequest",   param: `requester=${ref}` },
+    ] as const;
+
+    const results = await Promise.all(
+      searchParams.map(({ type, param }) =>
+        this.fetchFn(
+          `${this.fhirBase}/${type}?${param}&_count=5&_summary=true`,
+          { headers: { accept: "application/fhir+json" }, cache: "no-store" },
+        )
+          .then((r) => (r.ok ? r.json() : Promise.resolve({ entry: [] })))
+          .then((bundle: FhirBundle<{ resourceType: string; id?: string; name?: Array<{ text?: string; family?: string; given?: string[] }> | string; display?: string }>) =>
+            (bundle.entry ?? []).map((e): OrgReferenceDto => {
+              const res = e.resource;
+              const nameArr = Array.isArray(res?.name) ? res.name : [];
+              const display =
+                nameArr[0]?.text ||
+                [nameArr[0]?.given?.[0], nameArr[0]?.family].filter(Boolean).join(" ") ||
+                (typeof res?.name === "string" ? res.name : "") ||
+                res?.id ||
+                "—";
+              return { resourceType: res?.resourceType ?? type, id: res?.id ?? "", display };
+            }),
+          )
+          .catch(() => [] as OrgReferenceDto[]),
+      ),
+    );
+
+    return results.flat();
   }
 
   private async findByGln(gln: string): Promise<string | null> {

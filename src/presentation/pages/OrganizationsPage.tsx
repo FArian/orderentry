@@ -16,6 +16,9 @@ import { useFhirOrganizations } from "@/presentation/hooks/useFhirOrganizations"
 import { useTranslation } from "@/lib/i18n";
 import type { CreateOrganizationRequestDto, FhirOrganizationDto } from "@/infrastructure/api/dto/FhirRegistryDto";
 import { validateGln, sanitizeGln } from "@/shared/utils/swissValidators";
+import { useDebugMode } from "@/presentation/hooks/useDebugMode";
+import { DebugProvider, useDebugContext, tracedFetch } from "@/presentation/context/DebugContext";
+import { DebugPanel } from "@/presentation/components/DebugPanel";
 
 // ── Styles ─────────────────────────────────────────────────────────────────────
 
@@ -168,9 +171,10 @@ function SkeletonRows() {
 
 // ── OrganizationsPage ──────────────────────────────────────────────────────────
 
-export default function OrganizationsPage() {
+function OrganizationsPageInner() {
   const { t } = useTranslation();
   const { organizations, loading, error: loadError, createOrg, updateOrg, deleteOrg } = useFhirOrganizations();
+  const { addTrace } = useDebugContext();
 
   const [showCreate,  setShowCreate]  = useState(false);
   const [editOrg,     setEditOrg]     = useState<FhirOrganizationDto | null>(null);
@@ -178,6 +182,8 @@ export default function OrganizationsPage() {
   const [modalError,  setModalError]  = useState<string | null>(null);
   const [deletingId,  setDeletingId]  = useState<string | null>(null);
   const [flash,       setFlash]       = useState<FlashMsg>(null);
+  const [conflictOrg,  setConflictOrg]  = useState<FhirOrganizationDto | null>(null);
+  const [conflictRefs, setConflictRefs] = useState<Array<{ resourceType: string; id: string; display: string }>>([]);
 
   function showFlash(text: string, ok: boolean) {
     setFlash({ text, ok });
@@ -220,7 +226,19 @@ export default function OrganizationsPage() {
       await deleteOrg(org.id);
       showFlash(t("orgs.deleteOk"), true);
     } catch (e: unknown) {
-      showFlash(e instanceof Error ? e.message : String(e), false);
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg === "orgHasReferences") {
+        // Fetch which resources reference this org and show a conflict dialog
+        const res = await tracedFetch(addTrace, `/api/fhir/organizations/${org.id}/references`).catch(() => null);
+        const refs = res?.ok ? ((await res.json().catch(() => ({ references: [] }))) as { references: Array<{ resourceType: string; id: string; display: string }> }).references : [];
+        setConflictOrg(org);
+        setConflictRefs(refs);
+      } else {
+        const key = msg === "orgDeleteFailed" ? "orgs.deleteFailed"
+                  : msg === "orgNotFound"      ? "orgs.deleteNotFound"
+                  : null;
+        showFlash(key ? t(key) : msg, false);
+      }
     } finally {
       setDeletingId(null);
     }
@@ -250,6 +268,36 @@ export default function OrganizationsPage() {
           error={modalError}
           t={t}
         />
+      )}
+
+      {/* Conflict dialog — shown when org cannot be deleted due to existing references */}
+      {conflictOrg && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-zt-bg-card border border-zt-danger-border rounded-xl shadow-xl p-6 w-full max-w-md">
+            <h2 className="text-[15px] font-semibold text-zt-danger mb-1">{t("orgs.conflictTitle")}</h2>
+            <p className="text-[13px] text-zt-text-secondary mb-4">
+              {t("orgs.conflictBody").replace("{name}", conflictOrg.name)}
+            </p>
+            {conflictRefs.length > 0 && (
+              <ul className="mb-4 space-y-1 max-h-48 overflow-y-auto">
+                {conflictRefs.map((r) => (
+                  <li key={`${r.resourceType}/${r.id}`} className="flex items-center gap-2 text-[12px]">
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-zt-bg-muted text-zt-text-secondary border border-zt-border">
+                      {r.resourceType}
+                    </span>
+                    <span className="text-zt-text-primary">{r.display}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <button
+              onClick={() => { setConflictOrg(null); setConflictRefs([]); }}
+              className="w-full py-2 rounded-lg bg-zt-bg-page border border-zt-border text-[13px] text-zt-text-primary hover:bg-zt-bg-muted transition-colors cursor-pointer"
+            >
+              {t("common.close")}
+            </button>
+          </div>
+        </div>
       )}
 
       <div className="flex-1 overflow-y-auto bg-zt-bg-page">
@@ -352,8 +400,19 @@ export default function OrganizationsPage() {
             <Link href="/admin/users" className="ml-1 underline hover:no-underline">{t("nav.adminUsers")}</Link>
           </div>
 
+          <DebugPanel />
+
         </div>
       </div>
     </div>
+  );
+}
+
+export default function OrganizationsPage() {
+  const debugEnabled = useDebugMode();
+  return (
+    <DebugProvider enabled={debugEnabled}>
+      <OrganizationsPageInner />
+    </DebugProvider>
   );
 }

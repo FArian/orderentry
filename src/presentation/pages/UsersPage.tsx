@@ -27,6 +27,7 @@ import { validateGln, sanitizeGln } from "@/shared/utils/swissValidators";
 import type { UserResponseDto, CreateUserRequestDto, UpdateUserRequestDto } from "@/infrastructure/api/dto/UserDto";
 import type { RoleCatalogEntryDto } from "@/infrastructure/api/dto/RoleDto";
 import type { BadgeVariant } from "@/presentation/ui/Badge";
+import { ROLE_PERMISSION_MAP } from "@/domain/policies/RolePermissionMap";
 
 // ── Status / role badge helpers ───────────────────────────────────────────────
 
@@ -541,6 +542,11 @@ export default function UsersPage() {
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [flashMsg, setFlashMsg]  = useState<{ text: string; ok: boolean } | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  function togglePermissions(id: string) {
+    setExpandedId((prev) => (prev === id ? null : id));
+  }
 
   function flash(text: string, ok: boolean) {
     setFlashMsg({ text, ok });
@@ -747,6 +753,7 @@ export default function UsersPage() {
                   const isSyncing  = syncingId  === u.id;
                   const displayName = [u.profile?.firstName, u.profile?.lastName].filter(Boolean).join(" ") || "—";
                   return (
+                    <>
                     <tr key={u.id} className={`border-b border-zt-border/50 last:border-0 hover:bg-zt-bg-page transition-colors ${isDeleting ? "opacity-40" : ""}`}>
                       {/* Username */}
                       <td className="px-4 py-[11px] align-middle">
@@ -813,9 +820,38 @@ export default function UsersPage() {
                           >
                             {t("orders.delete")}
                           </button>
+                          <button
+                            onClick={() => togglePermissions(u.id)}
+                            className={`text-[11px] px-[9px] py-[3px] rounded-[6px] border whitespace-nowrap transition-colors cursor-pointer ${
+                              expandedId === u.id
+                                ? "border-zt-primary bg-zt-primary text-zt-text-on-primary"
+                                : "border-zt-border bg-zt-bg-card text-zt-text-secondary hover:bg-zt-bg-page"
+                            }`}
+                          >
+                            {t("users.permissionsBtn")}
+                          </button>
                         </div>
                       </td>
                     </tr>
+                    {expandedId === u.id && (
+                      <tr className="bg-zt-primary-light/20 border-b border-zt-border/50">
+                        <td colSpan={8} className="px-4 py-3">
+                          <div className="flex flex-wrap gap-1.5">
+                            {Array.from(ROLE_PERMISSION_MAP[u.role as "admin" | "user"] ?? [])
+                              .sort()
+                              .map((p) => (
+                                <code
+                                  key={p}
+                                  className="px-2 py-0.5 rounded-md text-[11px] font-mono bg-zt-primary-light text-zt-primary border border-zt-primary-border"
+                                >
+                                  {p}
+                                </code>
+                              ))}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    </>
                   );
                 })}
               </tbody>
