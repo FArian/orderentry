@@ -172,7 +172,7 @@ function MappingEditor({
           onChange={(e) => setNewVal(e.target.value as ServiceType)}
           className="w-28 rounded border border-zt-border bg-zt-bg-page px-2 py-1 text-[12px] focus:outline-none"
         >
-          {SERVICE_TYPES.map((s) => <option key={s}>{s}</option>)}
+          {AppConfig.serviceTypes.map((s: string) => <option key={s}>{s}</option>)}
         </select>
         <button
           type="button"
