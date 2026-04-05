@@ -327,6 +327,45 @@ zetlab-agent/
 
 ---
 
+### ⚠️ Offene Entscheidung — Go Framework-Wahl
+
+Bevor der Agent implementiert wird, muss das Go-Framework geklärt werden.
+
+#### Optionen
+
+| Framework | Typ | Vorteile | Nachteile |
+|---|---|---|---|
+| **Standard Library** | Pure Go | Kein Overhead, maximale Kontrolle, keine Abhängigkeiten | Mehr Boilerplate |
+| **Cobra** | CLI Framework | Strukturierte Commands, Flags, Help-Texte | Nur für CLI — kein HTTP |
+| **Fiber** | HTTP Framework | Sehr schnell, Express-ähnlich | Overkill wenn kein Web-UI |
+| **Chi** | HTTP Router | Leichtgewichtig, Standard-kompatibel | Nur Routing |
+| **Gin** | HTTP Framework | Beliebt, viel Community | Grösser als Chi |
+
+#### Empfehlung zur Diskussion
+
+```
+Für den Agent:
+  HTTP Client  → Standard Library (net/http) — reicht für Polling
+  CLI / Flags  → Cobra — für Konfiguration und Service-Commands
+  Filesystem   → fsnotify — Directory Watcher
+  Druck (ZPL)  → Standard Library (net.Dial TCP)
+  Druck (PDF)  → go-cups oder os/exec (lp / lpr)
+  SQLite       → modernc.org/sqlite (kein CGO nötig)
+```
+
+**Kein HTTP-Server-Framework nötig** — der Agent ist ein Client, kein Server.
+Nur der Health-Endpoint (`localhost:7890/health`) braucht einen minimalen HTTP-Server
+→ Standard Library reicht.
+
+#### Zu klären
+
+- [ ] Soll der Agent als **Windows Service** laufen? → `golang.org/x/sys/windows/svc`
+- [ ] Soll der Agent als **systemd Service** laufen? → Standard reicht
+- [ ] Logging: `log/slog` (Go 1.21 Standard) oder `zerolog` (strukturiertes JSON)?
+- [ ] Config: ENV only oder auch YAML/TOML Config-Datei?
+
+---
+
 ### Phase 4 — Admin UI
 
 #### 4. `/admin/agents`
