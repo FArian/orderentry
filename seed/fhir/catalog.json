@@ -1486,7 +1486,7 @@
     {
       "resource": {
         "resourceType": "ActivityDefinition",
-        "id": "actdef-*ABORH",
+        "id": "actdef-ABORH",
         "extension": [
           {
             "url": "https://www.zetlab.ch/StructureDefinition/specimen-definition",
@@ -1498,7 +1498,7 @@
             }
           }
         ],
-        "url": "https://www.zetlab.ch/fhir/activity/*ABORH",
+        "url": "https://www.zetlab.ch/fhir/activity/ABORH",
         "subtitle": "ABO/RhD-Bestimmung",
         "status": "active",
         "description": "Blutbild",
@@ -1543,13 +1543,13 @@
       },
       "request": {
         "method": "PUT",
-        "url": "ActivityDefinition/actdef-*ABORH"
+        "url": "ActivityDefinition/actdef-ABORH"
       }
     },
     {
       "resource": {
         "resourceType": "ObservationDefinition",
-        "id": "obsdef-*ABORH",
+        "id": "obsdef-ABORH",
         "category": [
           {
             "coding": [
@@ -1581,7 +1581,7 @@
       },
       "request": {
         "method": "PUT",
-        "url": "ObservationDefinition/obsdef-*ABORH"
+        "url": "ObservationDefinition/obsdef-ABORH"
       }
     },
     {
