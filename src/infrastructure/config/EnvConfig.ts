@@ -241,6 +241,43 @@ export const EnvConfig = {
   /** Path on Orchestra that exposes outbound HL7 results via GET. */
   orchestraHl7OutboundPath: str(process.env.ORCHESTRA_HL7_OUTBOUND_PATH, "/api/v1/out/hl7"),
 
+  // ── Order Number Engine ───────────────────────────────────────────────────
+  /** Base URL of the Orchestra order number API (POST). Empty = disabled (pool only). */
+  orchestraOrderApiUrl: str(process.env.ORCHESTRA_ORDER_API_URL, ""),
+
+  /** Timeout in ms for Orchestra order number requests. */
+  orchestraOrderTimeoutMs: num(process.env.ORCHESTRA_ORDER_TIMEOUT_MS, 3000),
+
+  /** MIBI order number prefix (default: "MI"). */
+  orderMiPrefix: str(process.env.ORDER_MI_PREFIX, "MI"),
+
+  /** MIBI order number start digit after prefix (default: "4"). */
+  orderMiStart: str(process.env.ORDER_MI_START, "4"),
+
+  /** MIBI order number total length including prefix (default: 10). */
+  orderMiLength: num(process.env.ORDER_MI_LENGTH, 10),
+
+  /** Routine order number total numeric length (default: 10). */
+  orderRoutineLength: num(process.env.ORDER_ROUTINE_LENGTH, 10),
+
+  /** POC order number prefix (default: "PO"). */
+  orderPocPrefix: str(process.env.ORDER_POC_PREFIX, "PO"),
+
+  /** POC order number total length including prefix (default: 7). */
+  orderPocLength: num(process.env.ORDER_POC_LENGTH, 7),
+
+  /** Pool INFO email threshold — send info alert when available ≤ this (default: 30). */
+  poolInfoThreshold: num(process.env.POOL_INFO_THRESHOLD, 30),
+
+  /** Pool WARN email threshold — send warn alert when available ≤ this (default: 15). */
+  poolWarnThreshold: num(process.env.POOL_WARN_THRESHOLD, 15),
+
+  /** Pool ERROR email threshold — send error alert when available ≤ this (default: 5). */
+  poolErrorThreshold: num(process.env.POOL_ERROR_THRESHOLD, 5),
+
+  /** Default notification email for pool alerts. Can be overridden in Admin UI. */
+  poolNotificationEmail: str(process.env.POOL_NOTIFICATION_EMAIL, ""),
+
   // ── Security ──────────────────────────────────────────────────────────────
   /**
    * Idle session timeout in minutes. 0 = disabled.

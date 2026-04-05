@@ -204,24 +204,69 @@ export function useOrderForm(
     return result;
   }, [patientData]);
 
+  /** Local timestamp-based ID — used only for FHIR draft resource IDs, not for real order numbers. */
   const generateOrderNumber = useCallback((): string => {
     const d = new Date();
     const pad = (n: number) => String(n).padStart(2, "0");
     return `ord-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
   }, []);
 
+  /**
+   * Fetches a real order number from the Order Number Engine.
+   * Uses the patient's managing organisation GLN (from FHIR) and the given serviceType.
+   * Falls back to the local timestamp generator if the API is unavailable.
+   */
+  const fetchOrderNumber = useCallback(async (serviceType: "MIBI" | "ROUTINE" | "POC" = "ROUTINE"): Promise<string> => {
+    try {
+      const managingOrg = (patientData as { managingOrganization?: { reference?: string } } | null)
+        ?.managingOrganization?.reference;
+      const orgFhirId = managingOrg?.split("/").pop();
+      // Resolve GLN from FHIR Organisation if we have an ID
+      let orgGln = "";
+      if (orgFhirId) {
+        const orgRes = await fetch(`/api/v1/proxy/fhir/organizations/${orgFhirId}`).catch(() => null);
+        if (orgRes?.ok) {
+          const org = await orgRes.json() as { identifier?: Array<{ system?: string; value?: string }> };
+          const glnId = org.identifier?.find((i) => i.system?.includes("gln") || i.system?.includes("GLN"));
+          orgGln = glnId?.value ?? "";
+        }
+      }
+      const res = await fetch("/api/v1/orders/number", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orgGln, serviceType, patientId: id }),
+      });
+      if (!res.ok) {
+        // Fall back gracefully to timestamp-based local number
+        return generateOrderNumber();
+      }
+      const data = await res.json() as { orderNumber: string };
+      return data.orderNumber;
+    } catch {
+      return generateOrderNumber();
+    }
+  }, [patientData, id, generateOrderNumber]);
+
   const searchPractitioners = useCallback((q: string) => {
     window.clearTimeout(practitionerDebounce.current);
     practitionerDebounce.current = window.setTimeout(async () => {
       try {
-        const res = await fetch(`/api/practitioners?q=${encodeURIComponent(q)}`);
+        // Extract the patient's managing organization to scope the practitioner search.
+        const managingOrg = (patientData as { managingOrganization?: { reference?: string } } | null)
+          ?.managingOrganization?.reference;
+        const patientOrgId = managingOrg?.split("/").pop();
+
+        const params = new URLSearchParams({ q });
+        if (patientOrgId) params.set("orgFhirId", patientOrgId);
+
+        const res = await fetch(`/api/practitioners?${params.toString()}`);
         const json = await res.json();
         setPractitioners(json.data || []);
       } catch {
         setPractitioners([]);
       }
     }, 300);
-  }, []);
+  }, [patientData]);
 
   /** Save current order as a FHIR draft ServiceRequest. */
   const saveDraft = useCallback(async (selectedTests: MiddleItem[]) => {
@@ -312,6 +357,7 @@ export function useOrderForm(
     // Functions
     getPatientIdentifiers,
     generateOrderNumber,
+    fetchOrderNumber,
     searchPractitioners,
     saveDraft,
   };

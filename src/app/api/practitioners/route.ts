@@ -48,16 +48,23 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const q = (searchParams.get("q") || "").trim();
 
-  // Resolve the logged-in user's orgFhirId for org-based filtering
-  let orgFhirId: string | undefined;
-  try {
-    const session = await getSessionFromCookies();
-    if (session?.sub) {
-      const user = await getUserById(session.sub);
-      orgFhirId = user?.profile?.orgFhirId || undefined;
+  // orgFhirId priority:
+  // 1. Explicit query param (patient's managing organization — most accurate)
+  // 2. Logged-in user's org (for external Auftraggeber without patient context)
+  // 3. undefined → unfiltered (admin / internal lab users)
+  let orgFhirId: string | undefined = searchParams.get("orgFhirId") || undefined;
+
+  if (!orgFhirId) {
+    try {
+      const session = await getSessionFromCookies();
+      if (session?.sub) {
+        const user = await getUserById(session.sub);
+        const isAdmin = user?.role === "admin";
+        orgFhirId = isAdmin ? undefined : (user?.profile?.orgFhirId || undefined);
+      }
+    } catch {
+      // Session or store unavailable — fall back to unfiltered list
     }
-  } catch {
-    // Session or store unavailable — fall back to unfiltered list
   }
 
   try {

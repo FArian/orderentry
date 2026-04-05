@@ -76,9 +76,8 @@ export class ResultsController {
     else if (patientName) url.searchParams.set("subject:Patient.name", patientName);
     if (orderNumber) url.searchParams.set("based-on:ServiceRequest.identifier", orderNumber);
     applyOrgFilter(url);
-    url.searchParams.set("_sort", "-_lastUpdated");
     url.searchParams.set("_count", String(safePageSize));
-    url.searchParams.set("_getpagesoffset", String(offset));
+    url.searchParams.set("_offset", String(offset));
 
     const countUrl = new URL(`${this.fhirBase}/DiagnosticReport`);
     if (q)           countUrl.searchParams.set("code", q);
@@ -88,7 +87,6 @@ export class ResultsController {
     if (orderNumber) countUrl.searchParams.set("based-on:ServiceRequest.identifier", orderNumber);
     applyOrgFilter(countUrl);
     countUrl.searchParams.set("_summary", "count");
-    countUrl.searchParams.set("_total", "accurate");
 
     this.log.debug("list DiagnosticReports", { patientId, patientName, orderNumber, status, page: safePage, pageSize: safePageSize });
 

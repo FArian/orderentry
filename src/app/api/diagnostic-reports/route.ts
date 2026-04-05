@@ -22,6 +22,8 @@ export async function GET(request: Request) {
   const patientName = searchParams.get("patientName") || undefined;
   const orderNumber = searchParams.get("orderNumber") || undefined;
 
+  const isInternalUser = sessionUser.role === "admin";
+
   const result = await resultsController.list({
     ...(q           !== undefined && { q }),
     ...(status      !== undefined && { status }),
@@ -30,8 +32,8 @@ export async function GET(request: Request) {
     ...(orderNumber !== undefined && { orderNumber }),
     page:     parseInt(searchParams.get("page")     ?? "1",  10),
     pageSize: parseInt(searchParams.get("pageSize") ?? "20", 10),
-    ...(sessionUser.orgFhirId !== undefined && { orgFhirId: sessionUser.orgFhirId }),
-    ...(sessionUser.orgGln    !== undefined && { orgGln:    sessionUser.orgGln }),
+    ...(!isInternalUser && sessionUser.orgFhirId !== undefined && { orgFhirId: sessionUser.orgFhirId }),
+    ...(!isInternalUser && sessionUser.orgGln    !== undefined && { orgGln:    sessionUser.orgGln }),
   });
 
   const httpStatus = (result as { httpStatus?: number }).httpStatus ?? 200;

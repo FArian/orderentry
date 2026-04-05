@@ -17,13 +17,18 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const q = searchParams.get("q") || undefined;
 
+  // Admin and internal lab users see all patients — no org filter.
+  // External Auftraggeber (role "user" with org profile) are scoped to their org.
+  const isInternalUser = sessionUser.role === "admin";
+
   const result = await patientsController.list({
     ...(q !== undefined && { q }),
     page:         parseInt(searchParams.get("page")     ?? "1",  10),
     pageSize:     parseInt(searchParams.get("pageSize") ?? "10", 10),
     showInactive: searchParams.get("showInactive") === "true",
-    ...(sessionUser.orgFhirId !== undefined && { orgFhirId: sessionUser.orgFhirId }),
-    ...(sessionUser.orgGln    !== undefined && { orgGln:    sessionUser.orgGln }),
+    showAll:      searchParams.get("showAll")      === "true",
+    ...(!isInternalUser && sessionUser.orgFhirId !== undefined && { orgFhirId: sessionUser.orgFhirId }),
+    ...(!isInternalUser && sessionUser.orgGln    !== undefined && { orgGln:    sessionUser.orgGln }),
   });
 
   const httpStatus = (result as { httpStatus?: number }).httpStatus ?? 200;

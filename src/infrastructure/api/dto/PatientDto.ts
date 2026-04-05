@@ -12,6 +12,8 @@ export interface ListPatientsQueryDto {
   pageSize?: number;
   /** When true, returns inactive patients instead of active ones */
   showInactive?: boolean;
+  /** When true, returns all patients regardless of active status (overrides showInactive) */
+  showAll?: boolean;
   /**
    * FHIR Organization resource ID (e.g. "klinik-hirslanden").
    * When set, only patients managed by this organization are returned.

@@ -220,6 +220,24 @@ const IconMail = (
   </svg>
 );
 
+const IconOrgRules = (
+  <svg viewBox="0 0 16 16" fill="currentColor" className="w-full h-full">
+    <rect x="1" y="2" width="14" height="3" rx="1"/>
+    <rect x="1" y="7" width="9"  height="3" rx="1"/>
+    <rect x="1" y="12" width="6"  height="2" rx="1"/>
+    <path d="M12 8l2 2-2 2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+  </svg>
+);
+
+const IconNumberPool = (
+  <svg viewBox="0 0 16 16" fill="currentColor" className="w-full h-full">
+    <rect x="1" y="1" width="6" height="6" rx="1"/>
+    <rect x="9" y="1" width="6" height="6" rx="1"/>
+    <rect x="1" y="9" width="6" height="6" rx="1"/>
+    <rect x="9" y="9" width="6" height="6" rx="1"/>
+  </svg>
+);
+
 // ── AppSidebar ────────────────────────────────────────────────────────────────
 
 export function AppSidebar() {
@@ -282,8 +300,10 @@ export function AppSidebar() {
             <NavItem href="/admin/roles"         icon={IconRoles} label={t("nav.adminRoles")} activePaths={["/admin/roles"]} {...(counts.roles    !== null && { badge: counts.roles })} />
             <NavItem href="/admin/organizations" icon={IconOrgs}  label={t("nav.adminOrgs")}  activePaths={["/admin/organizations"]} {...(counts.fhirOrgs !== null && { badge: counts.fhirOrgs })} />
             <NavItem href="/admin/auth-config"   icon={IconAuth}  label={t("nav.adminAuthConfig")} activePaths={["/admin/auth-config"]} />
-            <NavItem href="/settings/mail"        icon={IconMail}  label={t("nav.mailConfig")}       activePaths={["/settings/mail"]} />
-            <NavItem href="/admin/env"           icon={IconSettings} label={t("nav.adminEnv")}  activePaths={["/admin/env"]}  />
+            <NavItem href="/settings/mail"        icon={IconMail}       label={t("nav.mailConfig")}       activePaths={["/settings/mail"]} />
+            <NavItem href="/admin/org-rules"      icon={IconOrgRules}   label={t("nav.adminOrgRules")}    activePaths={["/admin/org-rules"]} />
+            <NavItem href="/admin/number-pool"    icon={IconNumberPool} label={t("nav.adminNumberPool")}  activePaths={["/admin/number-pool"]} />
+            <NavItem href="/admin/env"           icon={IconSettings}   label={t("nav.adminEnv")}         activePaths={["/admin/env"]}  />
             <NavItem href="/admin/fhir"          icon={IconFhir}  label={t("nav.adminFhir")}  activePaths={["/admin/fhir"]}  />
             <NavItem href="/admin/api"           icon={IconApi}   label={t("nav.adminApi")}   activePaths={["/admin/api"]}   />
             <NavItem href="/admin/logs"          icon={IconLogs}  label={t("nav.adminLogs")}  activePaths={["/admin/logs"]}  />

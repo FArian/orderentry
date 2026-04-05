@@ -75,7 +75,10 @@ export default function OrderCreatePage({ id, srId }: OrderCreatePageProps) {
     form.setSubmitMsg(null);
     form.setSubmitErr(null);
     try {
-      const orderNumber = form.generateOrderNumber();
+      // Fetch a real order number from the Order Number Engine (Orchestra → Pool fallback)
+      const orderNumber = await form.fetchOrderNumber(
+        form.priority === "urgent" ? "MIBI" : "ROUTINE",
+      );
       // Reuse existing SR id when editing a draft, otherwise generate new
       const activeSrId = form.currentSrId || `sr-${orderNumber}`;
       const encId = `enc-${orderNumber}`;

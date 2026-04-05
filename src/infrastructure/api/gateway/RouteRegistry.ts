@@ -90,6 +90,23 @@ export const V1_ROUTES: readonly RouteEntry[] = [
   // ── Metrics ─────────────────────────────────────────────────────────────────
   { method: "GET",    path: "/v1/metrics",                       version: "v1", tag: "Observability", auth: "public", summary: "Prometheus metrics" },
 
+  // ── Order Numbers ────────────────────────────────────────────────────────────
+  { method: "POST",   path: "/v1/orders/number",                         version: "v1", tag: "Orders",    auth: "public", summary: "Generate order number (Orchestra → Pool fallback)" },
+
+  // ── Org Rules (admin) ────────────────────────────────────────────────────────
+  { method: "GET",    path: "/v1/admin/org-rules",                       version: "v1", tag: "OrgRules",  auth: "admin",  summary: "List org rules" },
+  { method: "POST",   path: "/v1/admin/org-rules",                       version: "v1", tag: "OrgRules",  auth: "admin",  summary: "Create org rule" },
+  { method: "GET",    path: "/v1/admin/org-rules/:id",                   version: "v1", tag: "OrgRules",  auth: "admin",  summary: "Get org rule" },
+  { method: "PUT",    path: "/v1/admin/org-rules/:id",                   version: "v1", tag: "OrgRules",  auth: "admin",  summary: "Update org rule" },
+  { method: "DELETE", path: "/v1/admin/org-rules/:id",                   version: "v1", tag: "OrgRules",  auth: "admin",  summary: "Delete org rule" },
+
+  // ── Number Pool (admin) ──────────────────────────────────────────────────────
+  { method: "GET",    path: "/v1/admin/number-pool",                     version: "v1", tag: "NumberPool", auth: "admin",  summary: "List pool numbers + stats" },
+  { method: "POST",   path: "/v1/admin/number-pool",                     version: "v1", tag: "NumberPool", auth: "admin",  summary: "Add numbers to pool" },
+  { method: "DELETE", path: "/v1/admin/number-pool/:id",                 version: "v1", tag: "NumberPool", auth: "admin",  summary: "Delete pool number" },
+  { method: "GET",    path: "/v1/admin/number-pool/thresholds",          version: "v1", tag: "NumberPool", auth: "admin",  summary: "Get pool alert thresholds" },
+  { method: "PUT",    path: "/v1/admin/number-pool/thresholds",          version: "v1", tag: "NumberPool", auth: "admin",  summary: "Update pool alert thresholds" },
+
 ] as const;
 
 /** Look up a route by method + path for gateway logging. */

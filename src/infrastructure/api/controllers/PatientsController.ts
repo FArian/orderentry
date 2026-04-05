@@ -46,6 +46,7 @@ export class PatientsController {
       page = 1,
       pageSize = 10,
       showInactive = false,
+      showAll = false,
       orgFhirId,
       orgGln,
     } = query;
@@ -56,7 +57,6 @@ export class PatientsController {
     const safePage     = Math.max(1, page);
     const safePageSize = Math.max(1, pageSize);
     const offset       = (safePage - 1) * safePageSize;
-    const activeValue  = showInactive ? "false" : "true";
 
     const applyOrgFilter = (u: URL) => {
       if (orgFhirId) {
@@ -66,22 +66,25 @@ export class PatientsController {
       }
     };
 
+    const applyActiveFilter = (u: URL) => {
+      if (showAll) return; // no filter → HAPI returns all patients regardless of active status
+      u.searchParams.set("active", showInactive ? "false" : "true");
+    };
+
     const url = new URL(`${this.fhirBase}/Patient`);
     if (q) url.searchParams.set("name", q);
-    url.searchParams.set("active", activeValue);
+    applyActiveFilter(url);
     url.searchParams.set("_count", String(safePageSize));
-    url.searchParams.set("_getpagesoffset", String(offset));
-    url.searchParams.set("_sort", "-_lastUpdated");
+    url.searchParams.set("_offset", String(offset));
     applyOrgFilter(url);
 
     const countUrl = new URL(`${this.fhirBase}/Patient`);
     if (q) countUrl.searchParams.set("name", q);
-    countUrl.searchParams.set("active", activeValue);
+    applyActiveFilter(countUrl);
     countUrl.searchParams.set("_summary", "count");
-    countUrl.searchParams.set("_total", "accurate");
     applyOrgFilter(countUrl);
 
-    this.log.debug("list Patients", { q, showInactive, page: safePage, pageSize: safePageSize });
+    this.log.debug("list Patients", { q, showInactive, showAll, page: safePage, pageSize: safePageSize });
 
     try {
       const [res, countRes] = await Promise.all([

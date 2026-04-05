@@ -14,9 +14,11 @@ export async function GET() {
     );
   }
 
+  const isInternalUser = sessionUser.role === "admin";
+
   const result = await ordersController.list({
-    ...(sessionUser.orgFhirId !== undefined && { orgFhirId: sessionUser.orgFhirId }),
-    ...(sessionUser.orgGln    !== undefined && { orgGln:    sessionUser.orgGln }),
+    ...(!isInternalUser && sessionUser.orgFhirId !== undefined && { orgFhirId: sessionUser.orgFhirId }),
+    ...(!isInternalUser && sessionUser.orgGln    !== undefined && { orgGln:    sessionUser.orgGln }),
   });
 
   const httpStatus = (result as { httpStatus?: number }).httpStatus ?? 200;

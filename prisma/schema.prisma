@@ -78,3 +78,75 @@ model AgentJob {
   updatedAt           DateTime  @updatedAt
   doneAt              DateTime?
 }
+
+// ── OrgRule ───────────────────────────────────────────────────────────────────
+
+/// Organisation-specific rules for order numbers, patient IDs, and HL7 mapping.
+/// One entry per external Auftraggeber-Organisation.
+model OrgRule {
+  id             String   @id @default(uuid())
+  orgFhirId      String   @unique
+  orgGln         String?                 /// nullable — GLN may not be available at creation time
+  orgName        String
+  patientPrefix  String   @default("")
+  casePrefix     String   @default("")
+  hl7Msh3        String   @default("")
+  hl7Msh4        String   @default("")
+  hl7Msh5        String   @default("ZLZ")
+  hl7Msh6        String   @default("LAB")
+
+  // Per-org order number overrides (empty/null = use global ENV defaults)
+  mibiPrefix         String   @default("")   /// MIBI prefix override (e.g. "MI")
+  mibiStart          String   @default("")   /// MIBI start digit after prefix (e.g. "4")
+  mibiLength         Int?                    /// MIBI total length including prefix (null = global)
+  pocPrefix          String   @default("")   /// POC prefix override (e.g. "PO")
+  pocLength          Int?                    /// POC total length including prefix (null = global)
+  routineLength      Int?                    /// Routine total digit count (null = global)
+
+  /// JSON mapping: external code/department → ServiceType ("MIBI"|"ROUTINE"|"POC")
+  /// Example: {"MIKRO":"MIBI","CARDIO":"ROUTINE","BGA":"POC"}
+  serviceTypeMapping String   @default("{}")
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+// ── ReservedOrderNumber ───────────────────────────────────────────────────────
+
+/// Pre-reserved order numbers used as fallback when Orchestra/LIS is unavailable.
+/// Unique constraint on `number` prevents duplicates at DB level.
+model ReservedOrderNumber {
+  id                      String    @id @default(uuid())
+  number                  String    @unique
+  serviceType             String    /// "MIBI" | "ROUTINE" | "POC"
+  status                  String    @default("available") /// "available" | "used"
+  /// null = shared pool (any org); set = org-specific pool (FHIR Organization.id)
+  orgFhirId               String?
+  usedAt                  DateTime?
+  usedForPatientId        String?
+  usedForServiceRequestId String?
+  createdAt               DateTime  @default(now())
+}
+
+// ── PoolNotificationLog ───────────────────────────────────────────────────────
+
+/// Anti-spam log for pool threshold email notifications.
+/// An email is only sent once per threshold level until the pool is refilled.
+model PoolNotificationLog {
+  id             String   @id @default(uuid())
+  level          String   /// "info" | "warn" | "error"
+  sentAt         DateTime @default(now())
+  remainingCount Int
+  poolRefilled   Boolean  @default(false)
+}
+
+// ── PoolThresholdConfig ───────────────────────────────────────────────────────
+
+/// Singleton row (id = "default") storing pool alert thresholds and notification email.
+model PoolThresholdConfig {
+  id                 String @id @default("default")
+  infoAt             Int    @default(30)
+  warnAt             Int    @default(15)
+  errorAt            Int    @default(5)
+  notificationEmail  String @default("")
+}

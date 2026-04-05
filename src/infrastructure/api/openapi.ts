@@ -148,6 +148,29 @@ export const openApiSpec = {
         "Used by the Local Agent (e.g. fetching DocumentReference PDFs) and by the UI. " +
         "Authentication: Bearer JWT, PAT, or session cookie.",
     },
+    {
+      name: "Orders — Numbers",
+      description:
+        "Order number generation via the strategy engine. " +
+        "Requests a new unique order number for a given organisation (by GLN) and service type " +
+        "(MIBI, ROUTINE, POC). Orchestra API is tried first; pre-reserved pool is used as fallback. " +
+        "If the pool is exhausted the request is blocked until an admin replenishes the pool.",
+    },
+    {
+      name: "Admin — Org Rules",
+      description:
+        "Organisation-specific configuration rules — HL7 MSH segments, patient/case number prefixes, " +
+        "and routing metadata per organisation (identified by FHIR ID or GLN). " +
+        "All endpoints require admin role.",
+    },
+    {
+      name: "Admin — Number Pool",
+      description:
+        "Pre-reserved order number pool management. " +
+        "Admins can add numbers, delete unused entries, and configure alert thresholds (Info / Warn / Error). " +
+        "Threshold breaches trigger email notifications (anti-spam: one email per level until pool is refilled). " +
+        "All endpoints require admin role.",
+    },
   ],
   paths: {
     // ── Results ───────────────────────────────────────────────────────────────
@@ -2013,6 +2036,393 @@ export const openApiSpec = {
         },
       },
     },
+
+    // ── Order Numbers ─────────────────────────────────────────────────────────
+    "/orders/number": {
+      post: {
+        tags: ["Orders — Numbers"],
+        summary: "Generate order number",
+        description:
+          "Generates a unique order number for a given organisation and service type. " +
+          "Strategy: (1) Orchestra API → (2) pre-reserved pool fallback → (3) 503 if pool is empty. " +
+          "The `source` field in the response indicates which path was used.",
+        operationId: "generateOrderNumber",
+        security: [{ bearerAuth: [] }, { sessionCookie: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/OrderNumberRequest" },
+              example: { orgGln: "7601000000000", serviceType: "ROUTINE" },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "Order number generated successfully",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/OrderNumberResponse" },
+              },
+            },
+          },
+          "400": {
+            description: "Invalid request — missing orgGln, unknown serviceType",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ProblemDetails" },
+              },
+            },
+          },
+          "503": {
+            description: "Order pool exhausted — no numbers available",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ProblemDetails" },
+              },
+            },
+          },
+        },
+      },
+    },
+
+    // ── Org Rules ─────────────────────────────────────────────────────────────
+    "/admin/org-rules": {
+      get: {
+        tags: ["Admin — Org Rules"],
+        summary: "List org rules",
+        description: "Returns all organisation rules ordered by orgName.",
+        operationId: "listOrgRules",
+        security: [{ bearerAuth: [] }, { sessionCookie: [] }],
+        responses: {
+          "200": {
+            description: "Array of org rules",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "array",
+                  items: { $ref: "#/components/schemas/OrgRule" },
+                },
+              },
+            },
+          },
+          "401": { description: "Not authenticated" },
+          "403": { description: "Admin role required" },
+        },
+      },
+      post: {
+        tags: ["Admin — Org Rules"],
+        summary: "Create org rule",
+        description: "Creates a new organisation rule. `orgFhirId` or `orgGln` is required.",
+        operationId: "createOrgRule",
+        security: [{ bearerAuth: [] }, { sessionCookie: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/OrgRule" },
+              example: {
+                orgFhirId: "org-zlz",
+                orgGln: "7601000000000",
+                orgName: "ZLZ Zentrallabor AG",
+                patientPrefix: "ZLZ",
+                casePrefix: "F",
+                hl7Msh3: "ORDERENTRY",
+                hl7Msh4: "ZLZ",
+                hl7Msh5: "LIS",
+                hl7Msh6: "ZLZ",
+              },
+            },
+          },
+        },
+        responses: {
+          "201": {
+            description: "Org rule created",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/OrgRule" },
+              },
+            },
+          },
+          "400": { description: "Validation error" },
+          "401": { description: "Not authenticated" },
+          "403": { description: "Admin role required" },
+          "409": { description: "Conflict — orgFhirId or orgGln already exists" },
+        },
+      },
+    },
+    "/admin/org-rules/{id}": {
+      get: {
+        tags: ["Admin — Org Rules"],
+        summary: "Get org rule",
+        operationId: "getOrgRule",
+        security: [{ bearerAuth: [] }, { sessionCookie: [] }],
+        parameters: [
+          { name: "id", in: "path", required: true, schema: { type: "string" } },
+        ],
+        responses: {
+          "200": {
+            description: "Org rule",
+            content: {
+              "application/json": { schema: { $ref: "#/components/schemas/OrgRule" } },
+            },
+          },
+          "401": { description: "Not authenticated" },
+          "403": { description: "Admin role required" },
+          "404": { description: "Not found" },
+        },
+      },
+      put: {
+        tags: ["Admin — Org Rules"],
+        summary: "Update org rule",
+        operationId: "updateOrgRule",
+        security: [{ bearerAuth: [] }, { sessionCookie: [] }],
+        parameters: [
+          { name: "id", in: "path", required: true, schema: { type: "string" } },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/OrgRule" },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "Updated org rule",
+            content: {
+              "application/json": { schema: { $ref: "#/components/schemas/OrgRule" } },
+            },
+          },
+          "400": { description: "Validation error" },
+          "401": { description: "Not authenticated" },
+          "403": { description: "Admin role required" },
+          "404": { description: "Not found" },
+        },
+      },
+      delete: {
+        tags: ["Admin — Org Rules"],
+        summary: "Delete org rule",
+        operationId: "deleteOrgRule",
+        security: [{ bearerAuth: [] }, { sessionCookie: [] }],
+        parameters: [
+          { name: "id", in: "path", required: true, schema: { type: "string" } },
+        ],
+        responses: {
+          "204": { description: "Deleted" },
+          "401": { description: "Not authenticated" },
+          "403": { description: "Admin role required" },
+          "404": { description: "Not found" },
+        },
+      },
+    },
+
+    // ── FHIR Organization Search ──────────────────────────────────────────────
+    "/proxy/fhir/organizations": {
+      get: {
+        tags: ["Admin — Org Rules"],
+        summary: "Search FHIR organizations by GLN or name",
+        description:
+          "Searches FHIR Organization resources by name or identifier (GLN). " +
+          "Used to auto-fill the OrgRule form and the Number Pool org picker. " +
+          "Requires at least 2 characters.",
+        operationId: "searchFhirOrganizations",
+        security: [{ bearerAuth: [] }, { sessionCookie: [] }],
+        parameters: [
+          {
+            name: "q", in: "query", required: true,
+            schema: { type: "string", minLength: 2 },
+            description: "Search term — GLN number or organisation name",
+          },
+        ],
+        responses: {
+          "200": {
+            description: "List of matching organisations",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    results: {
+                      type: "array",
+                      items: { $ref: "#/components/schemas/FhirOrgSearchResult" },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          "401": { description: "Not authenticated" },
+          "403": { description: "Admin role required" },
+        },
+      },
+    },
+
+    // ── Number Pool ───────────────────────────────────────────────────────────
+    "/admin/number-pool": {
+      get: {
+        tags: ["Admin — Number Pool"],
+        summary: "List pool numbers + stats",
+        description:
+          "Returns all entries in the pre-reserved order number pool along with aggregate stats " +
+          "(total, available, used) per service type.",
+        operationId: "listNumberPool",
+        security: [{ bearerAuth: [] }, { sessionCookie: [] }],
+        responses: {
+          "200": {
+            description: "Pool entries and stats",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    entries: {
+                      type: "array",
+                      items: { $ref: "#/components/schemas/ReservedOrderNumber" },
+                    },
+                    stats: {
+                      type: "object",
+                      additionalProperties: {
+                        type: "object",
+                        properties: {
+                          total:     { type: "integer" },
+                          available: { type: "integer" },
+                          used:      { type: "integer" },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          "401": { description: "Not authenticated" },
+          "403": { description: "Admin role required" },
+        },
+      },
+      post: {
+        tags: ["Admin — Number Pool"],
+        summary: "Add numbers to pool",
+        description: "Bulk-inserts pre-reserved order numbers. Duplicates are silently skipped.",
+        operationId: "addNumbersToPool",
+        security: [{ bearerAuth: [] }, { sessionCookie: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["numbers", "serviceType"],
+                properties: {
+                  numbers:     { type: "array", items: { type: "string" }, minItems: 1 },
+                  serviceType: { type: "string", enum: ["MIBI", "ROUTINE", "POC"] },
+                  orgFhirId:   { type: "string", nullable: true, description: "FHIR Organization.id — null/omit for shared pool" },
+                },
+              },
+              example: {
+                numbers: ["7004003000", "7004003001", "7004003002"],
+                serviceType: "ROUTINE",
+                orgFhirId: null,
+              },
+            },
+          },
+        },
+        responses: {
+          "201": {
+            description: "Numbers added",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    added:      { type: "integer" },
+                    skipped:    { type: "integer" },
+                    serviceType: { type: "string" },
+                  },
+                },
+              },
+            },
+          },
+          "400": { description: "Validation error" },
+          "401": { description: "Not authenticated" },
+          "403": { description: "Admin role required" },
+        },
+      },
+    },
+    "/admin/number-pool/{id}": {
+      delete: {
+        tags: ["Admin — Number Pool"],
+        summary: "Delete pool number",
+        description: "Deletes an unused pool entry. Returns 409 if the entry has already been used.",
+        operationId: "deletePoolNumber",
+        security: [{ bearerAuth: [] }, { sessionCookie: [] }],
+        parameters: [
+          { name: "id", in: "path", required: true, schema: { type: "string" } },
+        ],
+        responses: {
+          "204": { description: "Deleted" },
+          "401": { description: "Not authenticated" },
+          "403": { description: "Admin role required" },
+          "404": { description: "Not found" },
+          "409": { description: "Conflict — number already used" },
+        },
+      },
+    },
+    "/admin/number-pool/thresholds": {
+      get: {
+        tags: ["Admin — Number Pool"],
+        summary: "Get pool alert thresholds",
+        description:
+          "Returns the configured alert thresholds for the pre-reserved number pool. " +
+          "Rule: errorAt < warnAt < infoAt.",
+        operationId: "getPoolThresholds",
+        security: [{ bearerAuth: [] }, { sessionCookie: [] }],
+        responses: {
+          "200": {
+            description: "Current threshold configuration",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/PoolThreshold" },
+              },
+            },
+          },
+          "401": { description: "Not authenticated" },
+          "403": { description: "Admin role required" },
+        },
+      },
+      put: {
+        tags: ["Admin — Number Pool"],
+        summary: "Update pool alert thresholds",
+        description:
+          "Updates the alert thresholds. All three values are required. " +
+          "Validation rule: `errorAt` < `warnAt` < `infoAt`.",
+        operationId: "updatePoolThresholds",
+        security: [{ bearerAuth: [] }, { sessionCookie: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/PoolThreshold" },
+              example: { infoAt: 50, warnAt: 20, errorAt: 5 },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "Updated thresholds",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/PoolThreshold" },
+              },
+            },
+          },
+          "400": { description: "Validation error — thresholds must satisfy errorAt < warnAt < infoAt" },
+          "401": { description: "Not authenticated" },
+          "403": { description: "Admin role required" },
+        },
+      },
+    },
   },
 
   // ── Reusable schemas ───────────────────────────────────────────────────────
@@ -2701,6 +3111,89 @@ export const openApiSpec = {
           id:     { type: "string", format: "uuid" },
           status: { type: "string", enum: ["done"] },
         },
+      },
+    },
+
+    // ── Order Number Engine schemas ──────────────────────────────────────────
+    OrgRule: {
+      type: "object",
+      required: ["id", "orgFhirId", "orgGln", "orgName"],
+      properties: {
+        id:            { type: "string", format: "uuid" },
+        orgFhirId:     { type: "string", description: "FHIR Organization.id" },
+        orgGln:        { type: "string", description: "GS1 GLN of the organization" },
+        orgName:       { type: "string" },
+        patientPrefix: { type: "string", description: "Prefix for patient IDs" },
+        casePrefix:    { type: "string", description: "Prefix for case/Fallnummer" },
+        hl7Msh3:       { type: "string", description: "HL7 MSH-3 Sending Application" },
+        hl7Msh4:       { type: "string", description: "HL7 MSH-4 Sending Facility" },
+        hl7Msh5:       { type: "string", description: "HL7 MSH-5 Receiving Application" },
+        hl7Msh6:       { type: "string", description: "HL7 MSH-6 Receiving Facility" },
+        mibiPrefix:    { type: "string", description: "MIBI prefix override (empty = global ENV)" },
+        mibiStart:     { type: "string", description: "MIBI start digit after prefix (empty = global ENV)" },
+        mibiLength:    { type: "integer", nullable: true, description: "MIBI total length (null = global ENV)" },
+        pocPrefix:     { type: "string", description: "POC prefix override (empty = global ENV)" },
+        pocLength:     { type: "integer", nullable: true, description: "POC total length (null = global ENV)" },
+        routineLength: { type: "integer", nullable: true, description: "Routine digit count (null = global ENV)" },
+        serviceTypeMapping: {
+          type: "object",
+          additionalProperties: { type: "string", enum: ["MIBI", "ROUTINE", "POC"] },
+          description: "Maps external department codes to ServiceType. E.g. {\"MIKRO\":\"MIBI\"}",
+        },
+        createdAt:     { type: "string", format: "date-time" },
+        updatedAt:     { type: "string", format: "date-time" },
+      },
+    },
+    FhirOrgSearchResult: {
+      type: "object",
+      required: ["orgFhirId", "orgGln", "orgName"],
+      properties: {
+        orgFhirId: { type: "string" },
+        orgGln:    { type: "string" },
+        orgName:   { type: "string" },
+      },
+    },
+    ReservedOrderNumber: {
+      type: "object",
+      required: ["id", "number", "serviceType", "status", "createdAt"],
+      properties: {
+        id:                      { type: "string", format: "uuid" },
+        number:                  { type: "string" },
+        serviceType:             { type: "string", enum: ["MIBI", "ROUTINE", "POC"] },
+        status:                  { type: "string", enum: ["available", "used"] },
+        orgFhirId:               { type: "string", nullable: true, description: "null = shared pool; value = org-specific" },
+        usedAt:                  { type: "string", format: "date-time" },
+        usedForPatientId:        { type: "string" },
+        usedForServiceRequestId: { type: "string" },
+        createdAt:               { type: "string", format: "date-time" },
+      },
+    },
+    PoolThreshold: {
+      type: "object",
+      required: ["infoAt", "warnAt", "errorAt", "notificationEmail"],
+      properties: {
+        infoAt:            { type: "integer", description: "Send INFO email when available ≤ this" },
+        warnAt:            { type: "integer", description: "Send WARN email when available ≤ this" },
+        errorAt:           { type: "integer", description: "Send ERROR email when available ≤ this" },
+        notificationEmail: { type: "string", format: "email" },
+      },
+    },
+    OrderNumberRequest: {
+      type: "object",
+      required: ["orgGln", "serviceType"],
+      properties: {
+        orgGln:      { type: "string" },
+        serviceType: { type: "string", enum: ["MIBI", "ROUTINE", "POC"] },
+        patientId:   { type: "string" },
+      },
+    },
+    OrderNumberResponse: {
+      type: "object",
+      required: ["orderNumber", "serviceType", "source"],
+      properties: {
+        orderNumber: { type: "string" },
+        serviceType: { type: "string", enum: ["MIBI", "ROUTINE", "POC"] },
+        source:      { type: "string", enum: ["orchestra", "pool"] },
       },
     },
 

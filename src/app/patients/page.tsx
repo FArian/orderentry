@@ -184,12 +184,13 @@ function PatientPageContent() {
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
 
-  const fetchPatients = useCallback(async (q: string, p: number, inactive = false) => {
+  const fetchPatients = useCallback(async (q: string, p: number, mode: FilterMode = "active") => {
     try {
       setLoading(true);
       setError(null);
       const params = new URLSearchParams({ q, page: String(p), pageSize: String(pageSize) });
-      if (inactive) params.set("showInactive", "true");
+      if (mode === "inactive") params.set("showInactive", "true");
+      if (mode === "all")      params.set("showAll", "true");
       const res = await fetch(`/api/patients?${params.toString()}`);
       if (!res.ok) throw new Error(`Request failed: ${res.status}`);
       const bundle = await res.json() as { total?: number; entry?: Array<{ resource?: FhirPatientResource }> };
@@ -211,7 +212,7 @@ function PatientPageContent() {
   useEffect(() => {
     const initialQ = (searchParams?.get("q") || "").toString();
     setQuery(initialQ);
-    fetchPatients(initialQ, 1, false);
+    fetchPatients(initialQ, 1, "active");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -223,20 +224,20 @@ function PatientPageContent() {
       setPage(1);
       const q = query.trim();
       router.replace(q ? `/patients?q=${encodeURIComponent(q)}` : "/patients", { scroll: false });
-      fetchPatients(q, 1, showInactive);
+      fetchPatients(q, 1, filterMode);
     }, 400);
     return () => { window.clearTimeout(debounceRef.current); };
-  }, [query, fetchPatients, router, showInactive]);
+  }, [query, fetchPatients, router, filterMode]);
 
   function goPage(p: number) {
     setPage(p);
-    fetchPatients(query.trim(), p, showInactive);
+    fetchPatients(query.trim(), p, filterMode);
   }
 
   function applyFilter(mode: FilterMode) {
     setFilterMode(mode);
     setPage(1);
-    fetchPatients(query.trim(), 1, mode === "inactive");
+    fetchPatients(query.trim(), 1, mode);
   }
 
   // ── Merge ──────────────────────────────────────────────────────────────────
@@ -267,7 +268,7 @@ function PatientPageContent() {
       setMergeMsg(t("patient.mergeOk"));
       setMergeSelected([]);
       setMergeMode(false);
-      fetchPatients(query, page, showInactive);
+      fetchPatients(query, page, filterMode);
     } catch (e: unknown) {
       setMergeErr(e instanceof Error ? e.message : String(e));
     } finally {
@@ -283,7 +284,7 @@ function PatientPageContent() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || String(res.status));
       setActivateMsg(t("patient.activateOk"));
-      fetchPatients(query, page, showInactive);
+      fetchPatients(query, page, filterMode);
     } catch (e: unknown) {
       setActivateMsg(e instanceof Error ? e.message : String(e));
     } finally {
@@ -421,7 +422,7 @@ function PatientPageContent() {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") { window.clearTimeout(debounceRef.current); fetchPatients(query.trim(), 1, showInactive); }}}
+              onKeyDown={(e) => { if (e.key === "Enter") { window.clearTimeout(debounceRef.current); fetchPatients(query.trim(), 1, filterMode); }}}
               placeholder={t("patient.searchPlaceholder")}
               className="w-full pl-9 pr-3 py-2 rounded-[8px] border border-zt-border bg-zt-bg-card text-[13px] text-zt-text-primary placeholder:text-zt-text-tertiary outline-none focus:border-zt-primary"
             />

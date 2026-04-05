@@ -61,7 +61,6 @@ export class OrdersController {
       } else if (orgGln) {
         url.searchParams.set("subject:Patient.organization:identifier", `${EnvConfig.fhirSystems.gln}|${orgGln}`);
       }
-      url.searchParams.set("_sort", "-_lastUpdated");
       url.searchParams.set("_count", "50");
 
       const res = await this.fetchFn(url.toString(), {

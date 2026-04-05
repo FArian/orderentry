@@ -58,8 +58,14 @@ function appliedVersions(db: Database.Database): Set<string> {
 }
 
 export function runSqliteMigrations(dbUrl: string): void {
-  // Strip "file:" prefix from Prisma-style URLs
-  const dbPath = dbUrl.replace(/^file:/, "");
+  // Resolve the SQLite path the same way Prisma does:
+  // relative paths are resolved from the `prisma/` directory (where schema.prisma lives),
+  // not from process.cwd(). This keeps the migration runner and Prisma pointing at the same file.
+  const PRISMA_SCHEMA_DIR = path.resolve(process.cwd(), "prisma");
+  const rawPath = dbUrl.replace(/^file:/, "");
+  const dbPath = path.isAbsolute(rawPath)
+    ? rawPath
+    : path.resolve(PRISMA_SCHEMA_DIR, rawPath);
 
   const dir = path.dirname(dbPath);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });

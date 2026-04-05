@@ -34,6 +34,15 @@ Thin page wrappers and server-side API route handlers.
 - API routes delegate to `infrastructure/api/controllers/`
 - Legacy pages (`patient/`, `order/`) must not be restructured
 
+## 🔐 Org-Scoping in API Routes
+
+Die Routes `/api/patients`, `/api/service-requests`, `/api/diagnostic-reports` und `/api/practitioners` wenden einen Mandanten-Filter an:
+
+- **`role === "admin"`** → kein Org-Filter, auch wenn `orgFhirId`/`orgGln` im User-Profil gesetzt sind (interner Laborbenutzer)
+- **`role === "user"` mit Profil-Org** → Org-Filter aktiv (externer Auftraggeber)
+
+Bei `/api/practitioners` gilt zusätzlich: der Filter kommt bevorzugt aus `?orgFhirId=` (= Organisation des Patienten, gesetzt vom Auftragsformular), nicht aus dem User-Profil.
+
 ---
 
 [⬆ Back to top](#)
