@@ -357,12 +357,44 @@ Für den Agent:
 Nur der Health-Endpoint (`localhost:7890/health`) braucht einen minimalen HTTP-Server
 → Standard Library reicht.
 
+#### Entscheidung — Zielplattformen
+
+✅ **Windows, Linux, macOS, Docker** — alle vier müssen unterstützt werden.
+
+Go kompiliert für alle Plattformen aus einer einzigen Codebase:
+
+```bash
+GOOS=windows GOARCH=amd64  go build → zetlab-agent.exe          (Klinik Windows PC)
+GOOS=linux   GOARCH=amd64  go build → zetlab-agent-linux        (Server / NUC)
+GOOS=linux   GOARCH=arm64  go build → zetlab-agent-linux-arm64  (Raspberry Pi / ARM)
+GOOS=darwin  GOARCH=amd64  go build → zetlab-agent-mac-intel    (Mac Intel)
+GOOS=darwin  GOARCH=arm64  go build → zetlab-agent-mac-m1       (Mac Apple Silicon)
+```
+
+#### Gewählte Packages
+
+| Package | Zweck | Begründung |
+|---|---|---|
+| `cobra` | CLI Commands | start / stop / status / register |
+| `fsnotify` | Directory Watcher | Cross-platform, alle 4 Plattformen |
+| `golang.org/x/sys` | Windows Service | `windows/svc` für Service-Registrierung |
+| `modernc.org/sqlite` | Lokale DB | Kein CGO — funktioniert auf allen Plattformen |
+| `log/slog` | Logging | Go 1.21 Standard — kein extra Package nötig |
+
+#### Plattform-spezifisches Verhalten
+
+| Funktion | Windows | Linux | macOS | Docker |
+|---|---|---|---|---|
+| **Service** | Windows Service (`svc`) | systemd Unit | LaunchAgent plist | Container |
+| **PDF Druck** | WinPrint API | CUPS (`lp`) | CUPS (`lp`) | Via Host-Drucker |
+| **ZPL Druck** | TCP:9100 | TCP:9100 | TCP:9100 | TCP:9100 |
+| **Installer** | `.msi` (geplant) | `.deb`/`.rpm` (geplant) | `.pkg` (geplant) | `docker pull` |
+
 #### Zu klären
 
-- [ ] Soll der Agent als **Windows Service** laufen? → `golang.org/x/sys/windows/svc`
-- [ ] Soll der Agent als **systemd Service** laufen? → Standard reicht
-- [ ] Logging: `log/slog` (Go 1.21 Standard) oder `zerolog` (strukturiertes JSON)?
-- [ ] Config: ENV only oder auch YAML/TOML Config-Datei?
+- [ ] Config: ENV only oder auch YAML/TOML Config-Datei für Windows-User?
+- [ ] Auto-Update: Watchtower-ähnlich oder manuelles Update?
+- [ ] Installer: Wann werden `.msi` / `.pkg` Installer gebaut?
 
 ---
 
