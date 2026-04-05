@@ -17,8 +17,7 @@ import { BackButton } from "@/components/BackButton";
 import { useTranslation } from "@/lib/i18n";
 import { useNumberPool } from "@/presentation/hooks/useNumberPool";
 import type { PoolThresholdDto } from "@/infrastructure/api/dto/NumberPoolDto";
-import { SERVICE_TYPES } from "@/domain/strategies/IOrderNumberStrategy";
-import type { ServiceType } from "@/domain/strategies/IOrderNumberStrategy";
+import { AppConfig } from "@/shared/config/AppConfig";
 
 interface FhirOrgResult { orgFhirId: string; orgGln: string; orgName: string; }
 
@@ -228,11 +227,11 @@ function AddNumbersForm({
   onAdd,
   t,
 }: {
-  onAdd: (numbers: string[], serviceType: ServiceType, orgFhirId?: string | null) => Promise<{ added: number; skipped: number }>;
+  onAdd: (numbers: string[], serviceType: string, orgFhirId?: string | null) => Promise<{ added: number; skipped: number }>;
   t:     (k: string) => string;
 }) {
   const [numbersText,  setNumbersText]  = useState("");
-  const [serviceType,  setServiceType]  = useState<ServiceType>("ROUTINE");
+  const [serviceType,  setServiceType]  = useState<string>(AppConfig.serviceTypes[0] ?? "");
   const [isOrgSpecific, setIsOrgSpecific] = useState(false);
   const [selectedOrg,  setSelectedOrg]  = useState<FhirOrgResult | null>(null);
   const [busy,         setBusy]         = useState(false);
@@ -320,10 +319,10 @@ function AddNumbersForm({
           <label className="block text-[11px] text-zt-text-tertiary mb-1">{t("pool.serviceType")}</label>
           <select
             value={serviceType}
-            onChange={(e) => setServiceType(e.target.value as ServiceType)}
+            onChange={(e) => setServiceType(e.target.value as string)}
             className="w-full rounded-lg border border-zt-border bg-zt-bg-page px-3 py-1.5 text-[13px] text-zt-text-primary focus:outline-none focus:border-zt-primary"
           >
-            {SERVICE_TYPES.map((st) => (
+            {AppConfig.serviceTypes.map((st) => (
               <option key={st} value={st}>{st}</option>
             ))}
           </select>
@@ -359,7 +358,7 @@ export default function NumberPoolPage() {
     addNumbers, deleteEntry, updateThresholds,
   } = useNumberPool();
 
-  const [filterType,    setFilterType]    = useState<ServiceType | "ALL">("ALL");
+  const [filterType,    setFilterType]    = useState<"ALL" | string>("ALL");
   const [filterStatus,  setFilterStatus]  = useState<"all" | "available" | "used">("all");
   const [filterOrg,     setFilterOrg]     = useState<"all" | "shared" | "org">("all");
   const [deleteError,   setDeleteError]   = useState<string | null>(null);
@@ -425,7 +424,7 @@ export default function NumberPoolPage() {
             <>
               {/* Stats */}
               <div className="grid grid-cols-3 gap-4">
-                {SERVICE_TYPES.map((st) => {
+                {AppConfig.serviceTypes.map((st) => {
                   const s = stats[st] ?? { total: 0, available: 0, used: 0 };
                   return (
                     <StatsCard
@@ -462,11 +461,11 @@ export default function NumberPoolPage() {
                     {/* Service type filter */}
                     <select
                       value={filterType}
-                      onChange={(e) => setFilterType(e.target.value as ServiceType | "ALL")}
+                      onChange={(e) => setFilterType(e.target.value as "ALL" | string)}
                       className="rounded-lg border border-zt-border bg-zt-bg-page px-2 py-1 text-[12px] text-zt-text-primary focus:outline-none"
                     >
                       <option value="ALL">{t("common.all")}</option>
-                      {SERVICE_TYPES.map((st) => <option key={st} value={st}>{st}</option>)}
+                      {AppConfig.serviceTypes.map((st) => <option key={st} value={st}>{st}</option>)}
                     </select>
                     {/* Status filter */}
                     <select

@@ -266,6 +266,16 @@ export const EnvConfig = {
   /** POC order number total length including prefix (default: 7). */
   orderPocLength: num(process.env.ORDER_POC_LENGTH, 7),
 
+  /**
+   * Comma-separated list of active order service types.
+   * Drives pool queries, strategy selection, and HL7 mapping on the server.
+   * Example: ORDER_SERVICE_TYPES=MIBI,ROUTINE,POC,CHEMO
+   */
+  orderServiceTypes: (process.env.ORDER_SERVICE_TYPES ?? "MIBI,ROUTINE,POC")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean),
+
   /** Pool INFO email threshold — send info alert when available ≤ this (default: 30). */
   poolInfoThreshold: num(process.env.POOL_INFO_THRESHOLD, 30),
 

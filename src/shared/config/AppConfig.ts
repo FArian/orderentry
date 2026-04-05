@@ -58,6 +58,17 @@ export const AppConfig = {
    * Set via NEXT_PUBLIC_LAB_ORG_ID env var; defaults to "zlz".
    */
   labOrgId: process.env.NEXT_PUBLIC_LAB_ORG_ID ?? "zlz",
+
+  // ── Order service types ───────────────────────────────────────────────────
+  /**
+   * Comma-separated list of active order service types shown in UI dropdowns.
+   * Baked into the client bundle at build time.
+   * Example: NEXT_PUBLIC_ORDER_SERVICE_TYPES=MIBI,ROUTINE,POC,CHEMO
+   */
+  serviceTypes: (process.env.NEXT_PUBLIC_ORDER_SERVICE_TYPES ?? "MIBI,ROUTINE,POC")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean),
 } as const;
 
 export type AppConfigType = typeof AppConfig;

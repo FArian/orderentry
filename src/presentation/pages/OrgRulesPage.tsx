@@ -17,7 +17,7 @@ import { BackButton } from "@/components/BackButton";
 import { useTranslation } from "@/lib/i18n";
 import { useOrgRules } from "@/presentation/hooks/useOrgRules";
 import type { OrgRuleDto } from "@/infrastructure/api/dto/OrgRuleDto";
-import { SERVICE_TYPES } from "@/domain/strategies/IOrderNumberStrategy";
+import { AppConfig } from "@/shared/config/AppConfig";
 import type { ServiceType } from "@/domain/strategies/IOrderNumberStrategy";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -113,13 +113,12 @@ function MappingEditor({
   onChange,
   t,
 }: {
-  value:    Record<string, ServiceType>;
-  onChange: (v: Record<string, ServiceType>) => void;
+  value:    Record<string, string>;
+  onChange: (v: Record<string, string>) => void;
   t:        (k: string) => string;
 }) {
   const [newKey, setNewKey] = useState("");
-  const [newVal, setNewVal] = useState<ServiceType>("ROUTINE");
-  const SERVICE_TYPES: ServiceType[] = ["MIBI", "ROUTINE", "POC"];
+  const [newVal, setNewVal] = useState<string>(AppConfig.serviceTypes[0] ?? "");
 
   function handleAdd() {
     const k = newKey.trim().toUpperCase();
@@ -189,10 +188,10 @@ function MappingEditor({
 
 // ── NumberConfigEditor ────────────────────────────────────────────────────────
 
-const ALL_SERVICE_TYPES: ServiceType[] = [...SERVICE_TYPES];
+const ALL_SERVICE_TYPES: string[] = [...AppConfig.serviceTypes];
 
 interface NumberConfigRow {
-  serviceType: ServiceType;
+  serviceType: string;  // from AppConfig.serviceTypes — dynamic
   prefix:      string;  // not used for ROUTINE
   start:       string;  // only for MIBI
   length:      string;  // "" = use global default
@@ -233,7 +232,7 @@ function NumberConfigEditor({
   t:        (k: string) => string;
 }) {
   const [rows, setRows] = useState<NumberConfigRow[]>(() => toConfigRows(form));
-  const [addType, setAddType] = useState<ServiceType>("MIBI");
+  const [addType, setAddType] = useState<string>(ALL_SERVICE_TYPES[0] ?? "");
 
   const usedTypes = new Set(rows.map((r) => r.serviceType));
   const availableTypes = ALL_SERVICE_TYPES.filter((st) => !usedTypes.has(st));
