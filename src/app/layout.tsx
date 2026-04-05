@@ -4,7 +4,8 @@ import pkg from "../../package.json";
 import AppHeader from "@/components/AppHeader";
 import Providers from "@/components/Providers";
 
-export const dynamic = "force-dynamic";
+// No force-dynamic here — every API route sets it individually where needed.
+// The layout itself is static: NEXT_PUBLIC_APP_VERSION is baked at build time.
 
 const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || pkg.version || "0.0.0";
 const SIMPLE_VERSION = (() => {

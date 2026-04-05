@@ -3,10 +3,9 @@
 /**
  * SessionContext — single source of truth for the authenticated user.
  *
- * Fetches GET /api/me once per pathname change and makes the result
- * available to any component via useSession().  A single fetch is shared
- * across the whole component tree, so UserMenu, AppSidebar, and any
- * permission-guarded UI all stay in sync without duplicate requests.
+ * Fetches GET /api/me once on mount. Call refresh() explicitly after
+ * login or logout. A single fetch is shared across the whole component
+ * tree — UserMenu, AppSidebar, and permission-guarded UI stay in sync.
  *
  * Usage:
  *   const { status, user, isAdmin } = useSession();
@@ -20,7 +19,6 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { usePathname } from "next/navigation";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -59,7 +57,6 @@ const SessionContext = createContext<SessionContextValue>({
 // ── Provider ──────────────────────────────────────────────────────────────────
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const pathname = usePathname();
   const [state, setState] = useState<SessionState>({ status: "loading" });
 
   const fetchSession = useCallback(async () => {
@@ -97,8 +94,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Re-fetch on every client-side navigation so stale state is impossible.
-  useEffect(() => { fetchSession(); }, [fetchSession, pathname]);
+  // Fetch once on mount. Use refresh() explicitly after login/logout.
+  // Re-fetching on every pathname change caused a /api/me round-trip per navigation.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchSession(); }, []);
 
   const value: SessionContextValue = {
     ...state,

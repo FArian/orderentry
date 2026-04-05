@@ -15,17 +15,17 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 export function middleware(request: NextRequest): NextResponse {
-  const { method, nextUrl } = request;
-
-  const entry = JSON.stringify({
-    time: new Date().toISOString(),
-    level: "info",
-    ctx: "Middleware",
-    msg: `${method} ${nextUrl.pathname}`,
-    ...(nextUrl.search ? { search: nextUrl.search } : {}),
-  });
-
-  console.log(entry);
+  // Only log in development — Edge console.log adds latency in production.
+  if (process.env.NODE_ENV === "development") {
+    const { method, nextUrl } = request;
+    console.log(JSON.stringify({
+      time:  new Date().toISOString(),
+      level: "info",
+      ctx:   "Middleware",
+      msg:   `${method} ${nextUrl.pathname}`,
+      ...(nextUrl.search ? { search: nextUrl.search } : {}),
+    }));
+  }
 
   return NextResponse.next();
 }
