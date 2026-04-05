@@ -20,7 +20,8 @@
     "deleting": "Suppression…",
     "saved": "Enregistré",
     "actions": "Actions",
-    "all": "Tous"
+    "all": "Tous",
+    "errorGeneric": "Une erreur s'est produite."
   },
   "nav": {
     "login": "Connexion",
@@ -131,6 +132,8 @@
     "showActive": "Afficher actifs",
     "activate": "Réactiver",
     "activateOk": "Patient réactivé avec succès.",
+    "deactivate": "Désactiver",
+    "deactivateOk": "Patient désactivé avec succès.",
     "loadError": "Erreur lors du chargement",
     "first": "Premier",
     "previous": "Précédent",
@@ -315,7 +318,9 @@
     "categories": "Catégories",
     "dob": "Date de naissance",
     "newOrder": "Nouvel ordre",
-    "copy": "Copier"
+    "copy": "Copier",
+    "inactivePatient": "Le patient est inactif",
+    "inactivePatientHint": "Aucune demande ne peut être créée pour des patients inactifs. Veuillez d'abord réactiver le patient."
   },
   "results": {
     "title": "Résultats",
@@ -604,6 +609,9 @@
     "colProfile": "Profil",
     "syncBtn": "Synchroniser avec FHIR",
     "permissionsBtn": "Autorisations",
+    "rolePermissions": "Autorisations de rôle (fixes)",
+    "extraPermissions": "Autorisations supplémentaires (assignables)",
+    "permissionsUpdated": "Autorisations mises à jour.",
     "syncPending": "En attente",
     "syncSynced": "Synchronise",
     "syncError": "Erreur",

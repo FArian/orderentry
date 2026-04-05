@@ -20,7 +20,8 @@
     "deleting": "Löschen…",
     "saved": "Gespeichert",
     "actions": "Aktionen",
-    "all": "Alle"
+    "all": "Alle",
+    "errorGeneric": "Ein Fehler ist aufgetreten."
   },
   "nav": {
     "login": "Login",
@@ -131,6 +132,8 @@
     "showActive": "Aktive anzeigen",
     "activate": "Reaktivieren",
     "activateOk": "Patient erfolgreich reaktiviert.",
+    "deactivate": "Deaktivieren",
+    "deactivateOk": "Patient erfolgreich deaktiviert.",
     "loadError": "Fehler beim Laden",
     "first": "Erste",
     "previous": "Zurück",
@@ -315,7 +318,9 @@
     "categories": "Kategorien",
     "dob": "Geburtsdatum",
     "newOrder": "Neuer Auftrag",
-    "copy": "Kopieren"
+    "copy": "Kopieren",
+    "inactivePatient": "Patient ist inaktiv",
+    "inactivePatientHint": "Für inaktive Patienten können keine Aufträge erstellt werden. Bitte reaktivieren Sie den Patienten zuerst."
   },
   "results": {
     "title": "Befunde",
@@ -604,6 +609,9 @@
     "colProfile": "Profil",
     "syncBtn": "FHIR synchronisieren",
     "permissionsBtn": "Berechtigungen",
+    "rolePermissions": "Rollen-Berechtigungen (fix)",
+    "extraPermissions": "Zusätzliche Berechtigungen (zuweisbar)",
+    "permissionsUpdated": "Berechtigungen aktualisiert.",
     "syncPending": "Ausstehend",
     "syncSynced": "Synchronisiert",
     "syncError": "Fehler",

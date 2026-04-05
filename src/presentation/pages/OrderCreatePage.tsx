@@ -254,6 +254,29 @@ export default function OrderCreatePage({ id, srId }: OrderCreatePageProps) {
     canSubmit, form, catalog, docs, id, submitBundle, tr,
   ]);
 
+  // ── Inactive patient guard ────────────────────────────────────────────────────
+
+  const patientIsActive = !form.patientLoading &&
+    (form.patientData as { active?: boolean } | null)?.active !== false;
+
+  if (!form.patientLoading && !patientIsActive) {
+    return (
+      <div className="flex flex-1 items-center justify-center p-8">
+        <div className="max-w-md w-full rounded-xl border border-zt-danger-border bg-zt-danger-light p-6 text-center">
+          <div className="text-3xl mb-3" aria-hidden="true">🚫</div>
+          <h2 className="text-base font-semibold text-zt-danger mb-2">{tr("order.inactivePatient")}</h2>
+          <p className="text-sm text-zt-text-secondary mb-4">{tr("order.inactivePatientHint")}</p>
+          <a
+            href="/patients?q="
+            className="inline-flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-lg bg-zt-bg-card border border-zt-border text-zt-text-primary hover:bg-zt-bg-page transition-colors"
+          >
+            ← {tr("nav.patients")}
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   // ── Render ────────────────────────────────────────────────────────────────────
 
   return (

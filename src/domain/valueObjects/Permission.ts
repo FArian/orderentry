@@ -14,8 +14,9 @@ export const PERMISSIONS = {
   ORDER_EDIT:   "order:edit",
 
   // ── Patients ───────────────────────────────────────────────────────────────
-  PATIENT_READ: "patient:read",
-  PATIENT_EDIT: "patient:edit",
+  PATIENT_READ:     "patient:read",
+  PATIENT_EDIT:     "patient:edit",
+  PATIENT_ACTIVATE: "patient:activate",
 
   // ── GLN ────────────────────────────────────────────────────────────────────
   GLN_READ: "gln:read",
@@ -32,3 +33,15 @@ export const PERMISSIONS = {
 
 /** Union type of all valid permission strings. */
 export type Permission = typeof PERMISSIONS[keyof typeof PERMISSIONS];
+
+/**
+ * Permissions that can be individually assigned to users beyond their base role.
+ * Admins can grant these to any user via PUT /api/v1/users/[id]/permissions.
+ */
+export const ASSIGNABLE_PERMISSIONS: readonly Permission[] = [
+  PERMISSIONS.PATIENT_ACTIVATE,
+  PERMISSIONS.ORDER_EDIT,
+  PERMISSIONS.PATIENT_EDIT,
+  PERMISSIONS.ORG_DELETE,
+  PERMISSIONS.GLN_SYNC,
+] as const;

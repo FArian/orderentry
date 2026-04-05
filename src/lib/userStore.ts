@@ -68,6 +68,8 @@ export type User = {
   fhirPractitionerRoleId?: string;
   apiTokenHash?:          string;
   apiTokenCreatedAt?:     string;
+  /** Individual permissions granted beyond the base role. Resolved at auth time. */
+  extraPermissions?:      string[];
 };
 
 // ── Password helpers ──────────────────────────────────────────────────────────
@@ -163,6 +165,10 @@ export async function setApiToken(userId: string, hash: string): Promise<void> {
 
 export async function clearApiToken(userId: string): Promise<void> {
   return userRepository.clearApiToken(userId);
+}
+
+export async function updateExtraPermissions(userId: string, permissions: string[]): Promise<User> {
+  return userRepository.updateExtraPermissions(userId, permissions);
 }
 
 export async function verifyUser(username: string, password: string): Promise<User | null> {

@@ -14,6 +14,7 @@ export interface IUserRepository {
   updatePassword(id: string, passwordHash: string, salt: string): Promise<void>;
   updateProfile(id: string, profile: UserProfile): Promise<User>;
   updateFhirSync(id: string, data: { fhirSyncStatus: UserFhirSyncStatus; fhirSyncedAt?: string; fhirSyncError?: string; fhirPractitionerId?: string; fhirPractitionerRoleId?: string }): Promise<User>;
+  updateExtraPermissions(id: string, permissions: string[]): Promise<User>;
   setApiToken(id: string, hash: string): Promise<void>;
   clearApiToken(id: string): Promise<void>;
   delete(id: string): Promise<void>;

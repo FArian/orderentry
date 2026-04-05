@@ -28,6 +28,7 @@ import type { UserResponseDto, CreateUserRequestDto, UpdateUserRequestDto } from
 import type { RoleCatalogEntryDto } from "@/infrastructure/api/dto/RoleDto";
 import type { BadgeVariant } from "@/presentation/ui/Badge";
 import { ROLE_PERMISSION_MAP } from "@/domain/policies/RolePermissionMap";
+import { ASSIGNABLE_PERMISSIONS } from "@/domain/valueObjects/Permission";
 
 // ── Status / role badge helpers ───────────────────────────────────────────────
 
@@ -529,7 +530,7 @@ export default function UsersPage() {
   const { roles } = useRoles();          // role catalog for the form dropdown
   const [search, setSearch] = useState("");
 
-  const { users, total, loading, error, page, pageSize, setPage, createUser, updateUser, deleteUser, syncToFhir } =
+  const { users, total, loading, error, page, pageSize, setPage, reload, createUser, updateUser, deleteUser, syncToFhir } =
     useUsers({ q: search });
 
   // Modal state
@@ -542,7 +543,8 @@ export default function UsersPage() {
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [flashMsg, setFlashMsg]  = useState<{ text: string; ok: boolean } | null>(null);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedId, setExpandedId]     = useState<string | null>(null);
+  const [savingPermId, setSavingPermId] = useState<string | null>(null);
 
   function togglePermissions(id: string) {
     setExpandedId((prev) => (prev === id ? null : id));
@@ -599,6 +601,35 @@ export default function UsersPage() {
       setDeletingId(null);
     }
   }, [deleteUser, t]);
+
+  // ── Toggle individual permission ─────────────────────────────────────────────
+  const handleTogglePermission = useCallback(async (u: UserResponseDto, permission: string) => {
+    const current = u.extraPermissions ?? [];
+    const next    = current.includes(permission)
+      ? current.filter((p) => p !== permission)
+      : [...current, permission];
+    setSavingPermId(`${u.id}:${permission}`);
+    try {
+      const res  = await fetch(`/api/v1/users/${u.id}/permissions`, {
+        method:  "PUT",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ permissions: next }),
+      });
+      if (!res.ok) {
+        const json = await res.json() as { error?: string };
+        flash(json.error ?? t("common.errorGeneric"), false);
+        return;
+      }
+      // Optimistic update: reflect change without full reload
+      u.extraPermissions = next;
+      flash(t("users.permissionsUpdated"), true);
+      await reload();
+    } catch (e: unknown) {
+      flash(e instanceof Error ? e.message : String(e), false);
+    } finally {
+      setSavingPermId(null);
+    }
+  }, [t, reload]);
 
   // ── FHIR Sync ───────────────────────────────────────────────────────────────
   const handleSync = useCallback(async (u: UserResponseDto) => {
@@ -834,19 +865,51 @@ export default function UsersPage() {
                       </td>
                     </tr>
                     {expandedId === u.id && (
-                      <tr className="bg-zt-primary-light/20 border-b border-zt-border/50">
+                      <tr className="bg-zt-bg-muted/40 border-b border-zt-border/50">
                         <td colSpan={8} className="px-4 py-3">
-                          <div className="flex flex-wrap gap-1.5">
-                            {Array.from(ROLE_PERMISSION_MAP[u.role as "admin" | "user"] ?? [])
-                              .sort()
-                              .map((p) => (
-                                <code
-                                  key={p}
-                                  className="px-2 py-0.5 rounded-md text-[11px] font-mono bg-zt-primary-light text-zt-primary border border-zt-primary-border"
-                                >
-                                  {p}
-                                </code>
-                              ))}
+                          <div className="space-y-2">
+                            {/* Role-based permissions — read only */}
+                            <div>
+                              <p className="text-[11px] text-zt-text-tertiary mb-1">{t("users.rolePermissions")}</p>
+                              <div className="flex flex-wrap gap-1.5">
+                                {Array.from(ROLE_PERMISSION_MAP[u.role as "admin" | "user"] ?? [])
+                                  .sort()
+                                  .map((p) => (
+                                    <code
+                                      key={p}
+                                      className="px-2 py-0.5 rounded-md text-[11px] font-mono bg-zt-bg-card text-zt-text-secondary border border-zt-border"
+                                    >
+                                      {p}
+                                    </code>
+                                  ))}
+                              </div>
+                            </div>
+                            {/* Assignable permissions — toggleable (admin only, and only for non-admin users) */}
+                            {u.role !== "admin" && (
+                              <div>
+                                <p className="text-[11px] text-zt-text-tertiary mb-1">{t("users.extraPermissions")}</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {ASSIGNABLE_PERMISSIONS.map((p) => {
+                                    const granted   = (u.extraPermissions ?? []).includes(p);
+                                    const isSaving  = savingPermId === `${u.id}:${p}`;
+                                    return (
+                                      <button
+                                        key={p}
+                                        disabled={isSaving}
+                                        onClick={() => handleTogglePermission(u, p)}
+                                        className={`px-2 py-0.5 rounded-md text-[11px] font-mono border transition-colors cursor-pointer disabled:opacity-50 ${
+                                          granted
+                                            ? "bg-zt-primary-light text-zt-primary border-zt-primary-border"
+                                            : "bg-zt-bg-card text-zt-text-tertiary border-zt-border hover:border-zt-primary hover:text-zt-primary"
+                                        }`}
+                                      >
+                                        {isSaving ? "…" : (granted ? "✓ " : "+ ")}{p}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </td>
                       </tr>

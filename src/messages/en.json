@@ -20,7 +20,8 @@
     "deleting": "Deleting…",
     "saved": "Saved",
     "actions": "Actions",
-    "all": "All"
+    "all": "All",
+    "errorGeneric": "An error occurred."
   },
   "nav": {
     "login": "Login",
@@ -131,6 +132,8 @@
     "showActive": "Show active",
     "activate": "Reactivate",
     "activateOk": "Patient reactivated successfully.",
+    "deactivate": "Deactivate",
+    "deactivateOk": "Patient deactivated successfully.",
     "loadError": "Error loading data",
     "first": "First",
     "previous": "Previous",
@@ -315,7 +318,9 @@
     "categories": "Categories",
     "dob": "Date of birth",
     "newOrder": "New order",
-    "copy": "Copy"
+    "copy": "Copy",
+    "inactivePatient": "Patient is inactive",
+    "inactivePatientHint": "Orders cannot be created for inactive patients. Please reactivate the patient first."
   },
   "results": {
     "title": "Results",
@@ -604,6 +609,9 @@
     "colProfile": "Profile",
     "syncBtn": "Sync to FHIR",
     "permissionsBtn": "Permissions",
+    "rolePermissions": "Role permissions (fixed)",
+    "extraPermissions": "Additional permissions (assignable)",
+    "permissionsUpdated": "Permissions updated.",
     "syncPending": "Pending",
     "syncSynced": "Synced",
     "syncError": "Error",

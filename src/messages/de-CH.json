@@ -20,7 +20,8 @@
     "deleting": "Am lösche…",
     "saved": "Gspicheret",
     "actions": "Aktione",
-    "all": "Alli"
+    "all": "Alli",
+    "errorGeneric": "Es isch en Fehler passiert."
   },
   "nav": {
     "login": "Ilogge",
@@ -131,6 +132,8 @@
     "showActive": "Aktivi zeige",
     "activate": "Wieder aktiviere",
     "activateOk": "Patient wieder aktiv 👍",
+    "deactivate": "Deaktiviere",
+    "deactivateOk": "Patient erfolgreich deaktiviert.",
     "loadError": "Fehler bim Lade",
     "first": "Erste",
     "previous": "Zrugg",
@@ -312,7 +315,9 @@
     "categories": "Kategorie",
     "dob": "Geburtsdatum",
     "newOrder": "Neuer Auftrag",
-    "copy": "Kopiere"
+    "copy": "Kopiere",
+    "inactivePatient": "Patient isch inaktiv",
+    "inactivePatientHint": "Für inaktivi Patiente chöi kei Ufträg erstellt werde. Bitte reaktiviere Sie de Patient zerscht."
   },
   "results": {
     "title": "Befund",
@@ -596,6 +601,9 @@
     "colProfile": "Profil",
     "syncBtn": "FHIR synchronisiere",
     "permissionsBtn": "Berechtigungen",
+    "rolePermissions": "Rollen-Berechtigungen (fix)",
+    "extraPermissions": "Zusätzlichi Berechtigungen (zuweisbar)",
+    "permissionsUpdated": "Berechtigungen aktualisiert.",
     "syncPending": "Ausstehend",
     "syncSynced": "Synchronisiert",
     "syncError": "Fehler",

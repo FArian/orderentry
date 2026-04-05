@@ -86,7 +86,11 @@ export async function requirePermission(
     };
   }
 
-  if (!checkPermission(user.role, permission)) {
+  const hasPermission =
+    checkPermission(user.role, permission) ||
+    (user.extraPermissions ?? []).includes(permission);
+
+  if (!hasPermission) {
     log.warn("Permission denied via session", {
       sub:        user.sub,
       username:   user.username,

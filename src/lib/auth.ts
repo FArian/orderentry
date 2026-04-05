@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import crypto from "crypto";
 import { LOCAL_SESSION_COOKIE } from "@/lib/localAuthShared";
 import { ALLOW_LOCAL_AUTH } from "@/lib/appConfig";
+import { EnvConfig } from "@/infrastructure/config/EnvConfig";
 
 type SessionPayload = {
   sub: string;
@@ -15,7 +16,7 @@ const COOKIE_NAME = "session";
 const ONE_DAY_SECONDS = 60 * 60 * 24;
 
 function getSecret(): string {
-  return process.env.AUTH_SECRET || "dev-secret-change-me";
+  return EnvConfig.authSecret;
 }
 
 function b64url(input: Buffer | string) {
@@ -119,12 +120,14 @@ export async function getAdminFromRequest(req: Request): Promise<SessionPayload 
 
 /** Full session user including org context — used by API routes to enforce org-scoped access. */
 export type SessionUserWithOrg = {
-  sub:        string;
-  username:   string;
-  role:       string;
-  orgGln?:    string;
-  orgFhirId?: string;
-  orgName?:   string;
+  sub:              string;
+  username:         string;
+  role:             string;
+  orgGln?:          string;
+  orgFhirId?:       string;
+  orgName?:         string;
+  /** Individual permissions granted beyond the base role. */
+  extraPermissions: string[];
 };
 
 /**
@@ -138,9 +141,10 @@ export async function getSessionUserWithOrg(): Promise<SessionUserWithOrg | null
   const { getUserById } = await import("@/lib/userStore");
   const user = await getUserById(session.sub).catch(() => null);
   return {
-    sub:      session.sub,
-    username: session.username,
-    role:     user?.role ?? "user",
+    sub:              session.sub,
+    username:         session.username,
+    role:             user?.role ?? "user",
+    extraPermissions: user?.extraPermissions ?? [],
     ...(user?.profile?.orgGln    !== undefined && { orgGln:    user.profile.orgGln }),
     ...(user?.profile?.orgFhirId !== undefined && { orgFhirId: user.profile.orgFhirId }),
     ...(user?.profile?.orgName   !== undefined && { orgName:   user.profile.orgName }),

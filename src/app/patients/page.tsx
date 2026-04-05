@@ -253,11 +253,11 @@ function PatientRow({
   isSelected,
   selIdx,
   activatingId,
-  filterMode,
+  canActivate,
   t,
   onRowClick,
   onMergeToggle,
-  onActivate,
+  onSetActive,
 }: {
   patient:      Patient;
   idx:          number;
@@ -265,11 +265,11 @@ function PatientRow({
   isSelected:   boolean;
   selIdx:       number;
   activatingId: string | null;
-  filterMode:   FilterMode;
+  canActivate:  boolean;
   t:            (k: string) => string;
   onRowClick:   () => void;
   onMergeToggle: () => void;
-  onActivate:   () => void;
+  onSetActive:  (active: boolean) => void;
 }) {
   const readableDate = formatReadableDate(patient.updatedAt);
 
@@ -356,20 +356,7 @@ function PatientRow({
       {/* Actions */}
       <td className="px-4 py-3.5" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-1.5">
-          {filterMode === "inactive" ? (
-            <button
-              onClick={onActivate}
-              disabled={activatingId === patient.id}
-              title={t("patient.activate")}
-              className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-lg bg-zt-success-light text-zt-success border border-zt-success-border hover:bg-zt-success hover:text-zt-text-on-success disabled:opacity-50 transition-colors cursor-pointer whitespace-nowrap"
-            >
-              {/* Checkmark icon */}
-              <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
-                <path d="M2 5.5l2.5 2.5L9 3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              {activatingId === patient.id ? t("common.saving") : t("patient.activate")}
-            </button>
-          ) : (
+          {patient.active ? (
             <>
               {/* Aufträge */}
               <Link
@@ -396,6 +383,21 @@ function PatientRow({
                 {t("befunde.title")}
               </Link>
 
+              {/* Deactivate — only for users with patient:activate */}
+              {canActivate && (
+                <button
+                  onClick={() => onSetActive(false)}
+                  disabled={activatingId === patient.id}
+                  title={t("patient.deactivate")}
+                  className="w-7 h-7 rounded-[6px] border border-zt-border bg-zt-bg-card flex items-center justify-center hover:bg-zt-danger-light hover:border-zt-danger hover:text-zt-danger disabled:opacity-50 transition-colors cursor-pointer"
+                  aria-label={t("patient.deactivate")}
+                >
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+                    <path d="M2.5 2.5l5 5M7.5 2.5l-5 5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+                  </svg>
+                </button>
+              )}
+
               {/* Detail arrow */}
               <Link
                 href={`/patient/${encodeURIComponent(patient.id)}`}
@@ -408,6 +410,23 @@ function PatientRow({
                 </svg>
               </Link>
             </>
+          ) : (
+            /* Inactive patient — show activate button */
+            canActivate ? (
+              <button
+                onClick={() => onSetActive(true)}
+                disabled={activatingId === patient.id}
+                title={t("patient.activate")}
+                className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-lg bg-zt-success-light text-zt-success border border-zt-success-border hover:bg-zt-success hover:text-zt-text-on-success disabled:opacity-50 transition-colors cursor-pointer whitespace-nowrap"
+              >
+                <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
+                  <path d="M2 5.5l2.5 2.5L9 3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                {activatingId === patient.id ? t("common.saving") : t("patient.activate")}
+              </button>
+            ) : (
+              <span className="text-[11px] text-zt-text-tertiary italic">{t("patient.statusInactive")}</span>
+            )
           )}
         </div>
       </td>
@@ -433,6 +452,7 @@ function PatientPageContent() {
 
   const [activatingId, setActivatingId] = useState<string | null>(null);
   const [activateMsg,  setActivateMsg]  = useState<string | null>(null);
+  const [canActivate,  setCanActivate]  = useState(false);
 
   const [mergeMode,     setMergeMode]     = useState(false);
   const [mergeSelected, setMergeSelected] = useState<Patient[]>([]);
@@ -476,6 +496,11 @@ function PatientPageContent() {
     const initialQ = (searchParams?.get("q") || "").toString();
     setQuery(initialQ);
     fetchPatients(initialQ, 1, "active");
+    // Check if the current user has patient:activate permission
+    fetch("/api/v1/me/permissions")
+      .then((r) => r.json() as Promise<{ permissions?: string[] }>)
+      .then((d) => { setCanActivate((d.permissions ?? []).includes("patient:activate")); })
+      .catch(() => { /* stay false */ });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -538,14 +563,18 @@ function PatientPageContent() {
     }
   }
 
-  async function activatePatient(patientId: string) {
+  async function setPatientActive(patientId: string, active: boolean) {
     setActivatingId(patientId);
     setActivateMsg(null);
     try {
-      const res = await fetch(`/api/patients/${encodeURIComponent(patientId)}/activate`, { method: "POST" });
-      const json = await res.json();
-      if (!res.ok) throw new Error((json as { error?: string }).error || String(res.status));
-      setActivateMsg(t("patient.activateOk"));
+      const res = await fetch(`/api/v1/patients/${encodeURIComponent(patientId)}/status`, {
+        method:  "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ active }),
+      });
+      const json = await res.json() as { error?: string };
+      if (!res.ok) throw new Error(json.error ?? String(res.status));
+      setActivateMsg(active ? t("patient.activateOk") : t("patient.deactivateOk"));
       fetchPatients(query, page, filterMode);
     } catch (e: unknown) {
       setActivateMsg(e instanceof Error ? e.message : String(e));
@@ -760,14 +789,14 @@ function PatientPageContent() {
                     isSelected={isSelected}
                     selIdx={selIdx}
                     activatingId={activatingId}
-                    filterMode={filterMode}
+                    canActivate={canActivate}
                     t={t}
                     onRowClick={() => {
                       if (mergeMode) toggleMergeSelect(patient);
                       else window.location.href = `/patient/${encodeURIComponent(patient.id)}`;
                     }}
                     onMergeToggle={() => toggleMergeSelect(patient)}
-                    onActivate={() => activatePatient(patient.id)}
+                    onSetActive={(active) => setPatientActive(patient.id, active)}
                   />
                 );
               })}

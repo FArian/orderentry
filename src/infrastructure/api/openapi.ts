@@ -12,7 +12,15 @@
  *   External clients:      Bearer token via one of:
  *     - JWT:  POST /api/auth/token  → { accessToken, tokenType, expiresIn }
  *     - PAT:  POST /api/users/{id}/token  → { token, createdAt }  (admin only, one-time)
+ *
+ * Dynamic values: all lab-specific identifiers (org ID, name, code) are read from
+ * EnvConfig at module load time — no hardcoded organisation strings in this file.
  */
+
+import { EnvConfig } from "@/infrastructure/config/EnvConfig";
+
+/** Short lab code derived from labOrgId (the segment before the first hyphen). */
+const labCode = EnvConfig.labOrgId.split("-")[0] ?? EnvConfig.labOrgId;
 
 export const openApiSpec = {
   openapi: "3.0.3",
@@ -20,11 +28,11 @@ export const openApiSpec = {
     title: "z2Lab OrderEntry API",
     version: "2.0.0",
     description:
-      "REST API for the **z2Lab** OrderEntry system — *ZLZ Zentrallabor AG & ZetLab AG*.\n\n" +
+      `REST API for the **z2Lab** OrderEntry system — *${EnvConfig.labName} & ZetLab AG*.\n\n` +
       "**Autor:** Farhad Arian  \n" +
       "**Funktion:** CTO  \n" +
-      "**Hauptlabor:** ZLZ Zentrallabor AG — [zlz.ch](https://www.zlz.ch)  \n" +
-      "**Tochtergesellschaft:** ZetLab AG *(unter ZLZ Zentrallabor AG)* — [zetlab.ch](https://zetlab.ch)\n\n" +
+      `**Hauptlabor:** ${EnvConfig.labName} — [zlz.ch](https://www.zlz.ch)  \n` +
+      `**Tochtergesellschaft:** ZetLab AG *(unter ${EnvConfig.labName})* — [zetlab.ch](https://zetlab.ch)\n\n` +
       "All FHIR data is proxied through a HAPI FHIR R4 server.\n\n" +
       "## Authentication\n\n" +
       "**Session cookie (browser / Swagger UI)**\n" +
@@ -37,11 +45,11 @@ export const openApiSpec = {
       "Token format: `ztk_<64 hex chars>`. Stored hashed, shown once.\n\n" +
       "Use the `Authorize` button above to set your Bearer token.",
     contact: {
-      name: "Farhad Arian — ZLZ Zentrallabor AG & ZetLab AG",
+      name: `Farhad Arian — ${EnvConfig.labName} & ZetLab AG`,
       url: "https://zetlab.ch",
     },
     license: {
-      name: "Proprietary — ZLZ Zentrallabor AG",
+      name: `Proprietary — ${EnvConfig.labName}`,
       url: "https://www.zlz.ch",
     },
   },
@@ -316,7 +324,7 @@ export const openApiSpec = {
                           intent: "order",
                           codeText: "Grosses Blutbild",
                           authoredOn: "2024-03-15T09:00:00Z",
-                          orderNumber: "ZLZ-2024-001",
+                          orderNumber: `${labCode}-2024-001`,
                           specimenCount: 1,
                           patientId: "p-123",
                         },
@@ -876,6 +884,109 @@ export const openApiSpec = {
       },
     },
 
+    // ── User permissions ──────────────────────────────────────────────────────
+    "/users/{id}/permissions": {
+      put: {
+        tags: ["Users"],
+        summary: "Update individual user permissions",
+        description:
+          "Assigns extra permissions to a user beyond their base role. " +
+          "Permissions must be from the ASSIGNABLE_PERMISSIONS whitelist. " +
+          "Requires admin role.",
+        operationId: "updateUserPermissions",
+        parameters: [
+          { name: "id", in: "path", required: true, schema: { type: "string" } },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["permissions"],
+                properties: {
+                  permissions: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "List of permission strings to assign (replaces existing).",
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "Updated permissions",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    id:               { type: "string" },
+                    extraPermissions: { type: "array", items: { type: "string" } },
+                  },
+                },
+              },
+            },
+          },
+          "401": { description: "Not authenticated" },
+          "403": { description: "Forbidden — admin role required" },
+          "404": { description: "User not found" },
+          "422": { description: "Unknown permission in list" },
+        },
+      },
+    },
+
+    // ── Patient status ────────────────────────────────────────────────────────
+    "/patients/{id}/status": {
+      patch: {
+        tags: ["Patients"],
+        summary: "Activate or deactivate a patient",
+        description:
+          "Sets the FHIR Patient.active flag. " +
+          "Requires permission patient:activate (admin or individually granted).",
+        operationId: "setPatientStatus",
+        parameters: [
+          { name: "id", in: "path", required: true, schema: { type: "string" } },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["active"],
+                properties: {
+                  active: { type: "boolean", description: "true = activate, false = deactivate" },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "Status updated",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    id:     { type: "string" },
+                    active: { type: "boolean" },
+                  },
+                },
+              },
+            },
+          },
+          "400": { description: "Invalid body" },
+          "401": { description: "Not authenticated" },
+          "403": { description: "Permission patient:activate required" },
+          "404": { description: "Patient not found" },
+        },
+      },
+    },
+
     // ── Mail (admin) ──────────────────────────────────────────────────────────
     "/admin/mail/status": {
       get: {
@@ -919,80 +1030,6 @@ export const openApiSpec = {
         responses: {
           "200": {
             description: "SMTP verification succeeded (optionally: test email sent)",
-            content: {
-              "application/json": {
-                schema: { $ref: "#/components/schemas/MailTestResponse" },
-              },
-            },
-          },
-          "502": {
-            description: "SMTP unreachable or authentication failed",
-            content: {
-              "application/json": {
-                schema: { $ref: "#/components/schemas/MailTestResponse" },
-              },
-            },
-          },
-          "503": {
-            description: "MAIL_PROVIDER not configured",
-            content: {
-              "application/json": {
-                schema: { $ref: "#/components/schemas/MailTestResponse" },
-              },
-            },
-          },
-          "401": { description: "Not authenticated" },
-          "403": { description: "Forbidden — admin role required" },
-        },
-      },
-    },
-
-    // ── Mail v1 (gateway-wrapped, recommended paths) ──────────────────────────
-    "/v1/admin/mail/status": {
-      get: {
-        tags: ["Mail"],
-        summary: "Mail configuration status (v1)",
-        description:
-          "Returns the current mail provider configuration via the API Gateway. " +
-          "No secrets are ever included. Requires admin role.\n\n" +
-          "**Preferred over** `GET /admin/mail/status` for all new integrations.",
-        operationId: "getMailStatusV1",
-        responses: {
-          "200": {
-            description: "Current mail status",
-            content: {
-              "application/json": {
-                schema: { $ref: "#/components/schemas/MailStatusResponse" },
-              },
-            },
-          },
-          "401": { description: "Not authenticated" },
-          "403": { description: "Forbidden — admin role required" },
-        },
-      },
-    },
-
-    "/v1/admin/mail/test": {
-      post: {
-        tags: ["Mail"],
-        summary: "Test mail connection (v1)",
-        description:
-          "Verifies the SMTP connection and optionally sends a test email, " +
-          "routed through the API Gateway (request ID, structured logging, error normalisation). " +
-          "Requires admin role.\n\n" +
-          "**Preferred over** `POST /admin/mail/test` for all new integrations.",
-        operationId: "testMailV1",
-        requestBody: {
-          required: false,
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/MailTestRequest" },
-            },
-          },
-        },
-        responses: {
-          "200": {
-            description: "SMTP verification succeeded",
             content: {
               "application/json": {
                 schema: { $ref: "#/components/schemas/MailTestResponse" },
@@ -1892,7 +1929,7 @@ export const openApiSpec = {
 
     // ── Agent job queue ───────────────────────────────────────────────────────
 
-    "/v1/agent/jobs": {
+    "/agent/jobs": {
       get: {
         tags: ["Agent"],
         summary: "Poll pending Agent jobs",
@@ -1910,7 +1947,7 @@ export const openApiSpec = {
             in: "query",
             required: true,
             description: "FHIR Organization ID — identifies the lab or clinic",
-            schema: { type: "string", example: "zlz" },
+            schema: { type: "string", example: EnvConfig.labOrgId },
           },
           {
             name: "locationId",
@@ -1940,7 +1977,7 @@ export const openApiSpec = {
           "Creates a pending print job containing ZPL barcode labels (one per specimen) " +
           "and a reference to the Begleitschein PDF stored in HAPI FHIR as a DocumentReference.\n\n" +
           "Called automatically by OrderEntry after every successful order submission.\n\n" +
-          "**ZPL format:** CODE128 barcode `{orderNumber} {materialCode}` — required by the ZLZ LIS scanner.\n\n" +
+          `**ZPL format:** CODE128 barcode \`{orderNumber} {materialCode}\` — required by the ${EnvConfig.labName} LIS scanner.\n\n` +
           "**PDF retrieval:** The Agent fetches the DocumentReference PDF via " +
           "`GET /api/v1/proxy/fhir/document-references/{documentReferenceId}`.",
         operationId: "createPrintJob",
@@ -1968,7 +2005,7 @@ export const openApiSpec = {
       },
     },
 
-    "/v1/agent/jobs/{id}/done": {
+    "/agent/jobs/{id}/done": {
       post: {
         tags: ["Agent"],
         summary: "Mark Agent job as completed",
@@ -2003,7 +2040,7 @@ export const openApiSpec = {
       },
     },
 
-    "/v1/proxy/fhir/document-references/{id}": {
+    "/proxy/fhir/document-references/{id}": {
       get: {
         tags: ["FHIR Proxy"],
         summary: "Get FHIR DocumentReference (PDF for Agent printing)",
@@ -2122,15 +2159,15 @@ export const openApiSpec = {
             "application/json": {
               schema: { $ref: "#/components/schemas/OrgRule" },
               example: {
-                orgFhirId: "org-zlz",
+                orgFhirId: `org-${labCode.toLowerCase()}`,
                 orgGln: "7601000000000",
-                orgName: "ZLZ Zentrallabor AG",
-                patientPrefix: "ZLZ",
+                orgName: EnvConfig.labName,
+                patientPrefix: labCode,
                 casePrefix: "F",
                 hl7Msh3: "ORDERENTRY",
-                hl7Msh4: "ZLZ",
+                hl7Msh4: labCode,
                 hl7Msh5: "LIS",
-                hl7Msh6: "ZLZ",
+                hl7Msh6: labCode,
               },
             },
           },
@@ -2530,6 +2567,38 @@ export const openApiSpec = {
         responses: {
           "200": { description: "Updated profile" },
           "400": { description: "Invalid JSON" },
+          "401": { description: "Not authenticated" },
+        },
+      },
+    },
+
+    "/me/permissions": {
+      get: {
+        tags: ["Auth"],
+        summary: "Get permissions for the current user",
+        description:
+          "Returns the role and full permission set for the authenticated user.\n\n" +
+          "The frontend uses this to conditionally show/hide features and actions.\n\n" +
+          "**Phase 1 (current):** permissions are derived from the role via a static map.\n" +
+          "**Phase 2 (future):** permissions will be stored in DB and manageable via admin UI.",
+        operationId: "getMyPermissions",
+        security: [{ sessionCookie: [] }],
+        responses: {
+          "200": {
+            description: "Role and granted permissions",
+            content: { "application/json": { schema: {
+              type: "object",
+              properties: {
+                role:        { type: "string", example: "user", description: "Resolved role name" },
+                permissions: {
+                  type:  "array",
+                  items: { type: "string" },
+                  example: ["gln:read", "order:create", "order:read", "patient:read"],
+                  description: "Sorted list of granted permission strings",
+                },
+              },
+            } } },
+          },
           "401": { description: "Not authenticated" },
         },
       },
@@ -3208,6 +3277,11 @@ export const openApiSpec = {
           fhirSyncError: { type: "string" },
           fhirPractitionerId: { type: "string" },
           fhirPractitionerRoleId: { type: "string" },
+          extraPermissions: {
+            type: "array",
+            items: { type: "string" },
+            description: "Individual permissions granted beyond the base role.",
+          },
         },
       },
 
@@ -3656,7 +3730,7 @@ export const openApiSpec = {
           documentReferenceId: { type: "string", description: "FHIR DocumentReference ID — use to fetch the Begleitschein PDF" },
           serviceRequestId:    { type: "string", nullable: true, description: "FHIR ServiceRequest ID" },
           patientId:           { type: "string", nullable: true, description: "FHIR Patient ID" },
-          orderNumber:         { type: "string", description: "ZLZ order number (Auftragsnummer)" },
+          orderNumber:         { type: "string", description: `${labCode} order number (Auftragsnummer)` },
           zpl:                 { type: "string", description: "Concatenated ZPL label data — one label per specimen (CODE128 barcode)" },
           createdAt:           { type: "string", format: "date-time", description: "ISO 8601 creation timestamp" },
         },
@@ -3682,7 +3756,7 @@ export const openApiSpec = {
           documentReferenceId: { type: "string", description: "FHIR DocumentReference ID — Begleitschein PDF stored in HAPI FHIR" },
           serviceRequestId:    { type: "string", description: "FHIR ServiceRequest ID" },
           patientId:           { type: "string", description: "FHIR Patient ID" },
-          orderNumber:         { type: "string", description: "ZLZ order number (Auftragsnummer)" },
+          orderNumber:         { type: "string", description: `${labCode} order number (Auftragsnummer)` },
           specimens: {
             type: "array",
             description: "Specimen list — one ZPL label per entry",
@@ -3690,7 +3764,7 @@ export const openApiSpec = {
               type: "object",
               required: ["materialCode", "materialName"],
               properties: {
-                materialCode: { type: "string", description: "ZLZ LIS material code (specimen_additionalinfo)" },
+                materialCode: { type: "string", description: `${labCode} LIS material code (specimen_additionalinfo)` },
                 materialName: { type: "string", description: "Material display name (German)" },
               },
             },

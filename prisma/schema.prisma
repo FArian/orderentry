@@ -43,6 +43,11 @@ model User {
   /// PostgreSQL/MSSQL: change to `Json?` for native JSON support.
   profile String?
 
+  /// Individual permissions granted beyond the user's base role.
+  /// Stored as JSON array string, e.g. '["patient:activate","order:edit"]'.
+  /// Resolved at auth time: effectivePermissions = rolePermissions ∪ extraPermissions.
+  extraPermissions String @default("[]")
+
   resetTokens PasswordResetToken[]
 }
 

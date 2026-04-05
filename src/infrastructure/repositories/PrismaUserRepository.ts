@@ -14,7 +14,17 @@ import type { User, UserProfile, UserRole, UserStatus, UserFhirSyncStatus } from
 import { prisma } from "@/infrastructure/db/prismaClient";
 import type { User as PrismaUser } from "@prisma/client";
 
+function parseExtraPermissions(raw: string): string[] {
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as string[]) : [];
+  } catch {
+    return [];
+  }
+}
+
 function toUser(row: PrismaUser): User {
+  const extraPermissions = parseExtraPermissions(row.extraPermissions);
   return {
     id:                     row.id,
     username:               row.username,
@@ -33,6 +43,7 @@ function toUser(row: PrismaUser): User {
     ...(row.apiTokenHash           && { apiTokenHash:           row.apiTokenHash }),
     ...(row.apiTokenCreatedAt      && { apiTokenCreatedAt:      row.apiTokenCreatedAt.toISOString() }),
     ...(row.profile                && { profile:                JSON.parse(row.profile) as UserProfile }),
+    ...(extraPermissions.length > 0 && { extraPermissions }),
   };
 }
 
@@ -119,6 +130,14 @@ export class PrismaUserRepository implements IUserRepository {
 
   async clearApiToken(id: string): Promise<void> {
     await prisma.user.update({ where: { id }, data: { apiTokenHash: null, apiTokenCreatedAt: null } });
+  }
+
+  async updateExtraPermissions(id: string, permissions: string[]): Promise<User> {
+    const row = await prisma.user.update({
+      where: { id },
+      data:  { extraPermissions: JSON.stringify(permissions) },
+    });
+    return toUser(row);
   }
 
   async delete(id: string): Promise<void> {

@@ -86,6 +86,21 @@ export interface UserResponseDto {
   fhirSyncError?: string;
   fhirPractitionerId?: string;
   fhirPractitionerRoleId?: string;
+  /** Individual permissions granted beyond the base role. */
+  extraPermissions: string[];
+}
+
+/** PUT /api/v1/users/{id}/permissions — assign individual permissions */
+export interface UpdatePermissionsRequestDto {
+  /** List of permission strings from ASSIGNABLE_PERMISSIONS. */
+  permissions: string[];
+}
+
+export interface UpdatePermissionsResponseDto {
+  id: string;
+  extraPermissions: string[];
+  error?: string;
+  httpStatus?: number;
 }
 
 /** GET /api/users — paginated list */

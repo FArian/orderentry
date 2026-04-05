@@ -22,6 +22,7 @@ import {
   validateCredentials,
   setApiToken,
   clearApiToken,
+  updateExtraPermissions,
 } from "@/lib/userStore";
 import { apiTokenService } from "@/infrastructure/auth/ApiTokenService";
 import { createLogger, type Logger } from "@/infrastructure/logging/Logger";
@@ -31,10 +32,13 @@ import type {
   DeleteUserResponseDto,
   ListUsersQueryDto,
   PagedUsersResponseDto,
+  UpdatePermissionsRequestDto,
+  UpdatePermissionsResponseDto,
   UpdateUserRequestDto,
   UserResponseDto,
   UserSyncResponseDto,
 } from "../dto/UserDto";
+import { ASSIGNABLE_PERMISSIONS } from "@/domain/valueObjects/Permission";
 import type { UserRole, UserStatus } from "@/domain/entities/ManagedUser";
 import type { User } from "@/lib/userStore";
 
@@ -50,6 +54,7 @@ function toDto(u: User): UserResponseDto {
     createdAt:      u.createdAt,
     profile:        u.profile ?? {},
     fhirSyncStatus: u.fhirSyncStatus ?? "not_synced",
+    extraPermissions: u.extraPermissions ?? [],
     ...(u.externalId            !== undefined ? { externalId:            u.externalId            } : {}),
     ...(u.fhirSyncedAt          !== undefined ? { fhirSyncedAt:          u.fhirSyncedAt          } : {}),
     ...(u.fhirSyncError         !== undefined ? { fhirSyncError:         u.fhirSyncError         } : {}),
@@ -250,6 +255,30 @@ export class UsersController {
       const message = err instanceof Error ? err.message : String(err);
       this.log.error("syncToFhir threw", { id, message });
       return { synced: false, error: message, httpStatus: 500 };
+    }
+  }
+
+  // ── Extra permissions ─────────────────────────────────────────────────────
+
+  async updatePermissions(id: string, body: UpdatePermissionsRequestDto): Promise<UpdatePermissionsResponseDto> {
+    this.log.info("updatePermissions", { id, permissions: body.permissions });
+    try {
+      const user = await getUserById(id);
+      if (!user) return { id, extraPermissions: [], error: "User not found", httpStatus: 404 };
+
+      const assignable = new Set<string>(ASSIGNABLE_PERMISSIONS);
+      const invalid = body.permissions.filter((p) => !assignable.has(p));
+      if (invalid.length > 0) {
+        return { id, extraPermissions: [], error: `Unknown permissions: ${invalid.join(", ")}`, httpStatus: 422 };
+      }
+
+      const updated = await updateExtraPermissions(id, body.permissions);
+      this.log.info("permissions updated", { id, extraPermissions: updated.extraPermissions });
+      return { id, extraPermissions: updated.extraPermissions ?? [] };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.log.error("updatePermissions threw", { id, message });
+      return { id, extraPermissions: [], error: message, httpStatus: 500 };
     }
   }
 
