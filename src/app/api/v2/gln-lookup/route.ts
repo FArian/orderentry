@@ -2,14 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionFromCookies }     from "@/lib/auth";
 import { EnvConfig }                 from "@/infrastructure/config/EnvConfig";
 import { GlnLookupController }       from "@/infrastructure/api/controllers/GlnLookupController";
-import { glnAdapterV1 }              from "@/application/adapters/GlnAdapterV1";
+import { glnAdapterV2 }              from "@/application/adapters/GlnAdapterV2";
 
 /**
- * GET /api/gln-lookup?gln={13-digit-gln}
+ * GET /api/v2/gln-lookup?gln={13-digit-gln}
  *
- * Legacy unversioned path — returns v1 response shape.
- * Stable versioned alias: GET /api/v1/gln-lookup (re-export, identical handler).
+ * v2 response shape — nested structure with renamed fields.
+ * Breaking changes from v1: ptype→partnerType, roleType→role,
+ * flat fields → nested person{} / address{}, computed displayName.
+ *
+ * Same business logic as v1 via shared GlnLookupController.
+ * Adapter pattern isolates the structural differences.
  */
+export const dynamic = "force-dynamic";
+
 export async function GET(req: NextRequest) {
   const session = await getSessionFromCookies();
   if (!session) {
@@ -24,7 +30,7 @@ export async function GET(req: NextRequest) {
   const gln = (req.nextUrl.searchParams.get("gln") ?? "").trim().replace(/\D/g, "");
 
   const controller = new GlnLookupController(endpointUrl);
-  const result     = await controller.lookup(gln, "v1", glnAdapterV1);
+  const result     = await controller.lookup(gln, "v2", glnAdapterV2);
 
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: result.status });

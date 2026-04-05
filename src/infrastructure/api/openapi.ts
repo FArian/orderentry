@@ -2521,11 +2521,113 @@ export const openApiSpec = {
         },
       },
     },
+    "/v2/gln-lookup": {
+      get: {
+        tags: ["External — GLN"],
+        summary: "Look up a GLN — v2 (nested structure)",
+        description:
+          "Same RefData SOAP lookup as `GET /api/gln-lookup` (v1), but returns a richer, " +
+          "nested response structure.\n\n" +
+          "**Breaking changes from v1:**\n" +
+          "- `ptype` renamed to `partnerType`\n" +
+          "- `roleType` renamed to `role`\n" +
+          "- Flat address fields moved into `address{}` object\n" +
+          "- `lastName`/`firstName` moved into `person{}` object (null for JUR)\n" +
+          "- `organization` is `null` (not `\"\"`) for NAT partners\n" +
+          "- New computed field `displayName`\n\n" +
+          "**ENV:** `REFDATA_SOAP_URL` — same endpoint as v1.",
+        operationId: "glnLookupV2",
+        security: [{ sessionCookie: [] }],
+        parameters: [
+          {
+            name: "gln",
+            in: "query",
+            required: true,
+            description: "13-digit GS1 Global Location Number",
+            schema: { type: "string", pattern: "^\\d{13}$", example: "7601000123456" },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "GLN found — v2 partner data returned",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/GlnResponseV2" },
+                examples: {
+                  nat: {
+                    summary: "Natural person (NAT)",
+                    value: {
+                      gln: "7601000123456", partnerType: "NAT", role: "HPC",
+                      displayName: "Müller Hans",
+                      person: { lastName: "Müller", firstName: "Hans" },
+                      organization: null,
+                      address: { street: "Bahnhofstrasse", streetNo: "1", zip: "8001", city: "Zürich", canton: "ZH", country: "CH" },
+                    },
+                  },
+                  jur: {
+                    summary: "Juridical entity (JUR)",
+                    value: {
+                      gln: "7601001234567", partnerType: "JUR", role: "ORG",
+                      displayName: "Hirslanden AG",
+                      person: null,
+                      organization: "Hirslanden AG",
+                      address: { street: "Witellikerstrasse", streetNo: "40", zip: "8032", city: "Zürich", canton: "ZH", country: "CH" },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          "400": { description: "GLN is not 13 digits" },
+          "401": { description: "Not authenticated" },
+          "404": { description: "GLN not found in RefData" },
+          "502": { description: "SOAP call failed — network error or timeout" },
+          "503": { description: "`REFDATA_SOAP_URL` not configured" },
+        },
+      },
+    },
   },
 
   // ── Reusable schemas ───────────────────────────────────────────────────────
   components: {
     schemas: {
+      GlnResponseV2: {
+        type: "object",
+        required: ["gln", "partnerType", "role", "displayName", "person", "organization", "address"],
+        description: "v2 GLN partner response — nested structure (GET /api/v2/gln-lookup).",
+        properties: {
+          gln:          { type: "string", description: "13-digit GLN", example: "7601000123456" },
+          partnerType:  { type: "string", enum: ["NAT", "JUR", ""], description: "NAT = natural person, JUR = juridical entity" },
+          role:         { type: "string", description: "RefData role type code (e.g. HPC, ORG)", example: "HPC" },
+          displayName:  { type: "string", description: "Computed display name: 'Müller Hans' (NAT) or organisation name (JUR)" },
+          person: {
+            nullable: true,
+            description: "Person details — populated for NAT, null for JUR",
+            type: "object",
+            required: ["lastName", "firstName"],
+            properties: {
+              lastName:  { type: "string" },
+              firstName: { type: "string" },
+            },
+          },
+          organization: {
+            type: "string", nullable: true,
+            description: "Organisation name — populated for JUR, null for NAT",
+          },
+          address: {
+            type: "object",
+            required: ["street", "streetNo", "zip", "city", "canton", "country"],
+            properties: {
+              street:   { type: "string" },
+              streetNo: { type: "string" },
+              zip:      { type: "string" },
+              city:     { type: "string" },
+              canton:   { type: "string", example: "ZH" },
+              country:  { type: "string", example: "CH" },
+            },
+          },
+        },
+      },
       GlnLookupResult: {
         type: "object",
         required: ["gln", "ptype", "roleType", "organization", "lastName", "firstName", "street", "streetNo", "zip", "city", "canton", "country"],
