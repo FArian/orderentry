@@ -32,5 +32,9 @@ build
 # OS
 .DS_Store
 
-# Docs / AI
+# Docs / AI / Tests (not needed in image)
 CLAUDE.md
+docs/
+tests/
+*.md
+coverage/
