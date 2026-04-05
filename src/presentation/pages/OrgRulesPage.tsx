@@ -197,21 +197,19 @@ interface NumberConfigRow {
   length:      string;  // "" = use global default
 }
 
-/** Case-insensitive helpers — FHIR returns "Routine" not "ROUTINE". */
-function isMibi(st: string)    { return st.toUpperCase() === "MIBI"; }
-function isRoutine(st: string) { return st.toUpperCase() === "ROUTINE"; }
-function isPoc(st: string)     { return st.toUpperCase() === "POC"; }
+/** Case-insensitive DB-column mapper (MIBI/POC/ROUTINE have dedicated columns). */
+function normalise(st: string) { return st.toUpperCase(); }
 
 function toConfigRows(form: Partial<OrgRuleDto>): NumberConfigRow[] {
   const rows: NumberConfigRow[] = [];
-  if (form.mibiPrefix || form.mibiLength != null) {
+  if (form.mibiPrefix || form.mibiStart || form.mibiLength != null) {
     rows.push({ serviceType: "MIBI",    prefix: form.mibiPrefix ?? "", start: form.mibiStart ?? "", length: form.mibiLength?.toString() ?? "" });
   }
   if (form.pocPrefix || form.pocLength != null) {
-    rows.push({ serviceType: "POC",     prefix: form.pocPrefix ?? "",  start: "", length: form.pocLength?.toString() ?? "" });
+    rows.push({ serviceType: "POC",     prefix: form.pocPrefix ?? "",  start: "",                  length: form.pocLength?.toString() ?? "" });
   }
   if (form.routineLength != null) {
-    rows.push({ serviceType: "ROUTINE", prefix: "",                    start: "", length: form.routineLength.toString() });
+    rows.push({ serviceType: "ROUTINE", prefix: "",                    start: "",                  length: form.routineLength.toString() });
   }
   return rows;
 }
@@ -220,10 +218,11 @@ function fromConfigRows(rows: NumberConfigRow[]): Partial<OrgRuleDto> {
   const out: Partial<OrgRuleDto> = { mibiPrefix: "", mibiStart: "", mibiLength: null, pocPrefix: "", pocLength: null, routineLength: null };
   for (const row of rows) {
     const len = row.length ? parseInt(row.length, 10) : null;
-    if (isMibi(row.serviceType))    { out.mibiPrefix = row.prefix; out.mibiStart = row.start; out.mibiLength = len; }
-    else if (isPoc(row.serviceType))     { out.pocPrefix  = row.prefix; out.pocLength = len; }
-    else if (isRoutine(row.serviceType)) { out.routineLength = len; }
-    // Unknown/custom service types: no DB column yet — length/prefix stored in JSON mapping (future)
+    const key = normalise(row.serviceType);
+    if (key === "MIBI")    { out.mibiPrefix = row.prefix; out.mibiStart = row.start; out.mibiLength = len; }
+    else if (key === "POC")     { out.pocPrefix = row.prefix; out.pocLength = len; }
+    else if (key === "ROUTINE") { out.routineLength = len; }
+    // Custom types (from FHIR): all three fields editable in UI; no dedicated DB column yet
   }
   return out;
 }
@@ -289,28 +288,22 @@ function NumberConfigEditor({
                   <span className="font-mono font-semibold text-zt-text-primary">{row.serviceType}</span>
                 </td>
                 <td className={cell}>
-                  {isRoutine(row.serviceType) ? (
-                    <span className="text-zt-text-tertiary">—</span>
-                  ) : (
-                    <input
-                      type="text"
-                      value={row.prefix}
-                      onChange={(e) => updateRow(i, { prefix: e.target.value })}
-                      placeholder={isMibi(row.serviceType) ? "MI" : isPoc(row.serviceType) ? "PO" : ""}
-                      className={inp}
-                    />
-                  )}
+                  <input
+                    type="text"
+                    value={row.prefix}
+                    onChange={(e) => updateRow(i, { prefix: e.target.value })}
+                    placeholder="z.B. MI"
+                    className={inp}
+                  />
                 </td>
                 <td className={cell}>
-                  {isMibi(row.serviceType) ? (
-                    <input
-                      type="text"
-                      value={row.start}
-                      onChange={(e) => updateRow(i, { start: e.target.value })}
-                      placeholder="4"
-                      className={inp}
-                    />
-                  ) : <span className="text-zt-text-tertiary">—</span>}
+                  <input
+                    type="text"
+                    value={row.start}
+                    onChange={(e) => updateRow(i, { start: e.target.value })}
+                    placeholder="z.B. 4"
+                    className={inp}
+                  />
                 </td>
                 <td className={cell}>
                   <input
@@ -319,7 +312,7 @@ function NumberConfigEditor({
                     max={30}
                     value={row.length}
                     onChange={(e) => updateRow(i, { length: e.target.value })}
-                    placeholder={isPoc(row.serviceType) ? "7" : "10"}
+                    placeholder="10"
                     className={inp}
                   />
                 </td>
