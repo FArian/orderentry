@@ -424,7 +424,20 @@ Neue Version verfügbar?
     → Service neu starten
 ```
 
-- [ ] Installer: Wann werden `.msi` / `.pkg` Installer gebaut?
+**Installer:** Option B — Gleichzeitig mit OrderEntry Go-Live
+
+```
+Go-Live Milestone:
+  ✅ OrderEntry (Next.js)     → produktiv
+  ✅ ZetLab Agent             → produktiv
+  ✅ Installer für alle Plattformen bereit:
+       Windows  → zetlab-agent-setup.exe (.msi)
+       macOS    → zetlab-agent.pkg
+       Linux    → zetlab-agent.deb / .rpm
+       Docker   → docker pull zetlab/agent
+```
+
+Das bedeutet: **Agent-Entwicklung muss parallel zu OrderEntry laufen.**
 
 ---
 
