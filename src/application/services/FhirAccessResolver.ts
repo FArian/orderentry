@@ -70,7 +70,7 @@ export class FhirAccessResolver {
     if (dbRole === "admin") {
       return {
         level: ACCESS_LEVELS.FULL,
-        practitionerFhirId,
+        ...(practitionerFhirId !== undefined && { practitionerFhirId }),
         isInternal: true,
         allowedOrgIds: [],
       };
