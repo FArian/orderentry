@@ -52,7 +52,12 @@
     "adminOrgRules": "Org-Regle",
     "adminNumberPool": "Nummerernpool",
     "accountSystem": "System",
-    "connectedSection": "Verbundeni Systeme"
+    "connectedSection": "Verbundeni Systeme",
+    "groupClinical": "Klinisch",
+    "groupAccount": "Konto",
+    "groupUserMgmt": "Benutzerverwaltung",
+    "groupOrderMgmt": "Uftragssteuerig",
+    "groupSystem": "System"
   },
   "merge": {
     "title": "Duplikate zämefüehre",

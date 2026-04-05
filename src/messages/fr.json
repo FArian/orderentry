@@ -52,7 +52,12 @@
     "adminOrgRules": "Règles org.",
     "adminNumberPool": "Pool de numéros",
     "accountSystem": "Système",
-    "connectedSection": "Systèmes connectés"
+    "connectedSection": "Systèmes connectés",
+    "groupClinical": "Clinique",
+    "groupAccount": "Compte",
+    "groupUserMgmt": "Gestion des utilisateurs",
+    "groupOrderMgmt": "Gestion des ordres",
+    "groupSystem": "Système"
   },
   "merge": {
     "title": "Fusionner les doublons",

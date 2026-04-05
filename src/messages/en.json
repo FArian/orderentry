@@ -52,7 +52,12 @@
     "adminOrgRules": "Org Rules",
     "adminNumberPool": "Number Pool",
     "accountSystem": "System",
-    "connectedSection": "Connected Systems"
+    "connectedSection": "Connected Systems",
+    "groupClinical": "Clinical",
+    "groupAccount": "Account",
+    "groupUserMgmt": "User Management",
+    "groupOrderMgmt": "Order Management",
+    "groupSystem": "System"
   },
   "merge": {
     "title": "Merge Duplicates",

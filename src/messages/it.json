@@ -52,7 +52,12 @@
     "adminOrgRules": "Regole org.",
     "adminNumberPool": "Pool numeri",
     "accountSystem": "Sistema",
-    "connectedSection": "Sistemi collegati"
+    "connectedSection": "Sistemi collegati",
+    "groupClinical": "Clinica",
+    "groupAccount": "Account",
+    "groupUserMgmt": "Gestione utenti",
+    "groupOrderMgmt": "Gestione ordini",
+    "groupSystem": "Sistema"
   },
   "merge": {
     "title": "Unisci duplicati",
