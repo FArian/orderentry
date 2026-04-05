@@ -2472,6 +2472,339 @@ export const openApiSpec = {
         },
       },
     },
+    "/idle-timeout": {
+      get: {
+        tags: ["Auth"],
+        summary: "Get session idle timeout",
+        description: "Returns the configured idle session timeout in minutes. `0` = disabled. Used by the client-side inactivity guard.",
+        operationId: "getIdleTimeout",
+        security: [{ sessionCookie: [] }],
+        responses: {
+          "200": {
+            description: "Idle timeout config",
+            content: { "application/json": { schema: { type: "object", required: ["minutes"], properties: { minutes: { type: "number", description: "0 = disabled" } } } } },
+          },
+          "401": { description: "Not authenticated" },
+        },
+      },
+    },
+
+    "/me/profile": {
+      get: {
+        tags: ["Auth"],
+        summary: "Get current user profile",
+        description: "Returns the authenticated user's extended profile (GLN, address, org data).",
+        operationId: "getMyProfile",
+        security: [{ sessionCookie: [] }],
+        responses: {
+          "200": {
+            description: "User with profile",
+            content: { "application/json": { schema: {
+              type: "object",
+              properties: {
+                id:        { type: "string" },
+                username:  { type: "string" },
+                createdAt: { type: "string", format: "date-time" },
+                profile:   { type: "object", description: "Key-value profile fields (gln, firstName, lastName, orgGln, …)" },
+              },
+            } } },
+          },
+          "401": { description: "Not authenticated" },
+          "404": { description: "User not found" },
+        },
+      },
+      put: {
+        tags: ["Auth"],
+        summary: "Update current user profile",
+        description:
+          "Updates allowed profile fields for the authenticated user.\n\n" +
+          "**Allowed fields:** `gln`, `localId`, `ptype`, `roleType`, `firstName`, `lastName`, `organization`, " +
+          "`street`, `streetNo`, `zip`, `city`, `canton`, `country`, `email`, `phone`, `orgGln`, `orgName`, `orgFhirId`.\n\n" +
+          "**PTYPE rules:** `JUR` → firstName/lastName removed; `NAT` → organization removed.",
+        operationId: "updateMyProfile",
+        security: [{ sessionCookie: [] }],
+        requestBody: {
+          required: true,
+          content: { "application/json": { schema: { type: "object", description: "Partial profile — only send fields to update" } } },
+        },
+        responses: {
+          "200": { description: "Updated profile" },
+          "400": { description: "Invalid JSON" },
+          "401": { description: "Not authenticated" },
+        },
+      },
+    },
+
+    "/practitioners": {
+      get: {
+        tags: ["Practitioners"],
+        summary: "Search practitioners (org-scoped)",
+        description:
+          "Returns Practitioners filtered by organisation.\n\n" +
+          "**Priority for org filter:**\n" +
+          "1. `orgFhirId` query param (patient's managing org)\n" +
+          "2. Logged-in user's `orgFhirId` (external Auftraggeber)\n" +
+          "3. Unfiltered (admin / internal users)\n\n" +
+          "Returns `{ id, name }` pairs for use in order-form dropdowns.",
+        operationId: "listPractitioners",
+        security: [{ sessionCookie: [] }],
+        parameters: [
+          { name: "q",          in: "query", schema: { type: "string" }, description: "Name search term" },
+          { name: "orgFhirId",  in: "query", schema: { type: "string" }, description: "FHIR Organization ID to filter by (overrides user profile org)" },
+        ],
+        responses: {
+          "200": {
+            description: "List of practitioners",
+            content: { "application/json": { schema: { type: "object", properties: {
+              data: { type: "array", items: { type: "object", properties: { id: { type: "string" }, name: { type: "string" } } } },
+            } } } },
+          },
+        },
+      },
+    },
+
+    "/roles": {
+      get: {
+        tags: ["Roles"],
+        summary: "List PractitionerRole catalog entries",
+        description: "Returns all role catalog entries. Public — no auth required (needed by user-form dropdown).",
+        operationId: "listRoles",
+        responses: {
+          "200": {
+            description: "Role list",
+            content: { "application/json": { schema: { type: "object", properties: {
+              data: { type: "array", items: { $ref: "#/components/schemas/RoleCatalogEntry" } },
+            } } } },
+          },
+        },
+      },
+      post: {
+        tags: ["Roles"],
+        summary: "Create a PractitionerRole catalog entry",
+        description: "Adds a new role to the catalog. Admin only.",
+        operationId: "createRole",
+        security: [{ sessionCookie: [] }],
+        requestBody: {
+          required: true,
+          content: { "application/json": { schema: { $ref: "#/components/schemas/CreateRoleRequest" } } },
+        },
+        responses: {
+          "201": { description: "Role created", content: { "application/json": { schema: { $ref: "#/components/schemas/RoleCatalogEntry" } } } },
+          "400": { description: "Validation error" },
+          "401": { description: "Not authenticated" },
+          "403": { description: "Admin role required" },
+          "409": { description: "Code already exists" },
+        },
+      },
+    },
+
+    "/roles/{id}": {
+      get: {
+        tags: ["Roles"],
+        summary: "Get a PractitionerRole catalog entry",
+        operationId: "getRoleById",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        responses: {
+          "200": { description: "Role entry", content: { "application/json": { schema: { $ref: "#/components/schemas/RoleCatalogEntry" } } } },
+          "404": { description: "Not found" },
+        },
+      },
+      put: {
+        tags: ["Roles"],
+        summary: "Update a PractitionerRole catalog entry",
+        operationId: "updateRole",
+        security: [{ sessionCookie: [] }],
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        requestBody: {
+          required: true,
+          content: { "application/json": { schema: { $ref: "#/components/schemas/UpdateRoleRequest" } } },
+        },
+        responses: {
+          "200": { description: "Updated role", content: { "application/json": { schema: { $ref: "#/components/schemas/RoleCatalogEntry" } } } },
+          "400": { description: "Validation error" },
+          "401": { description: "Not authenticated" },
+          "403": { description: "Admin role required" },
+          "404": { description: "Not found" },
+        },
+      },
+      delete: {
+        tags: ["Roles"],
+        summary: "Delete a PractitionerRole catalog entry",
+        operationId: "deleteRole",
+        security: [{ sessionCookie: [] }],
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        responses: {
+          "204": { description: "Deleted" },
+          "401": { description: "Not authenticated" },
+          "403": { description: "Admin role required" },
+          "404": { description: "Not found" },
+        },
+      },
+    },
+
+    "/insurance-lookup": {
+      get: {
+        tags: ["Insurance"],
+        summary: "Look up VeKa insurance card (SASIS)",
+        description:
+          "Queries the SASIS/OFAC VeKa card API for patient insurance data.\n\n" +
+          "Requires `SASIS_API_BASE` to be configured (503 otherwise).\n" +
+          "Feature flag: `NEXT_PUBLIC_SASIS_ENABLED=true`.",
+        operationId: "insuranceLookup",
+        security: [{ sessionCookie: [] }],
+        parameters: [
+          { name: "cardNumber", in: "query", required: true, schema: { type: "string", pattern: "^80\\d{18}$" }, description: "20-digit VeKa card number (starts with 80)" },
+          { name: "date",       in: "query", schema: { type: "string", format: "date" }, description: "Reference date (default: today)" },
+        ],
+        responses: {
+          "200": { description: "Patient insurance data from SASIS" },
+          "400": { description: "Missing or invalid cardNumber" },
+          "401": { description: "Not authenticated" },
+          "503": { description: "SASIS not configured" },
+        },
+      },
+    },
+
+    "/logs": {
+      get: {
+        tags: ["Observability"],
+        summary: "Tail structured server log file",
+        description:
+          "Returns the last N lines from the structured JSON log file.\n\n" +
+          "Supports filtering by level and search term.\n\n" +
+          "Admin only. Returns `enabled: false` when `LOG_FILE` is not configured.",
+        operationId: "getLogs",
+        security: [{ sessionCookie: [] }],
+        parameters: [
+          { name: "tail",   in: "query", schema: { type: "integer", default: 200, maximum: 1000 }, description: "Number of lines from end of file" },
+          { name: "level",  in: "query", schema: { type: "string", enum: ["debug", "info", "warn", "error"] }, description: "Minimum log level filter" },
+          { name: "search", in: "query", schema: { type: "string" }, description: "Case-insensitive search in msg/ctx fields" },
+        ],
+        responses: {
+          "200": {
+            description: "Log entries",
+            content: { "application/json": { schema: { type: "object", properties: {
+              enabled: { type: "boolean" },
+              logFile: { type: "string", description: "Basename of the log file (path masked)" },
+              total:   { type: "integer" },
+              entries: { type: "array", items: { type: "object", description: "Structured log entry (time, level, ctx, msg, …)" } },
+            } } } },
+          },
+          "401": { description: "Not authenticated" },
+          "403": { description: "Admin role required" },
+        },
+      },
+    },
+
+    "/fhir/locations": {
+      get: {
+        tags: ["FHIR"],
+        summary: "List FHIR Location resources",
+        description: "Returns FHIR Location resources, optionally filtered by organization. Admin only.",
+        operationId: "listFhirLocations",
+        security: [{ sessionCookie: [] }],
+        parameters: [
+          { name: "organization", in: "query", schema: { type: "string" }, description: "FHIR Organization ID to filter by" },
+        ],
+        responses: {
+          "200": { description: "FHIR Bundle of Locations", content: { "application/fhir+json": { schema: { type: "object" } } } },
+          "401": { description: "Not authenticated" },
+          "403": { description: "Admin role required" },
+        },
+      },
+    },
+
+    "/patients/{id}/activate": {
+      post: {
+        tags: ["Patients"],
+        summary: "Reactivate a merged patient",
+        description:
+          "Sets `active: true` and removes all `replaced-by` links from a patient.\n\n" +
+          "Used to undo a patient merge operation.",
+        operationId: "activatePatient",
+        security: [{ sessionCookie: [] }],
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" }, description: "Patient FHIR ID" }],
+        responses: {
+          "200": { description: "Patient reactivated", content: { "application/json": { schema: { type: "object", properties: { activated: { type: "boolean" }, id: { type: "string" } } } } } },
+          "401": { description: "Not authenticated" },
+          "404": { description: "Patient not found" },
+          "502": { description: "FHIR update failed" },
+        },
+      },
+    },
+
+    "/patients/{id}/document-references": {
+      get: {
+        tags: ["Patients"],
+        summary: "List DocumentReferences for a patient",
+        description: "Returns DocumentReference resources linked to the patient. Extracts PDF and HL7 attachments from `content[].attachment`.",
+        operationId: "listPatientDocumentReferences",
+        security: [{ sessionCookie: [] }],
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" }, description: "Patient FHIR ID" }],
+        responses: {
+          "200": { description: "List of DocumentReferences with attachment data" },
+          "401": { description: "Not authenticated" },
+        },
+      },
+    },
+
+    "/patients/{id}/merge": {
+      post: {
+        tags: ["Patients"],
+        summary: "Merge source patient into target patient",
+        description:
+          "Merges `sourceId` into the target patient (`id` from URL path).\n\n" +
+          "**Strategy 1:** FHIR `$merge` operation (HAPI FHIR).\n" +
+          "**Strategy 2 (fallback):** Sets source `active: false` and adds a `replaced-by` link.\n\n" +
+          "The target patient survives; source is deactivated.",
+        operationId: "mergePatient",
+        security: [{ sessionCookie: [] }],
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" }, description: "Target patient FHIR ID (survives)" }],
+        requestBody: {
+          required: true,
+          content: { "application/json": { schema: { type: "object", required: ["sourceId"], properties: { sourceId: { type: "string", description: "FHIR ID of the patient to be merged (deactivated)" } } } } },
+        },
+        responses: {
+          "200": {
+            description: "Merge successful",
+            content: { "application/json": { schema: { type: "object", properties: {
+              merged:   { type: "boolean" },
+              targetId: { type: "string" },
+              sourceId: { type: "string" },
+              method:   { type: "string", enum: ["fhir-merge", "patient-link"] },
+            } } } },
+          },
+          "400": { description: "Missing sourceId" },
+          "401": { description: "Not authenticated" },
+          "404": { description: "Source patient not found" },
+          "502": { description: "FHIR update failed" },
+        },
+      },
+    },
+
+    "/orders/submit": {
+      post: {
+        tags: ["Orders"],
+        summary: "Submit a new order (FHIR transaction bundle)",
+        description:
+          "Accepts a FHIR transaction Bundle (Encounter + ServiceRequest + Specimen + DocumentReference) " +
+          "and forwards it to HAPI FHIR server-side.\n\n" +
+          "Replaces the legacy direct client-side FHIR POST.",
+        operationId: "submitOrder",
+        security: [{ sessionCookie: [] }],
+        requestBody: {
+          required: true,
+          content: { "application/fhir+json": { schema: { type: "object", description: "FHIR transaction Bundle" } } },
+        },
+        responses: {
+          "200": { description: "Order submitted — returns created resource IDs" },
+          "400": { description: "Invalid JSON body" },
+          "401": { description: "Not authenticated" },
+          "502": { description: "FHIR server error" },
+        },
+      },
+    },
+
     "/gln-lookup": {
       get: {
         tags: ["External — GLN"],
@@ -2591,6 +2924,35 @@ export const openApiSpec = {
   // ── Reusable schemas ───────────────────────────────────────────────────────
   components: {
     schemas: {
+      RoleCatalogEntry: {
+        type: "object",
+        required: ["id", "code", "display", "createdAt"],
+        description: "A PractitionerRole catalog entry (GET /api/roles).",
+        properties: {
+          id:        { type: "string", format: "uuid" },
+          code:      { type: "string", description: "Unique role code (e.g. HPC)" },
+          display:   { type: "string", description: "Human-readable label" },
+          system:    { type: "string", description: "Optional FHIR coding system URI / OID" },
+          createdAt: { type: "string", format: "date-time" },
+        },
+      },
+      CreateRoleRequest: {
+        type: "object",
+        required: ["code", "display"],
+        properties: {
+          code:    { type: "string", description: "Unique role code (case-insensitive, must be unique)" },
+          display: { type: "string", description: "Human-readable display name" },
+          system:  { type: "string", description: "Optional FHIR coding system URI" },
+        },
+      },
+      UpdateRoleRequest: {
+        type: "object",
+        properties: {
+          code:    { type: "string" },
+          display: { type: "string" },
+          system:  { type: "string" },
+        },
+      },
       GlnResponseV2: {
         type: "object",
         required: ["gln", "partnerType", "role", "displayName", "person", "organization", "address"],
