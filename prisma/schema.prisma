@@ -84,6 +84,26 @@ model AgentJob {
   doneAt              DateTime?
 }
 
+// ── AgentRegistration ─────────────────────────────────────────────────────────
+
+/// A registered Local Agent for a clinic/practice.
+/// Each agent authenticates via a hashed API key (Bearer token).
+/// Routing: orgFhirId links the agent to a FHIR Organization.
+model AgentRegistration {
+  id            String    @id @default(uuid())
+  name          String                        /// Display name (e.g. "Klinik im Park")
+  orgFhirId     String                        /// FHIR Organization ID
+  orgGln        String?                       /// GS1 GLN (optional)
+  locationId    String?                       /// FHIR Location ID (optional — department routing)
+  apiKeyHash    String                        /// bcrypt hash of the API key
+  apiKeyPrefix  String                        /// First 8 chars for display (e.g. "zetlab_a")
+  status        String    @default("active")  /// "active" | "revoked"
+  lastSeenAt    DateTime?                     /// Last successful poll
+  agentVersion  String?                       /// Last reported agent version
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
 // ── OrgRule ───────────────────────────────────────────────────────────────────
 
 /// Organisation-specific rules for order numbers, patient IDs, and HL7 mapping.
