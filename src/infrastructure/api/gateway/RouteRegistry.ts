@@ -97,6 +97,43 @@ export const V1_ROUTES: readonly RouteEntry[] = [
   { method: "GET",    path: "/v1/gln-lookup",                            version: "v1", tag: "External — GLN", auth: "public", summary: "Look up a GLN in the RefData partner registry (v1 — flat)" },
   { method: "GET",    path: "/v2/gln-lookup",                            version: "v1", tag: "External — GLN", auth: "public", summary: "Look up a GLN in the RefData partner registry (v2 — nested)" },
 
+  // ── Patients — extended ──────────────────────────────────────────────────────
+  { method: "POST",   path: "/v1/patients/:id/activate",                 version: "v1", tag: "Patients",      auth: "public", summary: "Activate a patient" },
+  { method: "GET",    path: "/v1/patients/:id/document-references",      version: "v1", tag: "Patients",      auth: "public", summary: "List DocumentReferences for a patient" },
+  { method: "POST",   path: "/v1/patients/:id/merge",                    version: "v1", tag: "Patients",      auth: "public", summary: "Merge source patient into target patient" },
+
+  // ── Practitioners ────────────────────────────────────────────────────────────
+  { method: "GET",    path: "/v1/practitioners",                         version: "v1", tag: "Practitioners", auth: "public", summary: "Search practitioners (org-scoped)" },
+
+  // ── Roles ────────────────────────────────────────────────────────────────────
+  { method: "GET",    path: "/v1/roles",                                 version: "v1", tag: "Roles",         auth: "public", summary: "List all PractitionerRole catalog entries" },
+  { method: "POST",   path: "/v1/roles",                                 version: "v1", tag: "Roles",         auth: "admin",  summary: "Create a PractitionerRole catalog entry" },
+  { method: "GET",    path: "/v1/roles/:id",                             version: "v1", tag: "Roles",         auth: "public", summary: "Get a PractitionerRole catalog entry" },
+  { method: "PUT",    path: "/v1/roles/:id",                             version: "v1", tag: "Roles",         auth: "admin",  summary: "Update a PractitionerRole catalog entry" },
+  { method: "DELETE", path: "/v1/roles/:id",                             version: "v1", tag: "Roles",         auth: "admin",  summary: "Delete a PractitionerRole catalog entry" },
+
+  // ── Orders ───────────────────────────────────────────────────────────────────
+  { method: "POST",   path: "/v1/orders/submit",                         version: "v1", tag: "Orders",        auth: "public", summary: "Submit a new order (ServiceRequest)" },
+
+  // ── Deep Link ────────────────────────────────────────────────────────────────
+  { method: "GET",    path: "/v1/deeplink/order-entry",                  version: "v1", tag: "DeepLink",      auth: "public", summary: "KIS/PIS deep-link into order entry" },
+
+  // ── Insurance ────────────────────────────────────────────────────────────────
+  { method: "GET",    path: "/v1/insurance-lookup",                      version: "v1", tag: "Insurance",     auth: "public", summary: "Look up VeKa insurance card (SASIS)" },
+
+  // ── User profile ─────────────────────────────────────────────────────────────
+  { method: "GET",    path: "/v1/me/profile",                            version: "v1", tag: "Auth",          auth: "public", summary: "Get current user profile" },
+  { method: "PUT",    path: "/v1/me/profile",                            version: "v1", tag: "Auth",          auth: "public", summary: "Update current user profile" },
+
+  // ── Logs ────────────────────────────────────────────────────────────────────
+  { method: "GET",    path: "/v1/logs",                                  version: "v1", tag: "Observability", auth: "admin",  summary: "Tail structured log file (admin)" },
+
+  // ── Idle timeout ────────────────────────────────────────────────────────────
+  { method: "GET",    path: "/v1/idle-timeout",                          version: "v1", tag: "Auth",          auth: "public", summary: "Get session idle timeout configuration" },
+
+  // ── FHIR locations ───────────────────────────────────────────────────────────
+  { method: "GET",    path: "/v1/fhir/locations",                        version: "v1", tag: "FHIR",          auth: "public", summary: "List FHIR Location resources" },
+
   // ── Config — Service Types ───────────────────────────────────────────────────
   { method: "GET",    path: "/v1/config/service-types",                  version: "v1", tag: "Admin — Config", auth: "admin",  summary: "Get active order service types" },
 
