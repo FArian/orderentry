@@ -234,7 +234,7 @@
           "display": "Anna Muster"
         },
         "requester": {
-          "reference": "Practitioner/prac-001",
+          "reference": "Practitioner/prac-drescher-eva",
           "display": "Dr. med. Hans Müller"
         },
         "performer": [
@@ -304,7 +304,7 @@
           "display": "Beat Schreiber"
         },
         "requester": {
-          "reference": "Practitioner/prac-001",
+          "reference": "Practitioner/prac-drescher-eva",
           "display": "Dr. med. Hans Müller"
         },
         "performer": [
@@ -374,7 +374,7 @@
           "display": "Claudia Weber"
         },
         "requester": {
-          "reference": "Practitioner/prac-001",
+          "reference": "Practitioner/prac-drescher-eva",
           "display": "Dr. med. Hans Müller"
         },
         "performer": [
