@@ -2479,6 +2479,9 @@ export const openApiSpec = {
         description:
           "Queries the Swiss RefData SOAP service (`Partner.asmx`) for a 13-digit GLN.\n\n" +
           "Returns the partner's name, address, and role type.\n\n" +
+          "Available at both:\n" +
+          "- `GET /api/gln-lookup` — legacy path (backward-compatible)\n" +
+          "- `GET /api/v1/gln-lookup` — stable versioned path (recommended)\n\n" +
           "**PTYPE logic:**\n" +
           "- `NAT` (natural person): `DESCR1` = family name, `DESCR2` = given name\n" +
           "- `JUR` (organisation): `DESCR1` = organisation name\n\n" +

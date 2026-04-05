@@ -93,6 +93,9 @@ export const V1_ROUTES: readonly RouteEntry[] = [
   // ── Order Numbers ────────────────────────────────────────────────────────────
   { method: "POST",   path: "/v1/orders/number",                         version: "v1", tag: "Orders",    auth: "public", summary: "Generate order number (Orchestra → Pool fallback)" },
 
+  // ── External — GLN ──────────────────────────────────────────────────────────
+  { method: "GET",    path: "/v1/gln-lookup",                            version: "v1", tag: "External — GLN", auth: "public", summary: "Look up a GLN in the RefData partner registry" },
+
   // ── Config — Service Types ───────────────────────────────────────────────────
   { method: "GET",    path: "/v1/config/service-types",                  version: "v1", tag: "Admin — Config", auth: "admin",  summary: "Get active order service types" },
 
