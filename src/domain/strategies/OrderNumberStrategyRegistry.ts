@@ -8,13 +8,14 @@
  * values come from environment variables, not hardcoded.
  */
 
-import type { IOrderNumberStrategy, ServiceType } from "./IOrderNumberStrategy";
-import { MibiStrategy }    from "./MibiStrategy";
-import { RoutineStrategy } from "./RoutineStrategy";
-import { PocStrategy }     from "./PocStrategy";
+import type { IOrderNumberStrategy } from "./IOrderNumberStrategy";
+import { MibiStrategy }       from "./MibiStrategy";
+import { RoutineStrategy }    from "./RoutineStrategy";
+import { PocStrategy }        from "./PocStrategy";
+import { PassthroughStrategy } from "./PassthroughStrategy";
 
 class OrderNumberStrategyRegistry {
-  private readonly registry = new Map<ServiceType, IOrderNumberStrategy>();
+  private readonly registry = new Map<string, IOrderNumberStrategy>();
 
   constructor() {
     this.registerDefaults();
@@ -24,7 +25,7 @@ class OrderNumberStrategyRegistry {
     this.register(new MibiStrategy(
       process.env.ORDER_MI_PREFIX    ?? "MI",
       process.env.ORDER_MI_START     ?? "4",
-      parseInt(process.env.ORDER_MI_LENGTH ?? "10", 10),
+      parseInt(process.env.ORDER_MI_LENGTH ?? "11", 10),
     ));
     this.register(new RoutineStrategy(
       parseInt(process.env.ORDER_ROUTINE_LENGTH ?? "10", 10),
@@ -39,13 +40,17 @@ class OrderNumberStrategyRegistry {
     this.registry.set(strategy.serviceType, strategy);
   }
 
-  resolve(serviceType: ServiceType): IOrderNumberStrategy {
-    const strategy = this.registry.get(serviceType);
-    if (!strategy) throw new Error(`No strategy registered for ServiceType: ${serviceType}`);
-    return strategy;
+  /**
+   * Resolve the strategy for a given service type.
+   * For built-in types (MIBI, ROUTINE, POC) returns the registered strategy.
+   * For unknown/dynamic types returns a PassthroughStrategy so new service types
+   * work without any code change.
+   */
+  resolve(serviceType: string): IOrderNumberStrategy {
+    return this.registry.get(serviceType) ?? new PassthroughStrategy(serviceType);
   }
 
-  listServiceTypes(): ServiceType[] {
+  listServiceTypes(): string[] {
     return Array.from(this.registry.keys());
   }
 }

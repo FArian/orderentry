@@ -9,17 +9,30 @@
 // ── Service types ─────────────────────────────────────────────────────────────
 
 export const SERVICE_TYPES = ["MIBI", "ROUTINE", "POC"] as const;
-export type ServiceType = typeof SERVICE_TYPES[number];
+export type KnownServiceType = typeof SERVICE_TYPES[number];
 
-export function isServiceType(value: string): value is ServiceType {
-  return SERVICE_TYPES.includes(value as ServiceType);
+/**
+ * Open string type — allows dynamic service types beyond the built-in three
+ * (MIBI, ROUTINE, POC). New types (e.g. "GER", "CARDIO") require no code
+ * changes — they fall through to PassthroughStrategy automatically.
+ */
+export type ServiceType = string;
+
+/** Returns true only for the three built-in types. */
+export function isKnownServiceType(value: string): value is KnownServiceType {
+  return (SERVICE_TYPES as readonly string[]).includes(value);
+}
+
+/** @deprecated Use isKnownServiceType. Will be removed in a future version. */
+export function isServiceType(value: string): value is KnownServiceType {
+  return isKnownServiceType(value);
 }
 
 // ── Strategy interface ────────────────────────────────────────────────────────
 
 export interface IOrderNumberStrategy {
-  /** The service type this strategy handles. */
-  readonly serviceType: ServiceType;
+  /** The service type this strategy handles (any string). */
+  readonly serviceType: string;
 
   /**
    * Generate a formatted order number from a sequential counter.

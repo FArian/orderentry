@@ -19,6 +19,8 @@ interface Patient {
   address:   string;
   updatedAt: string;
   active:    boolean;
+  /** Display name of managingOrganization (Sender). Never fetched per-row from FHIR. */
+  senderName?: string | undefined;
 }
 
 // ── FHIR Patient parsing ──────────────────────────────────────────────────────
@@ -32,6 +34,7 @@ interface FhirPatientResource {
   name?:        FhirHumanName[];
   address?:     FhirAddress[];
   meta?:        { lastUpdated?: string };
+  managingOrganization?: { display?: string; reference?: string };
 }
 
 function fhirNameToString(n?: FhirHumanName[]): string {
@@ -52,12 +55,13 @@ function fhirAddressToString(a?: FhirAddress[]): string {
 
 function mapFhirPatient(r: FhirPatientResource): Patient {
   return {
-    id:        r.id ?? "",
-    name:      fhirNameToString(r.name),
-    address:   fhirAddressToString(r.address),
-    updatedAt: r.meta?.lastUpdated ?? "",
+    id:         r.id ?? "",
+    name:       fhirNameToString(r.name),
+    address:    fhirAddressToString(r.address),
+    updatedAt:  r.meta?.lastUpdated ?? "",
     // FHIR spec: absent active field means active=true
-    active:    r.active ?? true,
+    active:     r.active ?? true,
+    ...(r.managingOrganization?.display ? { senderName: r.managingOrganization.display } : {}),
   };
 }
 
@@ -208,11 +212,11 @@ function PageBtn({ label, disabled, onClick }: { label: string; disabled: boolea
 }
 
 // ── Column count helper ───────────────────────────────────────────────────────
-// Name | Status | Address | Updated | Orders | Actions  = 6
-// +1 for merge checkbox = 7
+// Name | Status | Sender | Address | Updated | Orders | Actions  = 7
+// +1 for merge checkbox = 8
 
 function colCount(mergeMode: boolean) {
-  return mergeMode ? 7 : 6;
+  return mergeMode ? 8 : 7;
 }
 
 // ── Skeleton row ──────────────────────────────────────────────────────────────
@@ -231,6 +235,7 @@ function SkeletonRow({ mergeMode }: { mergeMode: boolean }) {
         </div>
       </td>
       <td className="px-4 py-3.5"><div className="h-5 w-14 bg-zt-bg-muted rounded-full" /></td>
+      <td className="px-4 py-3.5"><div className="h-5 w-28 bg-zt-bg-muted rounded-md" /></td>
       <td className="px-4 py-3.5"><div className="h-3 w-48 bg-zt-bg-muted rounded" /></td>
       <td className="px-4 py-3.5"><div className="h-3 w-24 bg-zt-bg-muted rounded" /></td>
       <td className="px-4 py-3.5"><div className="h-5 w-16 bg-zt-bg-muted rounded-full" /></td>
@@ -325,6 +330,18 @@ function PatientRow({
       {/* Status */}
       <td className="px-4 py-3.5">
         <StatusBadge active={patient.active} />
+      </td>
+
+      {/* Sender (managingOrganization) */}
+      <td className="px-4 py-3.5">
+        {patient.senderName
+          ? (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-md border border-zt-primary-border bg-zt-primary-light text-zt-primary text-[12px] font-medium whitespace-nowrap max-w-[160px] truncate" title={patient.senderName}>
+              {patient.senderName}
+            </span>
+          )
+          : <span className="text-zt-text-tertiary text-[12px]">—</span>
+        }
       </td>
 
       {/* Address */}
@@ -731,6 +748,9 @@ function PatientPageContent() {
                 </th>
                 <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-zt-text-secondary uppercase tracking-[0.05em] border-b border-zt-border whitespace-nowrap">
                   {t("patient.colStatus")}
+                </th>
+                <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-zt-text-secondary uppercase tracking-[0.05em] border-b border-zt-border whitespace-nowrap">
+                  {t("org.sender")}
                 </th>
                 <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-zt-text-secondary uppercase tracking-[0.05em] border-b border-zt-border">
                   {t("patient.address")}

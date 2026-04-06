@@ -1,5 +1,7 @@
 // Domain entity — framework-independent, no React, no API calls.
 
+import type { OrganizationRef } from "@/domain/valueObjects/OrganizationRef";
+
 export enum OrderStatus {
   DRAFT            = "draft",
   ACTIVE           = "active",
@@ -20,4 +22,8 @@ export interface Order {
   authoredOn: string;
   codeText: string;
   specimenCount: number;
+  /** Sending organization (Auftraggeber). Resolved from ServiceRequest.requester. */
+  sender?: OrganizationRef | undefined;
+  /** Receiving organizations (Auftragnehmer). Resolved from ServiceRequest.performer[]. */
+  receivers: OrganizationRef[];
 }

@@ -283,6 +283,15 @@ const IconNumberPool = (
   </svg>
 );
 
+const IconAgents = (
+  <svg viewBox="0 0 16 16" fill="currentColor" className="w-full h-full">
+    <rect x="1" y="4" width="9" height="8" rx="1.5"/>
+    <path d="M10 7h3a1 1 0 011 1v2a1 1 0 01-1 1h-3" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+    <circle cx="4" cy="8" r="1.5" fill="white"/>
+    <path d="M13 8.5h1" stroke="white" strokeWidth="1.2" strokeLinecap="round"/>
+  </svg>
+);
+
 const IconEnv = (
   <svg viewBox="0 0 16 16" fill="currentColor" className="w-full h-full">
     <rect x="1" y="2" width="14" height="12" rx="1.5"/>
@@ -475,8 +484,8 @@ export function AppSidebar() {
             {/* Auftragssteuerung */}
             <NavGroup id="admin-orders" label={t("nav.groupOrderMgmt")}>
               <NavItem href="/settings/mail"     icon={IconMail}       label={t("nav.mailConfig")}      activePaths={["/settings/mail"]} />
-              <NavItem href="/admin/org-rules"   icon={IconOrgRules}   label={t("nav.adminOrgRules")}   activePaths={["/admin/org-rules"]} />
-              <NavItem href="/admin/number-pool" icon={IconNumberPool} label={t("nav.adminNumberPool")} activePaths={["/admin/number-pool"]} />
+              <NavItem href="/admin/order-numbers" icon={IconNumberPool} label={t("nav.adminOrderNumbers")} activePaths={["/admin/order-numbers", "/admin/org-rules", "/admin/number-pool"]} />
+              <NavItem href="/admin/agents"      icon={IconAgents}     label={t("nav.adminAgents")}      activePaths={["/admin/agents"]} />
             </NavGroup>
 
             {/* System */}

@@ -1,6 +1,7 @@
 import { createLogger }                  from "@/infrastructure/logging/Logger";
 import { reservedNumberRepository }      from "@/infrastructure/repositories/PrismaReservedNumberRepository";
 import { orgRuleRepository }             from "@/infrastructure/repositories/PrismaOrgRuleRepository";
+import { adminTaskRepository }           from "@/infrastructure/repositories/PrismaAdminTaskRepository";
 import { orchestraOrderService }         from "@/infrastructure/services/OrchestraOrderService";
 import { PoolNotificationService }       from "@/infrastructure/services/PoolNotificationService";
 import { GenerateOrderNumberUseCase, OrderBlockedError } from "@/application/useCases/GenerateOrderNumberUseCase";
@@ -13,6 +14,7 @@ const log = createLogger("NumberPoolController");
 function buildNotificationService() {
   return new PoolNotificationService(
     reservedNumberRepository,
+    adminTaskRepository,
     async (to, subject, text) => {
       // Lazy-import mail service to avoid bundling nodemailer in Edge runtime.
       const { mailService } = await import("@/infrastructure/mail/MailServiceFactory");
@@ -74,8 +76,8 @@ export class NumberPoolController {
   }
 
   async generateOrderNumber(body: OrderNumberRequestDto) {
-    if (!body.orgGln || !body.serviceType) {
-      return { httpStatus: 400, error: "orgGln and serviceType are required" };
+    if (!body.serviceType) {
+      return { httpStatus: 400, error: "serviceType is required" };
     }
     const notifications = buildNotificationService();
     const useCase       = new GenerateOrderNumberUseCase(

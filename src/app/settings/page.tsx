@@ -158,6 +158,7 @@ export default function SettingsPage() {
         body: JSON.stringify({ vars: envVars }),
       });
       if (res.status === 405) { setEnvReadOnly(true); setEnvError(t("settings.envEditorUnavailable")); return; }
+      if (res.status === 401 || res.status === 403) { setEnvError("Keine Berechtigung (Admin erforderlich). Bitte neu einloggen."); return; }
       const data = (await res.json()) as { ok: boolean; message?: string };
       if (!data.ok) {
         setEnvError(data.message ?? t("settings.envEditorError"));

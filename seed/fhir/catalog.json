@@ -1,36 +1,147 @@
 {
   "resourceType": "Bundle",
-  "id": "orderentry-catalog-v1",
+  "id": "orderentry-catalog-manual",
   "type": "transaction",
   "entry": [
     {
       "resource": {
+        "resourceType": "ActivityDefinition",
+        "id": "actdef-AAUG",
+        "extension": [
+          {
+            "url": "https://www.zetlab.ch/fhir/StructureDefinition/minimal-volume-microliter",
+            "valueQuantity": {
+              "value": 230,
+              "unit": "µl",
+              "system": "http://unitsofmeasure.org",
+              "code": "uL"
+            }
+          },
+          {
+            "url": "https://www.zetlab.ch/StructureDefinition/specimen-definition",
+            "valueReference": {
+              "identifier": {
+                "system": "https://www.zetlab.ch/fhir/specimen",
+                "value": "AA"
+              }
+            }
+          }
+        ],
+        "url": "https://www.zetlab.ch/fhir/activity/AAUG",
+        "subtitle": "Abstrich Auge/Nase/Mund/Ohr",
+        "status": "active",
+        "description": "Auge",
+        "topic": [
+          {
+            "coding": [
+              {
+                "system": "https://www.zetlab.ch/fhir/category",
+                "code": "MIBI",
+                "display": "Mikrobiologie"
+              }
+            ]
+          }
+        ],
+        "kind": "ServiceRequest",
+        "code": {
+          "coding": [
+            {
+              "extension": [
+                {
+                  "url": "http://hl7.org/fhir/StructureDefinition/translation",
+                  "extension": [
+                    {
+                      "url": "lang",
+                      "valueCode": "de"
+                    },
+                    {
+                      "url": "content",
+                      "valueString": "Auge"
+                    }
+                  ]
+                },
+                {
+                  "url": "http://hl7.org/fhir/StructureDefinition/translation",
+                  "extension": [
+                    {
+                      "url": "lang",
+                      "valueCode": "en"
+                    },
+                    {
+                      "url": "content",
+                      "valueString": "Eye"
+                    }
+                  ]
+                }
+              ],
+              "system": "https://www.zetlab.ch/lis/codes",
+              "code": "#AAUG",
+              "display": "Auge"
+            }
+          ]
+        },
+        "location": {
+          "identifier": {
+            "system": "https://www.zetlab.ch/fhir/groups-observation",
+            "value": "RISCHMB"
+          }
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ActivityDefinition/actdef-AAUG"
+      }
+    },
+    {
+      "resource": {
         "resourceType": "SpecimenDefinition",
-        "id": "specdef-10",
+        "id": "specdef-AA",
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/instance-url",
+            "valueUri": "https://www.zetlab.ch/fhir/specimen/AA"
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/resource-status",
+            "valueCode": "active"
+          }
+        ],
         "identifier": {
           "system": "https://www.zetlab.ch/fhir/specimen",
-          "value": "10"
+          "value": "AA"
         },
         "typeCollected": {
           "coding": [
             {
               "system": "https://www.zetlab.ch/fhir/specimen-types",
-              "code": "10",
-              "display": "Liquor Nativ"
+              "code": "AA",
+              "display": "Abstrich Auge/Nase/Mund/Ohr"
             },
             {
               "system": "http://snomed.info/sct",
-              "code": "258450006",
-              "display": "Cerebrospinal fluid specimen (specimen)"
+              "code": "119399004",
+              "display": "Specimen from eye (specimen)"
             }
           ],
-          "text": "Liquor Nativ"
+          "text": "Abstrich Auge / Nase / Mund / Ohr"
         },
         "typeTested": [
           {
             "preference": "preferred",
             "container": {
-              "description": "Liquor Nativ"
+              "description": "Abstrich-Transportmedium (z.B. Copan ESwab 480C)",
+              "minimumVolumeQuantity": {
+                "value": 0.5,
+                "unit": "mL",
+                "system": "http://unitsofmeasure.org",
+                "code": "mL"
+              }
+            },
+            "retentionTime": {
+              "value": 48,
+              "unit": "h",
+              "system": "http://unitsofmeasure.org",
+              "code": "h"
             },
             "rejectionCriterion": [
               {
@@ -41,7 +152,7 @@
                     "display": "Insufficient quantity"
                   }
                 ],
-                "text": "Unzureichende Probenmenge"
+                "text": "Getrockneter oder unzureichender Abstrich"
               }
             ],
             "handling": [
@@ -56,13 +167,27 @@
                   ],
                   "text": "Raumtemperatur"
                 },
+                "temperatureRange": {
+                  "low": {
+                    "value": 15,
+                    "unit": "°C",
+                    "system": "http://unitsofmeasure.org",
+                    "code": "Cel"
+                  },
+                  "high": {
+                    "value": 25,
+                    "unit": "°C",
+                    "system": "http://unitsofmeasure.org",
+                    "code": "Cel"
+                  }
+                },
                 "maxDuration": {
-                  "value": 24,
+                  "value": 48,
                   "unit": "h",
                   "system": "http://unitsofmeasure.org",
                   "code": "h"
                 },
-                "instruction": "Schnellstmöglich ins Labor senden. Nicht einfrieren."
+                "instruction": "Bei Raumtemperatur lagern. Nicht einfrieren. Schnellstmöglich ins Labor senden."
               }
             ]
           }
@@ -70,13 +195,637 @@
       },
       "request": {
         "method": "PUT",
-        "url": "SpecimenDefinition/specdef-10"
+        "url": "SpecimenDefinition/specdef-AA"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "ObservationDefinition",
+        "id": "obsdef-AAUG",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.zetlab.ch/lis/codes",
+              "code": "obsdef-AAUG",
+              "display": "Auge"
+            }
+          ],
+          "text": "Auge"
+        },
+        "identifier": [
+          {
+            "system": "https://www.zetlab.ch/lis/codes",
+            "value": "#AAUG"
+          }
+        ],
+        "preferredReportName": "Eye"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ObservationDefinition/obsdef-AAUG"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "ActivityDefinition",
+        "id": "actdef-ABAB",
+        "extension": [
+          {
+            "url": "https://www.zetlab.ch/fhir/StructureDefinition/minimal-volume-microliter",
+            "valueQuantity": {
+              "value": 230,
+              "unit": "µl",
+              "system": "http://unitsofmeasure.org",
+              "code": "uL"
+            }
+          },
+          {
+            "url": "https://www.zetlab.ch/StructureDefinition/specimen-definition",
+            "valueReference": {
+              "identifier": {
+                "system": "https://www.zetlab.ch/fhir/specimen",
+                "value": "60"
+              }
+            }
+          }
+        ],
+        "url": "https://www.zetlab.ch/fhir/activity/ABAB",
+        "subtitle": "Abstrich/Sekret",
+        "status": "active",
+        "description": "Allgemeine Bakteriologie inkl. Pilze",
+        "topic": [
+          {
+            "coding": [
+              {
+                "system": "https://www.zetlab.ch/fhir/category",
+                "code": "MIBI",
+                "display": "Mikrobiologie"
+              }
+            ]
+          }
+        ],
+        "kind": "ServiceRequest",
+        "code": {
+          "coding": [
+            {
+              "extension": [
+                {
+                  "url": "http://hl7.org/fhir/StructureDefinition/translation",
+                  "extension": [
+                    {
+                      "url": "lang",
+                      "valueCode": "de"
+                    },
+                    {
+                      "url": "content",
+                      "valueString": "Allgemeine Bakteriologie inkl. Pilze"
+                    }
+                  ]
+                },
+                {
+                  "url": "http://hl7.org/fhir/StructureDefinition/translation",
+                  "extension": [
+                    {
+                      "url": "lang",
+                      "valueCode": "en"
+                    },
+                    {
+                      "url": "content",
+                      "valueString": "General bacteriology incl. fungi"
+                    }
+                  ]
+                }
+              ],
+              "system": "https://www.zetlab.ch/lis/codes",
+              "code": "#ABAB",
+              "display": "Allgemeine Bakteriologie inkl. Pilze"
+            }
+          ]
+        },
+        "location": {
+          "identifier": {
+            "system": "https://www.zetlab.ch/fhir/groups-observation",
+            "value": "RISCHMB"
+          }
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ActivityDefinition/actdef-ABAB"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "SpecimenDefinition",
+        "id": "specdef-60",
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/instance-url",
+            "valueUri": "https://www.zetlab.ch/fhir/specimen/60"
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/resource-status",
+            "valueCode": "active"
+          }
+        ],
+        "identifier": {
+          "system": "https://www.zetlab.ch/fhir/specimen",
+          "value": "60"
+        },
+        "typeCollected": {
+          "coding": [
+            {
+              "system": "https://www.zetlab.ch/fhir/specimen-types",
+              "code": "60",
+              "display": "Abstrich/Sekret"
+            },
+            {
+              "system": "http://snomed.info/sct",
+              "code": "257261003",
+              "display": "Swab specimen"
+            }
+          ],
+          "text": "Abstrich / Sekret"
+        },
+        "typeTested": [
+          {
+            "preference": "preferred",
+            "container": {
+              "description": "Abstrich-Transportmedium (z.B. Copan ESwab 480C)",
+              "minimumVolumeQuantity": {
+                "value": 0.5,
+                "unit": "mL",
+                "system": "http://unitsofmeasure.org",
+                "code": "mL"
+              }
+            },
+            "retentionTime": {
+              "value": 48,
+              "unit": "h",
+              "system": "http://unitsofmeasure.org",
+              "code": "h"
+            },
+            "rejectionCriterion": [
+              {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/rejection-criteria",
+                    "code": "INSUFFICIENT",
+                    "display": "Insufficient quantity"
+                  }
+                ],
+                "text": "Getrockneter oder unzureichender Abstrich"
+              }
+            ],
+            "handling": [
+              {
+                "temperatureQualifier": {
+                  "coding": [
+                    {
+                      "system": "http://terminology.hl7.org/CodeSystem/handling-condition",
+                      "code": "room",
+                      "display": "Room Temperature"
+                    }
+                  ],
+                  "text": "Raumtemperatur"
+                },
+                "temperatureRange": {
+                  "low": {
+                    "value": 15,
+                    "unit": "°C",
+                    "system": "http://unitsofmeasure.org",
+                    "code": "Cel"
+                  },
+                  "high": {
+                    "value": 25,
+                    "unit": "°C",
+                    "system": "http://unitsofmeasure.org",
+                    "code": "Cel"
+                  }
+                },
+                "maxDuration": {
+                  "value": 48,
+                  "unit": "h",
+                  "system": "http://unitsofmeasure.org",
+                  "code": "h"
+                },
+                "instruction": "Bei Raumtemperatur lagern. Nicht einfrieren. Schnellstmöglich ins Labor senden."
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "SpecimenDefinition/specdef-60"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "ObservationDefinition",
+        "id": "obsdef-ABAB",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.zetlab.ch/lis/codes",
+              "code": "obsdef-ABAB",
+              "display": "Allgemeine Bakteriologie inkl. Pilze"
+            }
+          ],
+          "text": "Allgemeine Bakteriologie inkl. Pilze"
+        },
+        "identifier": [
+          {
+            "system": "https://www.zetlab.ch/lis/codes",
+            "value": "#ABAB"
+          }
+        ],
+        "preferredReportName": "General bacteriology incl. fungi"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ObservationDefinition/obsdef-ABAB"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "ActivityDefinition",
+        "id": "actdef-ABANMO",
+        "extension": [
+          {
+            "url": "https://www.zetlab.ch/fhir/StructureDefinition/minimal-volume-microliter",
+            "valueQuantity": {
+              "value": 230,
+              "unit": "µl",
+              "system": "http://unitsofmeasure.org",
+              "code": "uL"
+            }
+          },
+          {
+            "url": "https://www.zetlab.ch/StructureDefinition/specimen-definition",
+            "valueReference": {
+              "identifier": {
+                "system": "https://www.zetlab.ch/fhir/specimen",
+                "value": "AA"
+              }
+            }
+          }
+        ],
+        "url": "https://www.zetlab.ch/fhir/activity/ABANMO",
+        "subtitle": "Abstrich Auge/Nase/Mund/Ohr",
+        "status": "active",
+        "description": "Allgemeine Bakteriologie",
+        "topic": [
+          {
+            "coding": [
+              {
+                "system": "https://www.zetlab.ch/fhir/category",
+                "code": "MIBI",
+                "display": "Mikrobiologie"
+              }
+            ]
+          }
+        ],
+        "kind": "ServiceRequest",
+        "code": {
+          "coding": [
+            {
+              "extension": [
+                {
+                  "url": "http://hl7.org/fhir/StructureDefinition/translation",
+                  "extension": [
+                    {
+                      "url": "lang",
+                      "valueCode": "de"
+                    },
+                    {
+                      "url": "content",
+                      "valueString": "Allgemeine Bakteriologie"
+                    }
+                  ]
+                },
+                {
+                  "url": "http://hl7.org/fhir/StructureDefinition/translation",
+                  "extension": [
+                    {
+                      "url": "lang",
+                      "valueCode": "en"
+                    },
+                    {
+                      "url": "content",
+                      "valueString": "General bacteriology"
+                    }
+                  ]
+                }
+              ],
+              "system": "https://www.zetlab.ch/lis/codes",
+              "code": "#ABANMO",
+              "display": "Allgemeine Bakteriologie"
+            }
+          ]
+        },
+        "location": {
+          "identifier": {
+            "system": "https://www.zetlab.ch/fhir/groups-observation",
+            "value": "RISCHMB"
+          }
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ActivityDefinition/actdef-ABANMO"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "ObservationDefinition",
+        "id": "obsdef-ABANMO",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.zetlab.ch/lis/codes",
+              "code": "obsdef-ABANMO",
+              "display": "Allgemeine Bakteriologie"
+            }
+          ],
+          "text": "Allgemeine Bakteriologie"
+        },
+        "identifier": [
+          {
+            "system": "https://www.zetlab.ch/lis/codes",
+            "value": "#ABANMO"
+          }
+        ],
+        "preferredReportName": "General bacteriology"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ObservationDefinition/obsdef-ABANMO"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "ActivityDefinition",
+        "id": "actdef-ADENPAU",
+        "extension": [
+          {
+            "url": "https://www.zetlab.ch/fhir/StructureDefinition/minimal-volume-microliter",
+            "valueQuantity": {
+              "value": 230,
+              "unit": "µl",
+              "system": "http://unitsofmeasure.org",
+              "code": "uL"
+            }
+          },
+          {
+            "url": "https://www.zetlab.ch/StructureDefinition/specimen-definition",
+            "valueReference": {
+              "identifier": {
+                "system": "https://www.zetlab.ch/fhir/specimen",
+                "value": "AA"
+              }
+            }
+          }
+        ],
+        "url": "https://www.zetlab.ch/fhir/activity/ADENPAU",
+        "subtitle": "Abstrich Auge/Nase/Mund/Ohr",
+        "status": "active",
+        "description": "Adenoviren",
+        "topic": [
+          {
+            "coding": [
+              {
+                "system": "https://www.zetlab.ch/fhir/category",
+                "code": "MIBI",
+                "display": "Mikrobiologie"
+              }
+            ]
+          }
+        ],
+        "kind": "ServiceRequest",
+        "code": {
+          "coding": [
+            {
+              "extension": [
+                {
+                  "url": "http://hl7.org/fhir/StructureDefinition/translation",
+                  "extension": [
+                    {
+                      "url": "lang",
+                      "valueCode": "de"
+                    },
+                    {
+                      "url": "content",
+                      "valueString": "Adenoviren"
+                    }
+                  ]
+                },
+                {
+                  "url": "http://hl7.org/fhir/StructureDefinition/translation",
+                  "extension": [
+                    {
+                      "url": "lang",
+                      "valueCode": "en"
+                    },
+                    {
+                      "url": "content",
+                      "valueString": "Adenoviruses"
+                    }
+                  ]
+                }
+              ],
+              "system": "https://www.zetlab.ch/lis/codes",
+              "code": "#ADENPAU",
+              "display": "Adenoviren"
+            }
+          ]
+        },
+        "location": {
+          "identifier": {
+            "system": "https://www.zetlab.ch/fhir/groups-observation",
+            "value": "RISCHMB"
+          }
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ActivityDefinition/actdef-ADENPAU"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "ObservationDefinition",
+        "id": "obsdef-ADENPAU",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.zetlab.ch/lis/codes",
+              "code": "obsdef-ADENPAU",
+              "display": "Adenoviren"
+            }
+          ],
+          "text": "Adenoviren"
+        },
+        "identifier": [
+          {
+            "system": "https://www.zetlab.ch/lis/codes",
+            "value": "#ADENPAU"
+          }
+        ],
+        "preferredReportName": "Adenoviruses"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ObservationDefinition/obsdef-ADENPAU"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "ActivityDefinition",
+        "id": "actdef-ADENPNA",
+        "extension": [
+          {
+            "url": "https://www.zetlab.ch/fhir/StructureDefinition/minimal-volume-microliter",
+            "valueQuantity": {
+              "value": 230,
+              "unit": "µl",
+              "system": "http://unitsofmeasure.org",
+              "code": "uL"
+            }
+          },
+          {
+            "url": "https://www.zetlab.ch/StructureDefinition/specimen-definition",
+            "valueReference": {
+              "identifier": {
+                "system": "https://www.zetlab.ch/fhir/specimen",
+                "value": "91"
+              }
+            }
+          }
+        ],
+        "url": "https://www.zetlab.ch/fhir/activity/ADENPNA",
+        "subtitle": "Nasopharyngialabstrich",
+        "status": "active",
+        "description": "Adenoviren",
+        "topic": [
+          {
+            "coding": [
+              {
+                "system": "https://www.zetlab.ch/fhir/category",
+                "code": "MIBI",
+                "display": "Mikrobiologie"
+              }
+            ]
+          }
+        ],
+        "kind": "ServiceRequest",
+        "code": {
+          "coding": [
+            {
+              "extension": [
+                {
+                  "url": "http://hl7.org/fhir/StructureDefinition/translation",
+                  "extension": [
+                    {
+                      "url": "lang",
+                      "valueCode": "de"
+                    },
+                    {
+                      "url": "content",
+                      "valueString": "Adenoviren"
+                    }
+                  ]
+                },
+                {
+                  "url": "http://hl7.org/fhir/StructureDefinition/translation",
+                  "extension": [
+                    {
+                      "url": "lang",
+                      "valueCode": "en"
+                    },
+                    {
+                      "url": "content",
+                      "valueString": "Adenoviruses"
+                    }
+                  ]
+                }
+              ],
+              "system": "https://www.zetlab.ch/lis/codes",
+              "code": "#ADENPNA",
+              "display": "Adenoviren"
+            }
+          ]
+        },
+        "location": {
+          "identifier": {
+            "system": "https://www.zetlab.ch/fhir/groups-observation",
+            "value": "RISCHMB"
+          }
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ActivityDefinition/actdef-ADENPNA"
       }
     },
     {
       "resource": {
         "resourceType": "SpecimenDefinition",
         "id": "specdef-91",
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/instance-url",
+            "valueUri": "https://www.zetlab.ch/fhir/specimen/91"
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/resource-status",
+            "valueCode": "active"
+          }
+        ],
         "identifier": {
           "system": "https://www.zetlab.ch/fhir/specimen",
           "value": "91"
@@ -100,7 +849,19 @@
           {
             "preference": "preferred",
             "container": {
-              "description": "Nasopharyngialabstrich"
+              "description": "Nasopharyngeal-Abstrich-Transportmedium (z.B. Copan FLOQSwab + UTM)",
+              "minimumVolumeQuantity": {
+                "value": 1,
+                "unit": "mL",
+                "system": "http://unitsofmeasure.org",
+                "code": "mL"
+              }
+            },
+            "retentionTime": {
+              "value": 48,
+              "unit": "h",
+              "system": "http://unitsofmeasure.org",
+              "code": "h"
             },
             "rejectionCriterion": [
               {
@@ -111,7 +872,7 @@
                     "display": "Insufficient quantity"
                   }
                 ],
-                "text": "Unzureichende Probenmenge"
+                "text": "Getrockneter oder unzureichender Abstrich; falsches Transportmedium"
               }
             ],
             "handling": [
@@ -126,13 +887,27 @@
                   ],
                   "text": "Raumtemperatur"
                 },
+                "temperatureRange": {
+                  "low": {
+                    "value": 15,
+                    "unit": "°C",
+                    "system": "http://unitsofmeasure.org",
+                    "code": "Cel"
+                  },
+                  "high": {
+                    "value": 25,
+                    "unit": "°C",
+                    "system": "http://unitsofmeasure.org",
+                    "code": "Cel"
+                  }
+                },
                 "maxDuration": {
-                  "value": 24,
+                  "value": 48,
                   "unit": "h",
                   "system": "http://unitsofmeasure.org",
                   "code": "h"
                 },
-                "instruction": "Schnellstmöglich ins Labor senden. Nicht einfrieren."
+                "instruction": "Bei Raumtemperatur lagern. Nicht einfrieren. Schnellstmöglich ins Labor senden."
               }
             ]
           }
@@ -145,32 +920,308 @@
     },
     {
       "resource": {
+        "resourceType": "ObservationDefinition",
+        "id": "obsdef-ADENPNA",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.zetlab.ch/lis/codes",
+              "code": "obsdef-ADENPNA",
+              "display": "Adenoviren"
+            }
+          ],
+          "text": "Adenoviren"
+        },
+        "identifier": [
+          {
+            "system": "https://www.zetlab.ch/lis/codes",
+            "value": "#ADENPNA"
+          }
+        ],
+        "preferredReportName": "Adenoviruses"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ObservationDefinition/obsdef-ADENPNA"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "ActivityDefinition",
+        "id": "actdef-BAKPAU",
+        "extension": [
+          {
+            "url": "https://www.zetlab.ch/fhir/StructureDefinition/minimal-volume-microliter",
+            "valueQuantity": {
+              "value": 230,
+              "unit": "µl",
+              "system": "http://unitsofmeasure.org",
+              "code": "uL"
+            }
+          },
+          {
+            "url": "https://www.zetlab.ch/StructureDefinition/specimen-definition",
+            "valueReference": {
+              "identifier": {
+                "system": "https://www.zetlab.ch/fhir/specimen",
+                "value": "AA"
+              }
+            }
+          }
+        ],
+        "url": "https://www.zetlab.ch/fhir/activity/BAKPAU",
+        "subtitle": "Abstrich Auge/Nase/Mund/Ohr",
+        "status": "active",
+        "description": "Bakterielle Breitband-PCR",
+        "topic": [
+          {
+            "coding": [
+              {
+                "system": "https://www.zetlab.ch/fhir/category",
+                "code": "MIBI",
+                "display": "Mikrobiologie"
+              }
+            ]
+          }
+        ],
+        "kind": "ServiceRequest",
+        "code": {
+          "coding": [
+            {
+              "extension": [
+                {
+                  "url": "http://hl7.org/fhir/StructureDefinition/translation",
+                  "extension": [
+                    {
+                      "url": "lang",
+                      "valueCode": "de"
+                    },
+                    {
+                      "url": "content",
+                      "valueString": "Bakterielle Breitband-PCR"
+                    }
+                  ]
+                },
+                {
+                  "url": "http://hl7.org/fhir/StructureDefinition/translation",
+                  "extension": [
+                    {
+                      "url": "lang",
+                      "valueCode": "en"
+                    },
+                    {
+                      "url": "content",
+                      "valueString": "Bacterial broadband PCR"
+                    }
+                  ]
+                }
+              ],
+              "system": "https://www.zetlab.ch/lis/codes",
+              "code": "#BAKPAU",
+              "display": "Bakterielle Breitband-PCR"
+            }
+          ]
+        },
+        "location": {
+          "identifier": {
+            "system": "https://www.zetlab.ch/fhir/groups-observation",
+            "value": "RISCHMB"
+          }
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ActivityDefinition/actdef-BAKPAU"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "ObservationDefinition",
+        "id": "obsdef-BAKPAU",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.zetlab.ch/lis/codes",
+              "code": "obsdef-BAKPAU",
+              "display": "Bakterielle Breitband-PCR"
+            }
+          ],
+          "text": "Bakterielle Breitband-PCR"
+        },
+        "identifier": [
+          {
+            "system": "https://www.zetlab.ch/lis/codes",
+            "value": "#BAKPAU"
+          }
+        ],
+        "preferredReportName": "Bacterial broadband PCR"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ObservationDefinition/obsdef-BAKPAU"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "ActivityDefinition",
+        "id": "actdef-BOPAPBR",
+        "extension": [
+          {
+            "url": "https://www.zetlab.ch/fhir/StructureDefinition/minimal-volume-microliter",
+            "valueQuantity": {
+              "value": 230,
+              "unit": "µl",
+              "system": "http://unitsofmeasure.org",
+              "code": "uL"
+            }
+          },
+          {
+            "url": "https://www.zetlab.ch/StructureDefinition/specimen-definition",
+            "valueReference": {
+              "identifier": {
+                "system": "https://www.zetlab.ch/fhir/specimen",
+                "value": "AT"
+              }
+            }
+          }
+        ],
+        "url": "https://www.zetlab.ch/fhir/activity/BOPAPBR",
+        "subtitle": "Abstrich Bronch./Trachealsekret",
+        "status": "active",
+        "description": "Bordetella parapertussis",
+        "topic": [
+          {
+            "coding": [
+              {
+                "system": "https://www.zetlab.ch/fhir/category",
+                "code": "MIBI",
+                "display": "Mikrobiologie"
+              }
+            ]
+          }
+        ],
+        "kind": "ServiceRequest",
+        "code": {
+          "coding": [
+            {
+              "extension": [
+                {
+                  "url": "http://hl7.org/fhir/StructureDefinition/translation",
+                  "extension": [
+                    {
+                      "url": "lang",
+                      "valueCode": "de"
+                    },
+                    {
+                      "url": "content",
+                      "valueString": "Bordetella parapertussis"
+                    }
+                  ]
+                },
+                {
+                  "url": "http://hl7.org/fhir/StructureDefinition/translation",
+                  "extension": [
+                    {
+                      "url": "lang",
+                      "valueCode": "en"
+                    },
+                    {
+                      "url": "content",
+                      "valueString": "Bordetella parapertussis"
+                    }
+                  ]
+                }
+              ],
+              "system": "https://www.zetlab.ch/lis/codes",
+              "code": "#BOPAPBR",
+              "display": "Bordetella parapertussis"
+            }
+          ]
+        },
+        "location": {
+          "identifier": {
+            "system": "https://www.zetlab.ch/fhir/groups-observation",
+            "value": "RISCHMB"
+          }
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ActivityDefinition/actdef-BOPAPBR"
+      }
+    },
+    {
+      "resource": {
         "resourceType": "SpecimenDefinition",
-        "id": "specdef-60",
+        "id": "specdef-AT",
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/instance-url",
+            "valueUri": "https://www.zetlab.ch/fhir/specimen/AT"
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/resource-status",
+            "valueCode": "active"
+          }
+        ],
         "identifier": {
           "system": "https://www.zetlab.ch/fhir/specimen",
-          "value": "60"
+          "value": "AT"
         },
         "typeCollected": {
           "coding": [
             {
               "system": "https://www.zetlab.ch/fhir/specimen-types",
-              "code": "60",
-              "display": "Abstrich/Sekret"
+              "code": "AT",
+              "display": "Abstrich Bronch./Trachealsekret"
             },
             {
               "system": "http://snomed.info/sct",
               "code": "257261003",
-              "display": "Swab specimen (specimen)"
+              "display": "Swab specimen"
             }
           ],
-          "text": "Abstrich/Sekret"
+          "text": "Abstrich Bronch. / Trachealsekret"
         },
         "typeTested": [
           {
             "preference": "preferred",
             "container": {
-              "description": "Abstrich/Sekret"
+              "description": "Steriles Transportgefäss oder Abstrich-Transportmedium",
+              "minimumVolumeQuantity": {
+                "value": 0.5,
+                "unit": "mL",
+                "system": "http://unitsofmeasure.org",
+                "code": "mL"
+              }
+            },
+            "retentionTime": {
+              "value": 24,
+              "unit": "h",
+              "system": "http://unitsofmeasure.org",
+              "code": "h"
             },
             "rejectionCriterion": [
               {
@@ -181,7 +1232,7 @@
                     "display": "Insufficient quantity"
                   }
                 ],
-                "text": "Unzureichende Probenmenge"
+                "text": "Unzureichende Probenmenge; Probe länger als 24h bei Raumtemperatur"
               }
             ],
             "handling": [
@@ -196,75 +1247,19 @@
                   ],
                   "text": "Raumtemperatur"
                 },
-                "maxDuration": {
-                  "value": 24,
-                  "unit": "h",
-                  "system": "http://unitsofmeasure.org",
-                  "code": "h"
-                },
-                "instruction": "Schnellstmöglich ins Labor senden. Nicht einfrieren."
-              }
-            ]
-          }
-        ]
-      },
-      "request": {
-        "method": "PUT",
-        "url": "SpecimenDefinition/specdef-60"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "SpecimenDefinition",
-        "id": "specdef-56",
-        "identifier": {
-          "system": "https://www.zetlab.ch/fhir/specimen",
-          "value": "56"
-        },
-        "typeCollected": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/fhir/specimen-types",
-              "code": "56",
-              "display": "Blutkultur Peds Plus"
-            },
-            {
-              "system": "http://snomed.info/sct",
-              "code": "447154002",
-              "display": "Specimen from blood culture (specimen)"
-            }
-          ],
-          "text": "Blutkultur Peds Plus"
-        },
-        "typeTested": [
-          {
-            "preference": "preferred",
-            "container": {
-              "description": "Blutkultur Peds Plus"
-            },
-            "rejectionCriterion": [
-              {
-                "coding": [
-                  {
-                    "system": "http://terminology.hl7.org/CodeSystem/rejection-criteria",
-                    "code": "INSUFFICIENT",
-                    "display": "Insufficient quantity"
+                "temperatureRange": {
+                  "low": {
+                    "value": 15,
+                    "unit": "°C",
+                    "system": "http://unitsofmeasure.org",
+                    "code": "Cel"
+                  },
+                  "high": {
+                    "value": 25,
+                    "unit": "°C",
+                    "system": "http://unitsofmeasure.org",
+                    "code": "Cel"
                   }
-                ],
-                "text": "Unzureichende Probenmenge"
-              }
-            ],
-            "handling": [
-              {
-                "temperatureQualifier": {
-                  "coding": [
-                    {
-                      "system": "http://terminology.hl7.org/CodeSystem/handling-condition",
-                      "code": "room",
-                      "display": "Room Temperature"
-                    }
-                  ],
-                  "text": "Raumtemperatur"
                 },
                 "maxDuration": {
                   "value": 24,
@@ -272,7 +1267,7 @@
                   "system": "http://unitsofmeasure.org",
                   "code": "h"
                 },
-                "instruction": "Schnellstmöglich ins Labor senden. Nicht einfrieren."
+                "instruction": "Bei Raumtemperatur lagern. Innerhalb von 24h ins Labor senden. Nicht einfrieren."
               }
             ]
           }
@@ -280,295 +1275,13 @@
       },
       "request": {
         "method": "PUT",
-        "url": "SpecimenDefinition/specdef-56"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "SpecimenDefinition",
-        "id": "specdef-86",
-        "identifier": {
-          "system": "https://www.zetlab.ch/fhir/specimen",
-          "value": "86"
-        },
-        "typeCollected": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/fhir/specimen-types",
-              "code": "86",
-              "display": "Blutkultur I"
-            },
-            {
-              "system": "http://snomed.info/sct",
-              "code": "447154002",
-              "display": "Specimen from blood culture (specimen)"
-            }
-          ],
-          "text": "Blutkultur I"
-        },
-        "typeTested": [
-          {
-            "preference": "preferred",
-            "container": {
-              "description": "Blutkultur I"
-            },
-            "rejectionCriterion": [
-              {
-                "coding": [
-                  {
-                    "system": "http://terminology.hl7.org/CodeSystem/rejection-criteria",
-                    "code": "INSUFFICIENT",
-                    "display": "Insufficient quantity"
-                  }
-                ],
-                "text": "Unzureichende Probenmenge"
-              }
-            ],
-            "handling": [
-              {
-                "temperatureQualifier": {
-                  "coding": [
-                    {
-                      "system": "http://terminology.hl7.org/CodeSystem/handling-condition",
-                      "code": "room",
-                      "display": "Room Temperature"
-                    }
-                  ],
-                  "text": "Raumtemperatur"
-                },
-                "maxDuration": {
-                  "value": 24,
-                  "unit": "h",
-                  "system": "http://unitsofmeasure.org",
-                  "code": "h"
-                },
-                "instruction": "Schnellstmöglich ins Labor senden. Nicht einfrieren."
-              }
-            ]
-          }
-        ]
-      },
-      "request": {
-        "method": "PUT",
-        "url": "SpecimenDefinition/specdef-86"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "SpecimenDefinition",
-        "id": "specdef-14",
-        "identifier": {
-          "system": "https://www.zetlab.ch/fhir/specimen",
-          "value": "14"
-        },
-        "typeCollected": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/fhir/specimen-types",
-              "code": "14",
-              "display": "Fluorid-Plasma"
-            },
-            {
-              "system": "http://snomed.info/sct",
-              "code": "119361006",
-              "display": "Platelet poor plasma specimen (specimen)"
-            }
-          ],
-          "text": "Fluorid-Plasma"
-        },
-        "typeTested": [
-          {
-            "preference": "preferred",
-            "container": {
-              "description": "Fluorid-Plasma"
-            },
-            "rejectionCriterion": [
-              {
-                "coding": [
-                  {
-                    "system": "http://terminology.hl7.org/CodeSystem/rejection-criteria",
-                    "code": "INSUFFICIENT",
-                    "display": "Insufficient quantity"
-                  }
-                ],
-                "text": "Unzureichende Probenmenge"
-              }
-            ],
-            "handling": [
-              {
-                "temperatureQualifier": {
-                  "coding": [
-                    {
-                      "system": "http://terminology.hl7.org/CodeSystem/handling-condition",
-                      "code": "room",
-                      "display": "Room Temperature"
-                    }
-                  ],
-                  "text": "Raumtemperatur"
-                },
-                "maxDuration": {
-                  "value": 24,
-                  "unit": "h",
-                  "system": "http://unitsofmeasure.org",
-                  "code": "h"
-                },
-                "instruction": "Schnellstmöglich ins Labor senden. Nicht einfrieren."
-              }
-            ]
-          }
-        ]
-      },
-      "request": {
-        "method": "PUT",
-        "url": "SpecimenDefinition/specdef-14"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "SpecimenDefinition",
-        "id": "specdef-01",
-        "identifier": {
-          "system": "https://www.zetlab.ch/fhir/specimen",
-          "value": "01"
-        },
-        "typeCollected": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/fhir/specimen-types",
-              "code": "01",
-              "display": "Serum"
-            },
-            {
-              "system": "http://snomed.info/sct",
-              "code": "119364003",
-              "display": "Serum specimen (specimen)"
-            }
-          ],
-          "text": "Serum"
-        },
-        "typeTested": [
-          {
-            "preference": "preferred",
-            "container": {
-              "description": "Serum"
-            },
-            "rejectionCriterion": [
-              {
-                "coding": [
-                  {
-                    "system": "http://terminology.hl7.org/CodeSystem/rejection-criteria",
-                    "code": "INSUFFICIENT",
-                    "display": "Insufficient quantity"
-                  }
-                ],
-                "text": "Unzureichende Probenmenge"
-              }
-            ],
-            "handling": [
-              {
-                "temperatureQualifier": {
-                  "coding": [
-                    {
-                      "system": "http://terminology.hl7.org/CodeSystem/handling-condition",
-                      "code": "room",
-                      "display": "Room Temperature"
-                    }
-                  ],
-                  "text": "Raumtemperatur"
-                },
-                "maxDuration": {
-                  "value": 24,
-                  "unit": "h",
-                  "system": "http://unitsofmeasure.org",
-                  "code": "h"
-                },
-                "instruction": "Schnellstmöglich ins Labor senden. Nicht einfrieren."
-              }
-            ]
-          }
-        ]
-      },
-      "request": {
-        "method": "PUT",
-        "url": "SpecimenDefinition/specdef-01"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "ActivityDefinition",
-        "id": "actdef-CRP",
-        "extension": [
-          {
-            "url": "https://www.zetlab.ch/fhir/StructureDefinition/minimal-volume-microliter",
-            "valueQuantity": {
-              "value": 230,
-              "unit": "µl",
-              "system": "http://unitsofmeasure.org",
-              "code": "uL"
-            }
-          },
-          {
-            "url": "https://www.zetlab.ch/StructureDefinition/specimen-definition",
-            "valueReference": {
-              "identifier": {
-                "system": "https://www.zetlab.ch/fhir/specimen",
-                "value": "01"
-              }
-            }
-          }
-        ],
-        "url": "https://www.zetlab.ch/fhir/activity/CRP",
-        "subtitle": "CRP",
-        "status": "active",
-        "description": "Klinische Chemie",
-        "useContext": [
-          {
-            "code": {
-              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
-              "code": "facility"
-            },
-            "valueReference": {
-              "reference": "Organization/zlz"
-            }
-          }
-        ],
-        "topic": [
-          {
-            "coding": [
-              {
-                "system": "https://www.zetlab.ch/fhir/category",
-                "code": "Routine",
-                "display": "Routine"
-              }
-            ]
-          }
-        ],
-        "kind": "ServiceRequest",
-        "code": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/lis/codes",
-              "code": "CRP",
-              "display": "CRP"
-            }
-          ]
-        },
-        "location": {
-          "identifier": {
-            "system": "https://www.zetlab.ch/fhir/groups-observation",
-            "value": "KC"
-          }
-        }
-      },
-      "request": {
-        "method": "PUT",
-        "url": "ActivityDefinition/actdef-CRP"
+        "url": "SpecimenDefinition/specdef-AT"
       }
     },
     {
       "resource": {
         "resourceType": "ObservationDefinition",
-        "id": "obsdef-CRP",
+        "id": "obsdef-BOPAPBR",
         "category": [
           {
             "coding": [
@@ -584,2083 +1297,23 @@
           "coding": [
             {
               "system": "https://www.zetlab.ch/lis/codes",
-              "code": "CRP",
-              "display": "CRP"
+              "code": "obsdef-BOPAPBR",
+              "display": "Bordetella parapertussis"
             }
           ],
-          "text": "CRP"
+          "text": "Bordetella parapertussis"
         },
         "identifier": [
           {
             "system": "https://www.zetlab.ch/lis/codes",
-            "value": "CRP"
+            "value": "#BOPAPBR"
           }
         ],
-        "preferredReportName": "CRP"
+        "preferredReportName": "Bordetella parapertussis"
       },
       "request": {
         "method": "PUT",
-        "url": "ObservationDefinition/obsdef-CRP"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "ActivityDefinition",
-        "id": "actdef-TSH",
-        "extension": [
-          {
-            "url": "https://www.zetlab.ch/fhir/StructureDefinition/minimal-volume-microliter",
-            "valueQuantity": {
-              "value": 230,
-              "unit": "µl",
-              "system": "http://unitsofmeasure.org",
-              "code": "uL"
-            }
-          },
-          {
-            "url": "https://www.zetlab.ch/StructureDefinition/specimen-definition",
-            "valueReference": {
-              "identifier": {
-                "system": "https://www.zetlab.ch/fhir/specimen",
-                "value": "01"
-              }
-            }
-          }
-        ],
-        "url": "https://www.zetlab.ch/fhir/activity/TSH",
-        "subtitle": "TSH basal",
-        "status": "active",
-        "description": "Klinische Chemie",
-        "useContext": [
-          {
-            "code": {
-              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
-              "code": "facility"
-            },
-            "valueReference": {
-              "reference": "Organization/zlz"
-            }
-          }
-        ],
-        "topic": [
-          {
-            "coding": [
-              {
-                "system": "https://www.zetlab.ch/fhir/category",
-                "code": "Routine",
-                "display": "Routine"
-              }
-            ]
-          }
-        ],
-        "kind": "ServiceRequest",
-        "code": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/lis/codes",
-              "code": "TSH",
-              "display": "TSH basal"
-            }
-          ]
-        },
-        "location": {
-          "identifier": {
-            "system": "https://www.zetlab.ch/fhir/groups-observation",
-            "value": "KC"
-          }
-        }
-      },
-      "request": {
-        "method": "PUT",
-        "url": "ActivityDefinition/actdef-TSH"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "ObservationDefinition",
-        "id": "obsdef-TSH",
-        "category": [
-          {
-            "coding": [
-              {
-                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
-                "code": "laboratory",
-                "display": "Laboratory"
-              }
-            ]
-          }
-        ],
-        "code": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/lis/codes",
-              "code": "TSH",
-              "display": "TSH basal"
-            }
-          ],
-          "text": "TSH basal"
-        },
-        "identifier": [
-          {
-            "system": "https://www.zetlab.ch/lis/codes",
-            "value": "TSH"
-          }
-        ],
-        "preferredReportName": "TSH basal"
-      },
-      "request": {
-        "method": "PUT",
-        "url": "ObservationDefinition/obsdef-TSH"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "ActivityDefinition",
-        "id": "actdef-KREA",
-        "extension": [
-          {
-            "url": "https://www.zetlab.ch/fhir/StructureDefinition/minimal-volume-microliter",
-            "valueQuantity": {
-              "value": 230,
-              "unit": "µl",
-              "system": "http://unitsofmeasure.org",
-              "code": "uL"
-            }
-          },
-          {
-            "url": "https://www.zetlab.ch/StructureDefinition/specimen-definition",
-            "valueReference": {
-              "identifier": {
-                "system": "https://www.zetlab.ch/fhir/specimen",
-                "value": "01"
-              }
-            }
-          }
-        ],
-        "url": "https://www.zetlab.ch/fhir/activity/KREA",
-        "subtitle": "Kreatinin (inkl. eGFR)",
-        "status": "active",
-        "description": "Klinische Chemie",
-        "useContext": [
-          {
-            "code": {
-              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
-              "code": "facility"
-            },
-            "valueReference": {
-              "reference": "Organization/zlz"
-            }
-          }
-        ],
-        "topic": [
-          {
-            "coding": [
-              {
-                "system": "https://www.zetlab.ch/fhir/category",
-                "code": "Routine",
-                "display": "Routine"
-              }
-            ]
-          }
-        ],
-        "kind": "ServiceRequest",
-        "code": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/lis/codes",
-              "code": "KREA",
-              "display": "Kreatinin (inkl. eGFR)"
-            }
-          ]
-        },
-        "location": {
-          "identifier": {
-            "system": "https://www.zetlab.ch/fhir/groups-observation",
-            "value": "KC"
-          }
-        }
-      },
-      "request": {
-        "method": "PUT",
-        "url": "ActivityDefinition/actdef-KREA"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "ObservationDefinition",
-        "id": "obsdef-KREA",
-        "category": [
-          {
-            "coding": [
-              {
-                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
-                "code": "laboratory",
-                "display": "Laboratory"
-              }
-            ]
-          }
-        ],
-        "code": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/lis/codes",
-              "code": "KREA",
-              "display": "Kreatinin (inkl. eGFR)"
-            }
-          ],
-          "text": "Kreatinin (inkl. eGFR)"
-        },
-        "identifier": [
-          {
-            "system": "https://www.zetlab.ch/lis/codes",
-            "value": "KREA"
-          }
-        ],
-        "preferredReportName": "Creatinine (including eGFR)"
-      },
-      "request": {
-        "method": "PUT",
-        "url": "ObservationDefinition/obsdef-KREA"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "ActivityDefinition",
-        "id": "actdef-FERR",
-        "extension": [
-          {
-            "url": "https://www.zetlab.ch/fhir/StructureDefinition/minimal-volume-microliter",
-            "valueQuantity": {
-              "value": 230,
-              "unit": "µl",
-              "system": "http://unitsofmeasure.org",
-              "code": "uL"
-            }
-          },
-          {
-            "url": "https://www.zetlab.ch/StructureDefinition/specimen-definition",
-            "valueReference": {
-              "identifier": {
-                "system": "https://www.zetlab.ch/fhir/specimen",
-                "value": "01"
-              }
-            }
-          }
-        ],
-        "url": "https://www.zetlab.ch/fhir/activity/FERR",
-        "subtitle": "Ferritin",
-        "status": "active",
-        "description": "Klinische Chemie",
-        "useContext": [
-          {
-            "code": {
-              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
-              "code": "facility"
-            },
-            "valueReference": {
-              "reference": "Organization/zlz"
-            }
-          }
-        ],
-        "topic": [
-          {
-            "coding": [
-              {
-                "system": "https://www.zetlab.ch/fhir/category",
-                "code": "Routine",
-                "display": "Routine"
-              }
-            ]
-          }
-        ],
-        "kind": "ServiceRequest",
-        "code": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/lis/codes",
-              "code": "FERR",
-              "display": "Ferritin"
-            }
-          ]
-        },
-        "location": {
-          "identifier": {
-            "system": "https://www.zetlab.ch/fhir/groups-observation",
-            "value": "KC"
-          }
-        }
-      },
-      "request": {
-        "method": "PUT",
-        "url": "ActivityDefinition/actdef-FERR"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "ObservationDefinition",
-        "id": "obsdef-FERR",
-        "category": [
-          {
-            "coding": [
-              {
-                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
-                "code": "laboratory",
-                "display": "Laboratory"
-              }
-            ]
-          }
-        ],
-        "code": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/lis/codes",
-              "code": "FERR",
-              "display": "Ferritin"
-            }
-          ],
-          "text": "Ferritin"
-        },
-        "identifier": [
-          {
-            "system": "https://www.zetlab.ch/lis/codes",
-            "value": "FERR"
-          }
-        ],
-        "preferredReportName": "Ferritin"
-      },
-      "request": {
-        "method": "PUT",
-        "url": "ObservationDefinition/obsdef-FERR"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "ActivityDefinition",
-        "id": "actdef-PCT",
-        "extension": [
-          {
-            "url": "https://www.zetlab.ch/fhir/StructureDefinition/minimal-volume-microliter",
-            "valueQuantity": {
-              "value": 230,
-              "unit": "µl",
-              "system": "http://unitsofmeasure.org",
-              "code": "uL"
-            }
-          },
-          {
-            "url": "https://www.zetlab.ch/StructureDefinition/specimen-definition",
-            "valueReference": {
-              "identifier": {
-                "system": "https://www.zetlab.ch/fhir/specimen",
-                "value": "01"
-              }
-            }
-          }
-        ],
-        "url": "https://www.zetlab.ch/fhir/activity/PCT",
-        "subtitle": "Procalcitonin",
-        "status": "active",
-        "description": "Klinische Chemie",
-        "useContext": [
-          {
-            "code": {
-              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
-              "code": "facility"
-            },
-            "valueReference": {
-              "reference": "Organization/zlz"
-            }
-          }
-        ],
-        "topic": [
-          {
-            "coding": [
-              {
-                "system": "https://www.zetlab.ch/fhir/category",
-                "code": "Routine",
-                "display": "Routine"
-              }
-            ]
-          }
-        ],
-        "kind": "ServiceRequest",
-        "code": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/lis/codes",
-              "code": "PCT",
-              "display": "Procalcitonin"
-            }
-          ]
-        },
-        "location": {
-          "identifier": {
-            "system": "https://www.zetlab.ch/fhir/groups-observation",
-            "value": "KC"
-          }
-        }
-      },
-      "request": {
-        "method": "PUT",
-        "url": "ActivityDefinition/actdef-PCT"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "ObservationDefinition",
-        "id": "obsdef-PCT",
-        "category": [
-          {
-            "coding": [
-              {
-                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
-                "code": "laboratory",
-                "display": "Laboratory"
-              }
-            ]
-          }
-        ],
-        "code": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/lis/codes",
-              "code": "PCT",
-              "display": "Procalcitonin"
-            }
-          ],
-          "text": "Procalcitonin"
-        },
-        "identifier": [
-          {
-            "system": "https://www.zetlab.ch/lis/codes",
-            "value": "PCT"
-          }
-        ],
-        "preferredReportName": "Procalcitonin"
-      },
-      "request": {
-        "method": "PUT",
-        "url": "ObservationDefinition/obsdef-PCT"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "ActivityDefinition",
-        "id": "actdef-CHOL",
-        "extension": [
-          {
-            "url": "https://www.zetlab.ch/fhir/StructureDefinition/minimal-volume-microliter",
-            "valueQuantity": {
-              "value": 230,
-              "unit": "µl",
-              "system": "http://unitsofmeasure.org",
-              "code": "uL"
-            }
-          },
-          {
-            "url": "https://www.zetlab.ch/StructureDefinition/specimen-definition",
-            "valueReference": {
-              "identifier": {
-                "system": "https://www.zetlab.ch/fhir/specimen",
-                "value": "01"
-              }
-            }
-          }
-        ],
-        "url": "https://www.zetlab.ch/fhir/activity/CHOL",
-        "subtitle": "Cholesterin",
-        "status": "active",
-        "description": "Klinische Chemie",
-        "useContext": [
-          {
-            "code": {
-              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
-              "code": "facility"
-            },
-            "valueReference": {
-              "reference": "Organization/zlz"
-            }
-          }
-        ],
-        "topic": [
-          {
-            "coding": [
-              {
-                "system": "https://www.zetlab.ch/fhir/category",
-                "code": "Routine",
-                "display": "Routine"
-              }
-            ]
-          }
-        ],
-        "kind": "ServiceRequest",
-        "code": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/lis/codes",
-              "code": "CHOL",
-              "display": "Cholesterin"
-            }
-          ]
-        },
-        "location": {
-          "identifier": {
-            "system": "https://www.zetlab.ch/fhir/groups-observation",
-            "value": "KC"
-          }
-        }
-      },
-      "request": {
-        "method": "PUT",
-        "url": "ActivityDefinition/actdef-CHOL"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "ObservationDefinition",
-        "id": "obsdef-CHOL",
-        "category": [
-          {
-            "coding": [
-              {
-                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
-                "code": "laboratory",
-                "display": "Laboratory"
-              }
-            ]
-          }
-        ],
-        "code": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/lis/codes",
-              "code": "CHOL",
-              "display": "Cholesterin"
-            }
-          ],
-          "text": "Cholesterin"
-        },
-        "identifier": [
-          {
-            "system": "https://www.zetlab.ch/lis/codes",
-            "value": "CHOL"
-          }
-        ],
-        "preferredReportName": "Cholesterol"
-      },
-      "request": {
-        "method": "PUT",
-        "url": "ObservationDefinition/obsdef-CHOL"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "ActivityDefinition",
-        "id": "actdef-TRIG",
-        "extension": [
-          {
-            "url": "https://www.zetlab.ch/fhir/StructureDefinition/minimal-volume-microliter",
-            "valueQuantity": {
-              "value": 230,
-              "unit": "µl",
-              "system": "http://unitsofmeasure.org",
-              "code": "uL"
-            }
-          },
-          {
-            "url": "https://www.zetlab.ch/StructureDefinition/specimen-definition",
-            "valueReference": {
-              "identifier": {
-                "system": "https://www.zetlab.ch/fhir/specimen",
-                "value": "01"
-              }
-            }
-          }
-        ],
-        "url": "https://www.zetlab.ch/fhir/activity/TRIG",
-        "subtitle": "Triglyceride",
-        "status": "active",
-        "description": "Klinische Chemie",
-        "useContext": [
-          {
-            "code": {
-              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
-              "code": "facility"
-            },
-            "valueReference": {
-              "reference": "Organization/zlz"
-            }
-          }
-        ],
-        "topic": [
-          {
-            "coding": [
-              {
-                "system": "https://www.zetlab.ch/fhir/category",
-                "code": "Routine",
-                "display": "Routine"
-              }
-            ]
-          }
-        ],
-        "kind": "ServiceRequest",
-        "code": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/lis/codes",
-              "code": "TRIG",
-              "display": "Triglyceride"
-            }
-          ]
-        },
-        "location": {
-          "identifier": {
-            "system": "https://www.zetlab.ch/fhir/groups-observation",
-            "value": "KC"
-          }
-        }
-      },
-      "request": {
-        "method": "PUT",
-        "url": "ActivityDefinition/actdef-TRIG"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "ObservationDefinition",
-        "id": "obsdef-TRIG",
-        "category": [
-          {
-            "coding": [
-              {
-                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
-                "code": "laboratory",
-                "display": "Laboratory"
-              }
-            ]
-          }
-        ],
-        "code": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/lis/codes",
-              "code": "TRIG",
-              "display": "Triglyceride"
-            }
-          ],
-          "text": "Triglyceride"
-        },
-        "identifier": [
-          {
-            "system": "https://www.zetlab.ch/lis/codes",
-            "value": "TRIG"
-          }
-        ],
-        "preferredReportName": "Triglycerides"
-      },
-      "request": {
-        "method": "PUT",
-        "url": "ObservationDefinition/obsdef-TRIG"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "ActivityDefinition",
-        "id": "actdef-GLUCS",
-        "extension": [
-          {
-            "url": "https://www.zetlab.ch/fhir/StructureDefinition/minimal-volume-microliter",
-            "valueQuantity": {
-              "value": 230,
-              "unit": "µl",
-              "system": "http://unitsofmeasure.org",
-              "code": "uL"
-            }
-          },
-          {
-            "url": "https://www.zetlab.ch/StructureDefinition/specimen-definition",
-            "valueReference": {
-              "identifier": {
-                "system": "https://www.zetlab.ch/fhir/specimen",
-                "value": "01"
-              }
-            }
-          }
-        ],
-        "url": "https://www.zetlab.ch/fhir/activity/GLUCS",
-        "subtitle": "Glucose (Serum)",
-        "status": "active",
-        "description": "Klinische Chemie",
-        "useContext": [
-          {
-            "code": {
-              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
-              "code": "facility"
-            },
-            "valueReference": {
-              "reference": "Organization/zlz"
-            }
-          }
-        ],
-        "topic": [
-          {
-            "coding": [
-              {
-                "system": "https://www.zetlab.ch/fhir/category",
-                "code": "Routine",
-                "display": "Routine"
-              }
-            ]
-          }
-        ],
-        "kind": "ServiceRequest",
-        "code": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/lis/codes",
-              "code": "GLUCS",
-              "display": "Glucose (Serum)"
-            }
-          ]
-        },
-        "location": {
-          "identifier": {
-            "system": "https://www.zetlab.ch/fhir/groups-observation",
-            "value": "KC"
-          }
-        }
-      },
-      "request": {
-        "method": "PUT",
-        "url": "ActivityDefinition/actdef-GLUCS"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "ObservationDefinition",
-        "id": "obsdef-GLUCS",
-        "category": [
-          {
-            "coding": [
-              {
-                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
-                "code": "laboratory",
-                "display": "Laboratory"
-              }
-            ]
-          }
-        ],
-        "code": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/lis/codes",
-              "code": "GLUCS",
-              "display": "Glucose (Serum)"
-            }
-          ],
-          "text": "Glucose (Serum)"
-        },
-        "identifier": [
-          {
-            "system": "https://www.zetlab.ch/lis/codes",
-            "value": "GLUCS"
-          }
-        ],
-        "preferredReportName": "Glucose (Serum)"
-      },
-      "request": {
-        "method": "PUT",
-        "url": "ObservationDefinition/obsdef-GLUCS"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "ActivityDefinition",
-        "id": "actdef-GLUCF",
-        "extension": [
-          {
-            "url": "https://www.zetlab.ch/fhir/StructureDefinition/minimal-volume-microliter",
-            "valueQuantity": {
-              "value": 230,
-              "unit": "µl",
-              "system": "http://unitsofmeasure.org",
-              "code": "uL"
-            }
-          },
-          {
-            "url": "https://www.zetlab.ch/StructureDefinition/specimen-definition",
-            "valueReference": {
-              "identifier": {
-                "system": "https://www.zetlab.ch/fhir/specimen",
-                "value": "14"
-              }
-            }
-          }
-        ],
-        "url": "https://www.zetlab.ch/fhir/activity/GLUCF",
-        "subtitle": "Glucose (Fluorid)",
-        "status": "active",
-        "description": "Klinische Chemie",
-        "useContext": [
-          {
-            "code": {
-              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
-              "code": "facility"
-            },
-            "valueReference": {
-              "reference": "Organization/zlz"
-            }
-          }
-        ],
-        "topic": [
-          {
-            "coding": [
-              {
-                "system": "https://www.zetlab.ch/fhir/category",
-                "code": "Routine",
-                "display": "Routine"
-              }
-            ]
-          }
-        ],
-        "kind": "ServiceRequest",
-        "code": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/lis/codes",
-              "code": "GLUCF",
-              "display": "Glucose (Fluorid)"
-            }
-          ]
-        },
-        "location": {
-          "identifier": {
-            "system": "https://www.zetlab.ch/fhir/groups-observation",
-            "value": "KC"
-          }
-        }
-      },
-      "request": {
-        "method": "PUT",
-        "url": "ActivityDefinition/actdef-GLUCF"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "ObservationDefinition",
-        "id": "obsdef-GLUCF",
-        "category": [
-          {
-            "coding": [
-              {
-                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
-                "code": "laboratory",
-                "display": "Laboratory"
-              }
-            ]
-          }
-        ],
-        "code": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/lis/codes",
-              "code": "GLUCF",
-              "display": "Glucose (Fluorid)"
-            }
-          ],
-          "text": "Glucose (Fluorid)"
-        },
-        "identifier": [
-          {
-            "system": "https://www.zetlab.ch/lis/codes",
-            "value": "GLUCF"
-          }
-        ],
-        "preferredReportName": "Glucose (fluoride)"
-      },
-      "request": {
-        "method": "PUT",
-        "url": "ObservationDefinition/obsdef-GLUCF"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "ActivityDefinition",
-        "id": "actdef-ABORH",
-        "extension": [
-          {
-            "url": "https://www.zetlab.ch/StructureDefinition/specimen-definition",
-            "valueReference": {
-              "identifier": {
-                "system": "https://www.zetlab.ch/fhir/specimen",
-                "value": "01"
-              }
-            }
-          }
-        ],
-        "url": "https://www.zetlab.ch/fhir/activity/ABORH",
-        "subtitle": "ABO/RhD-Bestimmung",
-        "status": "active",
-        "description": "Blutbild",
-        "useContext": [
-          {
-            "code": {
-              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
-              "code": "facility"
-            },
-            "valueReference": {
-              "reference": "Organization/zlz"
-            }
-          }
-        ],
-        "topic": [
-          {
-            "coding": [
-              {
-                "system": "https://www.zetlab.ch/fhir/category",
-                "code": "Routine",
-                "display": "Routine"
-              }
-            ]
-          }
-        ],
-        "kind": "ServiceRequest",
-        "code": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/lis/codes",
-              "code": "*ABORH",
-              "display": "ABO/RhD-Bestimmung"
-            }
-          ]
-        },
-        "location": {
-          "identifier": {
-            "system": "https://www.zetlab.ch/fhir/groups-observation",
-            "value": "BB"
-          }
-        }
-      },
-      "request": {
-        "method": "PUT",
-        "url": "ActivityDefinition/actdef-ABORH"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "ObservationDefinition",
-        "id": "obsdef-ABORH",
-        "category": [
-          {
-            "coding": [
-              {
-                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
-                "code": "laboratory",
-                "display": "Laboratory"
-              }
-            ]
-          }
-        ],
-        "code": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/lis/codes",
-              "code": "*ABORH",
-              "display": "ABO/RhD-Bestimmung"
-            }
-          ],
-          "text": "ABO/RhD-Bestimmung"
-        },
-        "identifier": [
-          {
-            "system": "https://www.zetlab.ch/lis/codes",
-            "value": "*ABORH"
-          }
-        ],
-        "preferredReportName": "ABO / RhD determination"
-      },
-      "request": {
-        "method": "PUT",
-        "url": "ObservationDefinition/obsdef-ABORH"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "ActivityDefinition",
-        "id": "actdef-BKAE",
-        "extension": [
-          {
-            "url": "https://www.zetlab.ch/fhir/StructureDefinition/minimal-volume-microliter",
-            "valueQuantity": {
-              "value": 230,
-              "unit": "µl",
-              "system": "http://unitsofmeasure.org",
-              "code": "uL"
-            }
-          },
-          {
-            "url": "https://www.zetlab.ch/StructureDefinition/specimen-definition",
-            "valueReference": {
-              "identifier": {
-                "system": "https://www.zetlab.ch/fhir/specimen",
-                "value": "86"
-              }
-            }
-          }
-        ],
-        "url": "https://www.zetlab.ch/fhir/activity/BKAE",
-        "subtitle": "'Blutkultur aerob",
-        "status": "active",
-        "description": "Bakteriologie / Mykologie",
-        "useContext": [
-          {
-            "code": {
-              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
-              "code": "facility"
-            },
-            "valueReference": {
-              "reference": "Organization/zlz"
-            }
-          }
-        ],
-        "topic": [
-          {
-            "coding": [
-              {
-                "system": "https://www.zetlab.ch/fhir/category",
-                "code": "MIBI",
-                "display": "Mikrobiologie"
-              }
-            ]
-          }
-        ],
-        "kind": "ServiceRequest",
-        "code": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/lis/codes",
-              "code": "BKAE",
-              "display": "'Blutkultur aerob"
-            }
-          ]
-        },
-        "location": {
-          "identifier": {
-            "system": "https://www.zetlab.ch/fhir/groups-observation",
-            "value": "BAK/MYKO"
-          }
-        }
-      },
-      "request": {
-        "method": "PUT",
-        "url": "ActivityDefinition/actdef-BKAE"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "ObservationDefinition",
-        "id": "obsdef-BKAE",
-        "category": [
-          {
-            "coding": [
-              {
-                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
-                "code": "laboratory",
-                "display": "Laboratory"
-              }
-            ]
-          }
-        ],
-        "code": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/lis/codes",
-              "code": "BKAE",
-              "display": "'Blutkultur aerob"
-            }
-          ],
-          "text": "'Blutkultur aerob"
-        },
-        "identifier": [
-          {
-            "system": "https://www.zetlab.ch/lis/codes",
-            "value": "BKAE"
-          }
-        ],
-        "preferredReportName": "'Blood culture aerob"
-      },
-      "request": {
-        "method": "PUT",
-        "url": "ObservationDefinition/obsdef-BKAE"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "ActivityDefinition",
-        "id": "actdef-BKAN",
-        "extension": [
-          {
-            "url": "https://www.zetlab.ch/fhir/StructureDefinition/minimal-volume-microliter",
-            "valueQuantity": {
-              "value": 230,
-              "unit": "µl",
-              "system": "http://unitsofmeasure.org",
-              "code": "uL"
-            }
-          },
-          {
-            "url": "https://www.zetlab.ch/StructureDefinition/specimen-definition",
-            "valueReference": {
-              "identifier": {
-                "system": "https://www.zetlab.ch/fhir/specimen",
-                "value": "86"
-              }
-            }
-          }
-        ],
-        "url": "https://www.zetlab.ch/fhir/activity/BKAN",
-        "subtitle": "'Blutkultur anaerob",
-        "status": "active",
-        "description": "Bakteriologie / Mykologie",
-        "useContext": [
-          {
-            "code": {
-              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
-              "code": "facility"
-            },
-            "valueReference": {
-              "reference": "Organization/zlz"
-            }
-          }
-        ],
-        "topic": [
-          {
-            "coding": [
-              {
-                "system": "https://www.zetlab.ch/fhir/category",
-                "code": "MIBI",
-                "display": "Mikrobiologie"
-              }
-            ]
-          }
-        ],
-        "kind": "ServiceRequest",
-        "code": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/lis/codes",
-              "code": "BKAN",
-              "display": "'Blutkultur anaerob"
-            }
-          ]
-        },
-        "location": {
-          "identifier": {
-            "system": "https://www.zetlab.ch/fhir/groups-observation",
-            "value": "BAK/MYKO"
-          }
-        }
-      },
-      "request": {
-        "method": "PUT",
-        "url": "ActivityDefinition/actdef-BKAN"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "ObservationDefinition",
-        "id": "obsdef-BKAN",
-        "category": [
-          {
-            "coding": [
-              {
-                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
-                "code": "laboratory",
-                "display": "Laboratory"
-              }
-            ]
-          }
-        ],
-        "code": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/lis/codes",
-              "code": "BKAN",
-              "display": "'Blutkultur anaerob"
-            }
-          ],
-          "text": "'Blutkultur anaerob"
-        },
-        "identifier": [
-          {
-            "system": "https://www.zetlab.ch/lis/codes",
-            "value": "BKAN"
-          }
-        ],
-        "preferredReportName": "'Blood culture anaerob"
-      },
-      "request": {
-        "method": "PUT",
-        "url": "ObservationDefinition/obsdef-BKAN"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "ActivityDefinition",
-        "id": "actdef-BKKULT",
-        "extension": [
-          {
-            "url": "https://www.zetlab.ch/fhir/StructureDefinition/minimal-volume-microliter",
-            "valueQuantity": {
-              "value": 230,
-              "unit": "µl",
-              "system": "http://unitsofmeasure.org",
-              "code": "uL"
-            }
-          },
-          {
-            "url": "https://www.zetlab.ch/StructureDefinition/specimen-definition",
-            "valueReference": {
-              "identifier": {
-                "system": "https://www.zetlab.ch/fhir/specimen",
-                "value": "86"
-              }
-            }
-          }
-        ],
-        "url": "https://www.zetlab.ch/fhir/activity/BKKULT",
-        "subtitle": "'Blutkultur aerob + anaerob",
-        "status": "active",
-        "description": "Bakteriologie / Mykologie",
-        "useContext": [
-          {
-            "code": {
-              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
-              "code": "facility"
-            },
-            "valueReference": {
-              "reference": "Organization/zlz"
-            }
-          }
-        ],
-        "topic": [
-          {
-            "coding": [
-              {
-                "system": "https://www.zetlab.ch/fhir/category",
-                "code": "MIBI",
-                "display": "Mikrobiologie"
-              }
-            ]
-          }
-        ],
-        "kind": "ServiceRequest",
-        "code": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/lis/codes",
-              "code": "BKKULT",
-              "display": "'Blutkultur aerob + anaerob"
-            }
-          ]
-        },
-        "location": {
-          "identifier": {
-            "system": "https://www.zetlab.ch/fhir/groups-observation",
-            "value": "BAK/MYKO"
-          }
-        }
-      },
-      "request": {
-        "method": "PUT",
-        "url": "ActivityDefinition/actdef-BKKULT"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "ObservationDefinition",
-        "id": "obsdef-BKKULT",
-        "category": [
-          {
-            "coding": [
-              {
-                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
-                "code": "laboratory",
-                "display": "Laboratory"
-              }
-            ]
-          }
-        ],
-        "code": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/lis/codes",
-              "code": "BKKULT",
-              "display": "'Blutkultur aerob + anaerob"
-            }
-          ],
-          "text": "'Blutkultur aerob + anaerob"
-        },
-        "identifier": [
-          {
-            "system": "https://www.zetlab.ch/lis/codes",
-            "value": "BKKULT"
-          }
-        ],
-        "preferredReportName": "'Blood culture aerob + anaerob"
-      },
-      "request": {
-        "method": "PUT",
-        "url": "ObservationDefinition/obsdef-BKKULT"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "ActivityDefinition",
-        "id": "actdef-BKPED",
-        "extension": [
-          {
-            "url": "https://www.zetlab.ch/fhir/StructureDefinition/minimal-volume-microliter",
-            "valueQuantity": {
-              "value": 230,
-              "unit": "µl",
-              "system": "http://unitsofmeasure.org",
-              "code": "uL"
-            }
-          },
-          {
-            "url": "https://www.zetlab.ch/StructureDefinition/specimen-definition",
-            "valueReference": {
-              "identifier": {
-                "system": "https://www.zetlab.ch/fhir/specimen",
-                "value": "56"
-              }
-            }
-          }
-        ],
-        "url": "https://www.zetlab.ch/fhir/activity/BKPED",
-        "subtitle": "'Blutkultur Pediatric",
-        "status": "active",
-        "description": "Bakteriologie / Mykologie",
-        "useContext": [
-          {
-            "code": {
-              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
-              "code": "facility"
-            },
-            "valueReference": {
-              "reference": "Organization/zlz"
-            }
-          }
-        ],
-        "topic": [
-          {
-            "coding": [
-              {
-                "system": "https://www.zetlab.ch/fhir/category",
-                "code": "MIBI",
-                "display": "Mikrobiologie"
-              }
-            ]
-          }
-        ],
-        "kind": "ServiceRequest",
-        "code": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/lis/codes",
-              "code": "BKPED",
-              "display": "'Blutkultur Pediatric"
-            }
-          ]
-        },
-        "location": {
-          "identifier": {
-            "system": "https://www.zetlab.ch/fhir/groups-observation",
-            "value": "BAK/MYKO"
-          }
-        }
-      },
-      "request": {
-        "method": "PUT",
-        "url": "ActivityDefinition/actdef-BKPED"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "ObservationDefinition",
-        "id": "obsdef-BKPED",
-        "category": [
-          {
-            "coding": [
-              {
-                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
-                "code": "laboratory",
-                "display": "Laboratory"
-              }
-            ]
-          }
-        ],
-        "code": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/lis/codes",
-              "code": "BKPED",
-              "display": "'Blutkultur Pediatric"
-            }
-          ],
-          "text": "'Blutkultur Pediatric"
-        },
-        "identifier": [
-          {
-            "system": "https://www.zetlab.ch/lis/codes",
-            "value": "BKPED"
-          }
-        ],
-        "preferredReportName": "'Blood culture pediatric"
-      },
-      "request": {
-        "method": "PUT",
-        "url": "ObservationDefinition/obsdef-BKPED"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "ActivityDefinition",
-        "id": "actdef-ADVRSP",
-        "extension": [
-          {
-            "url": "https://www.zetlab.ch/fhir/StructureDefinition/minimal-volume-microliter",
-            "valueQuantity": {
-              "value": 230,
-              "unit": "µl",
-              "system": "http://unitsofmeasure.org",
-              "code": "uL"
-            }
-          },
-          {
-            "url": "https://www.zetlab.ch/StructureDefinition/specimen-definition",
-            "valueReference": {
-              "identifier": {
-                "system": "https://www.zetlab.ch/fhir/specimen",
-                "value": "60"
-              }
-            }
-          }
-        ],
-        "url": "https://www.zetlab.ch/fhir/activity/ADVRSP",
-        "subtitle": "'Adenovirus",
-        "status": "active",
-        "description": "Bakteriologie / Mykologie",
-        "useContext": [
-          {
-            "code": {
-              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
-              "code": "facility"
-            },
-            "valueReference": {
-              "reference": "Organization/zlz"
-            }
-          }
-        ],
-        "topic": [
-          {
-            "coding": [
-              {
-                "system": "https://www.zetlab.ch/fhir/category",
-                "code": "MIBI",
-                "display": "Mikrobiologie"
-              }
-            ]
-          }
-        ],
-        "kind": "ServiceRequest",
-        "code": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/lis/codes",
-              "code": "ADVRSP",
-              "display": "'Adenovirus"
-            }
-          ]
-        },
-        "location": {
-          "identifier": {
-            "system": "https://www.zetlab.ch/fhir/groups-observation",
-            "value": "BAK/MYKO"
-          }
-        }
-      },
-      "request": {
-        "method": "PUT",
-        "url": "ActivityDefinition/actdef-ADVRSP"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "ObservationDefinition",
-        "id": "obsdef-ADVRSP",
-        "category": [
-          {
-            "coding": [
-              {
-                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
-                "code": "laboratory",
-                "display": "Laboratory"
-              }
-            ]
-          }
-        ],
-        "code": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/lis/codes",
-              "code": "ADVRSP",
-              "display": "'Adenovirus"
-            }
-          ],
-          "text": "'Adenovirus"
-        },
-        "identifier": [
-          {
-            "system": "https://www.zetlab.ch/lis/codes",
-            "value": "ADVRSP"
-          }
-        ]
-      },
-      "request": {
-        "method": "PUT",
-        "url": "ObservationDefinition/obsdef-ADVRSP"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "ActivityDefinition",
-        "id": "actdef-AREC",
-        "extension": [
-          {
-            "url": "https://www.zetlab.ch/fhir/StructureDefinition/minimal-volume-microliter",
-            "valueQuantity": {
-              "value": 230,
-              "unit": "µl",
-              "system": "http://unitsofmeasure.org",
-              "code": "uL"
-            }
-          },
-          {
-            "url": "https://www.zetlab.ch/StructureDefinition/specimen-definition",
-            "valueReference": {
-              "identifier": {
-                "system": "https://www.zetlab.ch/fhir/specimen",
-                "value": "60"
-              }
-            }
-          }
-        ],
-        "url": "https://www.zetlab.ch/fhir/activity/AREC",
-        "subtitle": "Rektovaginal",
-        "status": "active",
-        "description": "Bakteriologie / Mykologie",
-        "useContext": [
-          {
-            "code": {
-              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
-              "code": "facility"
-            },
-            "valueReference": {
-              "reference": "Organization/zlz"
-            }
-          }
-        ],
-        "topic": [
-          {
-            "coding": [
-              {
-                "system": "https://www.zetlab.ch/fhir/category",
-                "code": "MIBI",
-                "display": "Mikrobiologie"
-              }
-            ]
-          }
-        ],
-        "kind": "ServiceRequest",
-        "code": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/lis/codes",
-              "code": "AREC",
-              "display": "Rektovaginal"
-            }
-          ]
-        },
-        "location": {
-          "identifier": {
-            "system": "https://www.zetlab.ch/fhir/groups-observation",
-            "value": "BAK/MYKO"
-          }
-        }
-      },
-      "request": {
-        "method": "PUT",
-        "url": "ActivityDefinition/actdef-AREC"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "ObservationDefinition",
-        "id": "obsdef-AREC",
-        "category": [
-          {
-            "coding": [
-              {
-                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
-                "code": "laboratory",
-                "display": "Laboratory"
-              }
-            ]
-          }
-        ],
-        "code": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/lis/codes",
-              "code": "AREC",
-              "display": "Rektovaginal"
-            }
-          ],
-          "text": "Rektovaginal"
-        },
-        "identifier": [
-          {
-            "system": "https://www.zetlab.ch/lis/codes",
-            "value": "AREC"
-          }
-        ],
-        "preferredReportName": "Rectovaginal"
-      },
-      "request": {
-        "method": "PUT",
-        "url": "ObservationDefinition/obsdef-AREC"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "ActivityDefinition",
-        "id": "actdef-RSVRSP",
-        "extension": [
-          {
-            "url": "https://www.zetlab.ch/fhir/StructureDefinition/minimal-volume-microliter",
-            "valueQuantity": {
-              "value": 230,
-              "unit": "µl",
-              "system": "http://unitsofmeasure.org",
-              "code": "uL"
-            }
-          },
-          {
-            "url": "https://www.zetlab.ch/StructureDefinition/specimen-definition",
-            "valueReference": {
-              "identifier": {
-                "system": "https://www.zetlab.ch/fhir/specimen",
-                "value": "60"
-              }
-            }
-          }
-        ],
-        "url": "https://www.zetlab.ch/fhir/activity/RSVRSP",
-        "subtitle": "'Respiratorisches Synzytial-Virus A/B",
-        "status": "active",
-        "description": "Bakteriologie / Mykologie",
-        "useContext": [
-          {
-            "code": {
-              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
-              "code": "facility"
-            },
-            "valueReference": {
-              "reference": "Organization/zlz"
-            }
-          }
-        ],
-        "topic": [
-          {
-            "coding": [
-              {
-                "system": "https://www.zetlab.ch/fhir/category",
-                "code": "MIBI",
-                "display": "Mikrobiologie"
-              }
-            ]
-          }
-        ],
-        "kind": "ServiceRequest",
-        "code": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/lis/codes",
-              "code": "RSVRSP",
-              "display": "'Respiratorisches Synzytial-Virus A/B"
-            }
-          ]
-        },
-        "location": {
-          "identifier": {
-            "system": "https://www.zetlab.ch/fhir/groups-observation",
-            "value": "BAK/MYKO"
-          }
-        }
-      },
-      "request": {
-        "method": "PUT",
-        "url": "ActivityDefinition/actdef-RSVRSP"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "ObservationDefinition",
-        "id": "obsdef-RSVRSP",
-        "category": [
-          {
-            "coding": [
-              {
-                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
-                "code": "laboratory",
-                "display": "Laboratory"
-              }
-            ]
-          }
-        ],
-        "code": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/lis/codes",
-              "code": "RSVRSP",
-              "display": "'Respiratorisches Synzytial-Virus A/B"
-            }
-          ],
-          "text": "'Respiratorisches Synzytial-Virus A/B"
-        },
-        "identifier": [
-          {
-            "system": "https://www.zetlab.ch/lis/codes",
-            "value": "RSVRSP"
-          }
-        ]
-      },
-      "request": {
-        "method": "PUT",
-        "url": "ObservationDefinition/obsdef-RSVRSP"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "ActivityDefinition",
-        "id": "actdef-COV1N",
-        "extension": [
-          {
-            "url": "https://www.zetlab.ch/StructureDefinition/specimen-definition",
-            "valueReference": {
-              "identifier": {
-                "system": "https://www.zetlab.ch/fhir/specimen",
-                "value": "91"
-              }
-            }
-          }
-        ],
-        "url": "https://www.zetlab.ch/fhir/activity/COV1N",
-        "subtitle": "COV1N",
-        "status": "active",
-        "description": "Bakteriologie / Mykologie",
-        "useContext": [
-          {
-            "code": {
-              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
-              "code": "facility"
-            },
-            "valueReference": {
-              "reference": "Organization/zlz"
-            }
-          }
-        ],
-        "topic": [
-          {
-            "coding": [
-              {
-                "system": "https://www.zetlab.ch/fhir/category",
-                "code": "MIBI",
-                "display": "Mikrobiologie"
-              }
-            ]
-          }
-        ],
-        "kind": "ServiceRequest",
-        "code": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/lis/codes",
-              "code": "COV1N",
-              "display": "COV1N"
-            }
-          ]
-        },
-        "location": {
-          "identifier": {
-            "system": "https://www.zetlab.ch/fhir/groups-observation",
-            "value": "BAK/MYKO"
-          }
-        }
-      },
-      "request": {
-        "method": "PUT",
-        "url": "ActivityDefinition/actdef-COV1N"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "ObservationDefinition",
-        "id": "obsdef-COV1N",
-        "category": [
-          {
-            "coding": [
-              {
-                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
-                "code": "laboratory",
-                "display": "Laboratory"
-              }
-            ]
-          }
-        ],
-        "code": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/lis/codes",
-              "code": "COV1N",
-              "display": "COV1N"
-            }
-          ],
-          "text": "COV1N"
-        },
-        "identifier": [
-          {
-            "system": "https://www.zetlab.ch/lis/codes",
-            "value": "COV1N"
-          }
-        ]
-      },
-      "request": {
-        "method": "PUT",
-        "url": "ObservationDefinition/obsdef-COV1N"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "ActivityDefinition",
-        "id": "actdef-MEENPLI",
-        "extension": [
-          {
-            "url": "https://www.zetlab.ch/fhir/StructureDefinition/minimal-volume-microliter",
-            "valueQuantity": {
-              "value": 230,
-              "unit": "µl",
-              "system": "http://unitsofmeasure.org",
-              "code": "uL"
-            }
-          },
-          {
-            "url": "https://www.zetlab.ch/StructureDefinition/specimen-definition",
-            "valueReference": {
-              "identifier": {
-                "system": "https://www.zetlab.ch/fhir/specimen",
-                "value": "10"
-              }
-            }
-          }
-        ],
-        "url": "https://www.zetlab.ch/fhir/activity/MEENPLI",
-        "subtitle": "*Meningitis Panel (PCR)",
-        "status": "active",
-        "description": "Bakteriologie / Mykologie",
-        "useContext": [
-          {
-            "code": {
-              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
-              "code": "facility"
-            },
-            "valueReference": {
-              "reference": "Organization/zlz"
-            }
-          }
-        ],
-        "topic": [
-          {
-            "coding": [
-              {
-                "system": "https://www.zetlab.ch/fhir/category",
-                "code": "MIBI",
-                "display": "Mikrobiologie"
-              }
-            ]
-          }
-        ],
-        "kind": "ServiceRequest",
-        "code": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/lis/codes",
-              "code": "MEENPLI",
-              "display": "*Meningitis Panel (PCR)"
-            }
-          ]
-        },
-        "location": {
-          "identifier": {
-            "system": "https://www.zetlab.ch/fhir/groups-observation",
-            "value": "BAK/MYKO"
-          }
-        }
-      },
-      "request": {
-        "method": "PUT",
-        "url": "ActivityDefinition/actdef-MEENPLI"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "ObservationDefinition",
-        "id": "obsdef-MEENPLI",
-        "category": [
-          {
-            "coding": [
-              {
-                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
-                "code": "laboratory",
-                "display": "Laboratory"
-              }
-            ]
-          }
-        ],
-        "code": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/lis/codes",
-              "code": "MEENPLI",
-              "display": "*Meningitis Panel (PCR)"
-            }
-          ],
-          "text": "*Meningitis Panel (PCR)"
-        },
-        "identifier": [
-          {
-            "system": "https://www.zetlab.ch/lis/codes",
-            "value": "MEENPLI"
-          }
-        ],
-        "preferredReportName": "Meningitis panel"
-      },
-      "request": {
-        "method": "PUT",
-        "url": "ObservationDefinition/obsdef-MEENPLI"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "ActivityDefinition",
-        "id": "actdef-RSVPCR",
-        "extension": [
-          {
-            "url": "https://www.zetlab.ch/StructureDefinition/specimen-definition",
-            "valueReference": {
-              "identifier": {
-                "system": "https://www.zetlab.ch/fhir/specimen",
-                "value": "91"
-              }
-            }
-          }
-        ],
-        "url": "https://www.zetlab.ch/fhir/activity/RSVPCR",
-        "subtitle": "'RSV Respiratory Syncytial Virus (RNA)",
-        "status": "active",
-        "description": "Bakteriologie / Mykologie",
-        "useContext": [
-          {
-            "code": {
-              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
-              "code": "facility"
-            },
-            "valueReference": {
-              "reference": "Organization/zlz"
-            }
-          }
-        ],
-        "topic": [
-          {
-            "coding": [
-              {
-                "system": "https://www.zetlab.ch/fhir/category",
-                "code": "MIBI",
-                "display": "Mikrobiologie"
-              }
-            ]
-          }
-        ],
-        "kind": "ServiceRequest",
-        "code": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/lis/codes",
-              "code": "RSVPCR",
-              "display": "'RSV Respiratory Syncytial Virus (RNA)"
-            }
-          ]
-        },
-        "location": {
-          "identifier": {
-            "system": "https://www.zetlab.ch/fhir/groups-observation",
-            "value": "BAK/MYKO"
-          }
-        }
-      },
-      "request": {
-        "method": "PUT",
-        "url": "ActivityDefinition/actdef-RSVPCR"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "ObservationDefinition",
-        "id": "obsdef-RSVPCR",
-        "category": [
-          {
-            "coding": [
-              {
-                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
-                "code": "laboratory",
-                "display": "Laboratory"
-              }
-            ]
-          }
-        ],
-        "code": {
-          "coding": [
-            {
-              "system": "https://www.zetlab.ch/lis/codes",
-              "code": "RSVPCR",
-              "display": "'RSV Respiratory Syncytial Virus (RNA)"
-            }
-          ],
-          "text": "'RSV Respiratory Syncytial Virus (RNA)"
-        },
-        "identifier": [
-          {
-            "system": "https://www.zetlab.ch/lis/codes",
-            "value": "RSVPCR"
-          }
-        ],
-        "preferredReportName": "RSV Respiratory Syncytial Virus (RNA)"
-      },
-      "request": {
-        "method": "PUT",
-        "url": "ObservationDefinition/obsdef-RSVPCR"
+        "url": "ObservationDefinition/obsdef-BOPAPBR"
       }
     }
   ]

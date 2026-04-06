@@ -16,6 +16,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { BackButton } from "@/components/BackButton";
 import { Badge } from "@/presentation/ui/Badge";
 import type { BadgeVariant } from "@/presentation/ui/Badge";
+import { OrgBadgeOrDash } from "@/presentation/ui/OrgBadge";
 import { useOrders } from "@/presentation/hooks/useOrders";
 import { formatDate } from "@/shared/utils/formatDate";
 import { useTranslation } from "@/lib/i18n";
@@ -371,13 +372,15 @@ export default function OrdersPage() {
               <thead>
                 <tr className="bg-zt-bg-page">
                   {[
-                    { key: "id",          label: t("orders.id"),          cls: "w-48" },
-                    { key: "patient",     label: t("orders.patient"),      cls: "" },
-                    { key: "description", label: t("orders.description"),  cls: "" },
-                    { key: "status",      label: t("orders.status"),       cls: "w-40" },
-                    { key: "date",        label: t("orders.date"),         cls: "w-32" },
-                    { key: "specimens",   label: t("orders.specimens"),    cls: "w-24" },
-                    { key: "actions",     label: t("orders.actions"),      cls: "w-36" },
+                    { key: "id",             label: t("orders.id"),              cls: "w-40" },
+                    { key: "patient",        label: t("orders.patient"),          cls: "" },
+                    { key: "description",    label: t("orders.description"),      cls: "" },
+                    { key: "auftraggeber",   label: t("org.auftraggeber"),         cls: "w-36" },
+                    { key: "auftragnehmer",  label: t("org.auftragnehmer"),        cls: "w-36" },
+                    { key: "status",         label: t("orders.status"),           cls: "w-36" },
+                    { key: "date",           label: t("orders.date"),             cls: "w-28" },
+                    { key: "specimens",      label: t("orders.specimens"),        cls: "w-20" },
+                    { key: "actions",        label: t("orders.actions"),          cls: "w-36" },
                   ].map((col) => (
                     <th
                       key={col.key}
@@ -391,7 +394,7 @@ export default function OrdersPage() {
               <tbody>
                 {loading && Array.from({ length: 8 }, (_, i) => (
                   <tr key={`skel-${i}`} className="border-b border-zt-border/50 last:border-0">
-                    {Array.from({ length: 7 }, (__, j) => (
+                    {Array.from({ length: 9 }, (__, j) => (
                       <td key={j} className="px-4 py-3">
                         <div className="h-4 rounded bg-zt-bg-muted animate-pulse" />
                       </td>
@@ -401,7 +404,7 @@ export default function OrdersPage() {
 
                 {!loading && error && (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-[13px] text-zt-danger">
+                    <td colSpan={9} className="px-4 py-8 text-center text-[13px] text-zt-danger">
                       {t("orders.loadError")}: {error}
                     </td>
                   </tr>
@@ -409,7 +412,7 @@ export default function OrdersPage() {
 
                 {!loading && !error && filteredOrders.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-4 py-10 text-center text-[13px] text-zt-text-tertiary">
+                    <td colSpan={9} className="px-4 py-10 text-center text-[13px] text-zt-text-tertiary">
                       {t("orders.noResults")}
                     </td>
                   </tr>
@@ -457,6 +460,21 @@ export default function OrdersPage() {
                             {o.specimenCount} {o.specimenCount === 1 ? "Probe" : "Proben"}
                           </div>
                         )}
+                      </td>
+
+                      {/* Auftraggeber (sender) */}
+                      <td className="px-4 py-[11px] align-middle">
+                        <OrgBadgeOrDash org={o.sender} variant="sender" />
+                      </td>
+
+                      {/* Auftragnehmer (receivers) */}
+                      <td className="px-4 py-[11px] align-middle">
+                        {o.receivers.length > 0
+                          ? o.receivers.map((r, i) => (
+                              <OrgBadgeOrDash key={i} org={r} variant="receiver" />
+                            ))
+                          : <span className="text-zt-text-tertiary text-[12px]">—</span>
+                        }
                       </td>
 
                       {/* Status */}

@@ -2,10 +2,10 @@ import type { IOrderNumberStrategy } from "./IOrderNumberStrategy";
 
 /**
  * MIBI (Mikrobiologie) order number strategy.
- * Format: MI4XXXXXXXX — prefix "MI", start digit "4", total 10 characters.
- * Example: MI4000012345
+ * Format: MI4XXXXXXXX — prefix "MI", start digit "4", total 11 characters.
+ * Example: MI40030020 → MI400300200
  *
- * Prefix and start digit are configurable via constructor (defaults from ENV).
+ * Prefix, start digit and total length are configurable via constructor (defaults from ENV).
  */
 export class MibiStrategy implements IOrderNumberStrategy {
   readonly serviceType = "MIBI" as const;
@@ -13,7 +13,7 @@ export class MibiStrategy implements IOrderNumberStrategy {
   constructor(
     private readonly prefix: string = "MI",
     private readonly startDigit: string = "4",
-    private readonly totalLength: number = 10,
+    private readonly totalLength: number = 11,
   ) {}
 
   format(counter: number): string {

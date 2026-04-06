@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionFromCookies }     from "@/lib/auth";
+import { requirePermission }         from "@/infrastructure/api/middleware/RequirePermission";
+import { PERMISSIONS }               from "@/domain/valueObjects/Permission";
 import { EnvConfig }                 from "@/infrastructure/config/EnvConfig";
 import { GlnLookupController }       from "@/infrastructure/api/controllers/GlnLookupController";
 import { glnAdapterV2 }              from "@/application/adapters/GlnAdapterV2";
@@ -17,10 +18,8 @@ import { glnAdapterV2 }              from "@/application/adapters/GlnAdapterV2";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  const session = await getSessionFromCookies();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const perm = await requirePermission(req, PERMISSIONS.GLN_READ);
+  if (!perm.ok) return perm.response;
 
   const endpointUrl = EnvConfig.refdataSoapUrl;
   if (!endpointUrl) {

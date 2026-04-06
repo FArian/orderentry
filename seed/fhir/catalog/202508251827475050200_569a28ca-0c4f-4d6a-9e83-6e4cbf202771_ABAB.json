@@ -1,0 +1,210 @@
+{
+	"resourceType": "Bundle",
+	"id": "bundle-transaction-569a28ca-0c4f-4d6a-9e83-6e4cbf202771",
+	"type": "transaction",
+	"timestamp": "2025-08-25T18:27:47.505+02:00",
+	"entry": [
+		{
+			"resource": {
+				"resourceType": "ActivityDefinition",
+				"id": "actdef-ABAB",
+				"extension": [
+					{
+						"url": "https://www.zetlab.ch/fhir/StructureDefinition/minimal-volume-microliter",
+						"valueQuantity": {
+							"value": 230,
+							"unit": "µl",
+							"system": "http://unitsofmeasure.org",
+							"code": "uL"
+						}
+					},
+					{
+						"url": "https://www.zetlab.ch/StructureDefinition/specimen-definition",
+						"valueReference": {
+							"identifier": {
+								"system": "https://www.zetlab.ch/fhir/specimen",
+								"value": "60"
+							}
+						}
+					}
+				],
+				"url": "https://www.zetlab.ch/fhir/activity/ABAB",
+				"subtitle": "Abstrich/Sekret",
+				"status": "active",
+				"description": "Allgemeine Bakteriologie inkl. Pilze",
+				"topic": [
+					{
+						"coding": [
+							{
+								"system": "https://www.zetlab.ch/fhir/category",
+								"code": "MIBI",
+								"display": "Mikrobiologie"
+							}
+						]
+					}
+				],
+				"kind": "ServiceRequest",
+				"code": {
+					"coding": [
+						{
+							"extension": [
+								{
+									"url": "http://hl7.org/fhir/StructureDefinition/translation",
+									"extension": [
+										{ "url": "lang", "valueCode": "de" },
+										{ "url": "content", "valueString": "Allgemeine Bakteriologie inkl. Pilze" }
+									]
+								},
+								{
+									"url": "http://hl7.org/fhir/StructureDefinition/translation",
+									"extension": [
+										{ "url": "lang", "valueCode": "en" },
+										{ "url": "content", "valueString": "General bacteriology incl. fungi" }
+									]
+								}
+							],
+							"system": "https://www.zetlab.ch/lis/codes",
+							"code": "#ABAB",
+							"display": "Allgemeine Bakteriologie inkl. Pilze"
+						}
+					]
+				},
+				"location": {
+					"identifier": {
+						"system": "https://www.zetlab.ch/fhir/groups-observation",
+						"value": "RISCHMB"
+					}
+				}
+			},
+			"request": { "method": "PUT", "url": "ActivityDefinition/actdef-ABAB" }
+		},
+		{
+			"resource": {
+				"resourceType": "SpecimenDefinition",
+				"id": "specdef-60",
+				"extension": [
+					{
+						"url": "http://hl7.org/fhir/StructureDefinition/instance-url",
+						"valueUri": "https://www.zetlab.ch/fhir/specimen/60"
+					},
+					{
+						"url": "http://hl7.org/fhir/StructureDefinition/resource-status",
+						"valueCode": "active"
+					}
+				],
+				"identifier": {
+					"system": "https://www.zetlab.ch/fhir/specimen",
+					"value": "60"
+				},
+				"typeCollected": {
+					"coding": [
+						{
+							"system": "https://www.zetlab.ch/fhir/specimen-types",
+							"code": "60",
+							"display": "Abstrich/Sekret"
+						},
+						{
+							"system": "http://snomed.info/sct",
+							"code": "257261003",
+							"display": "Swab specimen"
+						}
+					],
+					"text": "Abstrich / Sekret"
+				},
+				"typeTested": [
+					{
+						"preference": "preferred",
+						"container": {
+							"description": "Abstrich-Transportmedium (z.B. Copan ESwab 480C)",
+							"minimumVolumeQuantity": {
+								"value": 0.5,
+								"unit": "mL",
+								"system": "http://unitsofmeasure.org",
+								"code": "mL"
+							}
+						},
+						"retentionTime": {
+							"value": 48,
+							"unit": "h",
+							"system": "http://unitsofmeasure.org",
+							"code": "h"
+						},
+						"rejectionCriterion": [
+							{
+								"coding": [
+									{
+										"system": "http://terminology.hl7.org/CodeSystem/rejection-criteria",
+										"code": "INSUFFICIENT",
+										"display": "Insufficient quantity"
+									}
+								],
+								"text": "Getrockneter oder unzureichender Abstrich"
+							}
+						],
+						"handling": [
+							{
+								"temperatureQualifier": {
+									"coding": [
+										{
+											"system": "http://terminology.hl7.org/CodeSystem/handling-condition",
+											"code": "room",
+											"display": "Room Temperature"
+										}
+									],
+									"text": "Raumtemperatur"
+								},
+								"temperatureRange": {
+									"low":  { "value": 15, "unit": "°C", "system": "http://unitsofmeasure.org", "code": "Cel" },
+									"high": { "value": 25, "unit": "°C", "system": "http://unitsofmeasure.org", "code": "Cel" }
+								},
+								"maxDuration": {
+									"value": 48,
+									"unit": "h",
+									"system": "http://unitsofmeasure.org",
+									"code": "h"
+								},
+								"instruction": "Bei Raumtemperatur lagern. Nicht einfrieren. Schnellstmöglich ins Labor senden."
+							}
+						]
+					}
+				]
+			},
+			"request": { "method": "PUT", "url": "SpecimenDefinition/specdef-60" }
+		},
+		{
+			"resource": {
+				"resourceType": "ObservationDefinition",
+				"id": "obsdef-ABAB",
+				"category": [
+					{
+						"coding": [
+							{
+								"system": "http://terminology.hl7.org/CodeSystem/observation-category",
+								"code": "laboratory",
+								"display": "Laboratory"
+							}
+						]
+					}
+				],
+				"code": {
+					"coding": [
+						{
+							"system": "https://www.zetlab.ch/lis/codes",
+							"code": "obsdef-ABAB",
+							"display": "Allgemeine Bakteriologie inkl. Pilze"
+						}
+					],
+					"text": "Allgemeine Bakteriologie inkl. Pilze"
+				},
+				"identifier": [
+					{
+						"system": "https://www.zetlab.ch/lis/codes",
+						"value": "#ABAB"
+					}
+				],
+				"preferredReportName": "General bacteriology incl. fungi"
+			},
+			"request": { "method": "PUT", "url": "ObservationDefinition/obsdef-ABAB" }
+		}
+	]
+}

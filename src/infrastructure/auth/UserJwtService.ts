@@ -13,6 +13,7 @@
  */
 
 import crypto from "crypto";
+import { EnvConfig } from "@/infrastructure/config/EnvConfig";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -56,7 +57,7 @@ function b64urlDecode(b64: string): string {
 }
 
 function getSecret(): string {
-  return process.env.AUTH_SECRET || "dev-secret-change-me";
+  return EnvConfig.authSecret;
 }
 
 // ── Service ───────────────────────────────────────────────────────────────────

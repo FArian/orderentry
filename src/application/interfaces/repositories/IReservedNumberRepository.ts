@@ -24,7 +24,12 @@ export interface IReservedNumberRepository {
   addMany(numbers: ReservedNumberInput[]): Promise<number>;
   delete(id: string): Promise<void>;
   stats(): Promise<PoolStats>;
-  countAvailable(): Promise<number>;
+  /**
+   * Count available pool entries.
+   * When serviceType is provided, counts only entries of that type —
+   * giving accurate per-type thresholds for notifications.
+   */
+  countAvailable(serviceType?: string): Promise<number>;
 
   // Threshold config (stored alongside pool in DB)
   getThresholds(): Promise<PoolThresholdData>;

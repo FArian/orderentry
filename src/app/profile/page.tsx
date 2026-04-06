@@ -6,6 +6,7 @@ import { useTranslation } from "@/lib/i18n";
 import { glnEnabled } from "@/config";
 import { AppSidebar } from "@/components/AppSidebar";
 import { BackButton } from "@/components/BackButton";
+import { useMyPermissions } from "@/presentation/hooks/useMyPermissions";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -148,6 +149,7 @@ function TextInput({
 
 export default function ProfilePage() {
   const { t } = useTranslation();
+  const { data: myPerms, loading: permsLoading } = useMyPermissions();
 
   const [user, setUser]     = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -231,10 +233,13 @@ export default function ProfilePage() {
       try { json = await res.json(); }
       catch { throw new Error(`HTTP ${res.status} – ungültige Antwort`); }
       if (!res.ok) {
-        const key = json.error === "glnNotFound" ? "profile.glnNotFound"
-                  : json.error === "invalidGln"  ? "profile.invalidGln"
+        const key = json.error === "glnNotFound"    ? "profile.glnNotFound"
+                  : json.error === "invalidGln"      ? "profile.invalidGln"
+                  : json.error === "glnUnavailable"  ? "profile.glnUnavailable"
+                  : json.error === "glnError"         ? "profile.glnUnavailable"
+                  : json.error === "noGlnApi"         ? "profile.noGlnApi"
                   : null;
-        throw new Error(key ? t(key) : (json.error || `HTTP ${res.status}`));
+        throw new Error(key ? t(key) : `HTTP ${res.status}`);
       }
       const ptype = json.ptype || "";
       setGlnPtype(ptype);
@@ -270,10 +275,13 @@ export default function ProfilePage() {
       try { json = await res.json(); }
       catch { throw new Error(`HTTP ${res.status} – ungültige Antwort`); }
       if (!res.ok) {
-        const key = json.error === "glnNotFound" ? "profile.glnNotFound"
-                  : json.error === "invalidGln"  ? "profile.invalidGln"
+        const key = json.error === "glnNotFound"    ? "profile.glnNotFound"
+                  : json.error === "invalidGln"      ? "profile.invalidGln"
+                  : json.error === "glnUnavailable"  ? "profile.glnUnavailable"
+                  : json.error === "glnError"         ? "profile.glnUnavailable"
+                  : json.error === "noGlnApi"         ? "profile.noGlnApi"
                   : null;
-        throw new Error(key ? t(key) : (json.error || `HTTP ${res.status}`));
+        throw new Error(key ? t(key) : `HTTP ${res.status}`);
       }
       const name = json.organization || [json.lastName, json.firstName].filter(Boolean).join(", ") || gln;
       setOrgName(name);
@@ -749,6 +757,49 @@ export default function ProfilePage() {
                 />
               </Field>
             </div>
+          </SectionCard>
+
+          {/* Meine Berechtigungen (read-only) */}
+          <SectionCard title={t("profile.permissions")}>
+            {permsLoading ? (
+              <div className="flex gap-2 animate-pulse">
+                {[80, 96, 72, 88].map((w) => (
+                  <div key={w} className="h-5 rounded-full bg-zt-bg-muted" style={{ width: w }} />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {/* Role badge */}
+                <div className="flex items-center gap-2">
+                  <span className="text-[12px] text-zt-text-secondary">{t("profile.permissionsRole")}:</span>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium ${
+                    myPerms?.role === "admin"
+                      ? "bg-zt-info-light text-zt-info border border-zt-info-border"
+                      : "bg-zt-bg-muted text-zt-text-secondary border border-zt-border"
+                  }`}>
+                    {myPerms?.role ?? "—"}
+                  </span>
+                </div>
+                {/* Permissions list */}
+                <div>
+                  <p className="text-[11px] text-zt-text-tertiary mb-2">{t("profile.permissionsGranted")}:</p>
+                  {(myPerms?.permissions.length ?? 0) === 0 ? (
+                    <p className="text-[12px] text-zt-text-tertiary">{t("profile.permissionsNone")}</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-1.5">
+                      {myPerms!.permissions.map((p) => (
+                        <code
+                          key={p}
+                          className="px-2 py-0.5 rounded-md text-[11px] font-mono bg-zt-primary-light text-zt-primary border border-zt-primary-border"
+                        >
+                          {p}
+                        </code>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </SectionCard>
 
           {/* Save bar */}

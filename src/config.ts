@@ -1,8 +1,8 @@
-export const fhirBase: string =
-  process.env.FHIR_BASE_URL || 'https://hapi.2a01-4f8-1c1a-5842--1.nip.io/fhir';
+import { EnvConfig } from "@/infrastructure/config/EnvConfig";
 
-export const sasísApiBase: string =
-  process.env.SASIS_API_BASE || '';
+export const fhirBase: string = EnvConfig.fhirBaseUrl;
+
+export const sasísApiBase: string = EnvConfig.sasisApiBase;
 
 // true only when SASIS_API_BASE is explicitly configured
 export const sasísEnabled: boolean =

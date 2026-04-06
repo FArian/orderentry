@@ -26,7 +26,7 @@ import {
   type FhirOperationOutcome,
 } from "@/infrastructure/fhir/FhirTypes";
 
-const GLN_SYSTEM = "urn:oid:2.51.1.3";
+const GLN_SYSTEM = "https://www.gs1.org/gln";
 
 export interface OrgReferenceDto {
   resourceType: string;
@@ -212,15 +212,17 @@ export class FhirOrganizationsController {
   }
 
   private async findByGln(gln: string): Promise<string | null> {
+    // Search both GLN systems: current standard and legacy OID
+    const systems = [GLN_SYSTEM, "urn:oid:2.51.1.3"];
     try {
-      const url = `${this.fhirBase}/Organization?identifier=${encodeURIComponent(`${GLN_SYSTEM}|${gln}`)}&_count=1`;
-      const res = await this.fetchFn(url, {
-        headers: { accept: "application/fhir+json" },
-        cache: "no-store",
-      });
-      if (!res.ok) return null;
-      const bundle = (await res.json()) as FhirBundle<FhirOrganization>;
-      return bundle.entry?.[0]?.resource?.id ?? null;
+      const results = await Promise.all(systems.map(async (sys) => {
+        const url = `${this.fhirBase}/Organization?identifier=${encodeURIComponent(`${sys}|${gln}`)}&_count=1`;
+        const res = await this.fetchFn(url, { headers: { accept: "application/fhir+json" }, cache: "no-store" });
+        if (!res.ok) return null;
+        const bundle = (await res.json()) as FhirBundle<FhirOrganization>;
+        return bundle.entry?.[0]?.resource?.id ?? null;
+      }));
+      return results.find((id) => id !== null) ?? null;
     } catch {
       return null;
     }

@@ -30,6 +30,8 @@ export class OrderFactory {
       authoredOn: data.authoredOn ?? "",
       codeText: data.codeText ?? "",
       specimenCount: typeof data.specimenCount === "number" ? data.specimenCount : 0,
+      ...(data.sender !== undefined && { sender: data.sender }),
+      receivers: data.receivers ?? [],
     };
   }
 

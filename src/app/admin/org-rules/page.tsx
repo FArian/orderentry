@@ -1,7 +1,5 @@
-"use client";
-
-import OrgRulesPage from "@/presentation/pages/OrgRulesPage";
+import { redirect } from "next/navigation";
 
 export default function AdminOrgRulesRoute() {
-  return <OrgRulesPage />;
+  redirect("/admin/order-numbers?tab=org-rules");
 }

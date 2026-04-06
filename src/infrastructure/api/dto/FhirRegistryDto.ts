@@ -39,6 +39,7 @@ export interface FhirPractitionerDto {
   organizationId:     string;
   organizationName:   string;
   roleCode:           string;
+  roleDisplay:        string;
   practitionerRoleId: string;
 }
 

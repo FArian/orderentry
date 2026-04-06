@@ -2,12 +2,13 @@
  * RuntimeConfig — runtime configuration override layer.
  *
  * Priority (highest → lowest):
- *   1. GUI override  (data/config.json)
- *   2. Environment   (process.env)
+ *   1. Environment   (process.env)  ← always wins; cannot be overridden at runtime
+ *   2. GUI override  (data/config.json)
  *   3. Default value (hardcoded fallback)
  *
  * Overrides are stored in data/config.json and take effect immediately
  * on the next request — no application restart required.
+ * If a process.env variable is set, the config.json override is ignored for that key.
  *
  * Vercel: data/config.json does not persist between invocations.
  *   GET  → returns env / default values (overrides are always empty).
@@ -69,10 +70,12 @@ export async function readOverrides(cwd = process.cwd()): Promise<ConfigOverride
 
 /**
  * Resolves a single key using the priority chain:
- *   override → process.env → default
+ *   process.env → override → default
+ *
+ * ENV always wins. config.json override is only used when no ENV var is set.
  */
 export function resolveKey(key: SupportedKey, overrides: ConfigOverrides): string {
-  return overrides[key] ?? process.env[key] ?? DEFAULTS[key];
+  return process.env[key] ?? overrides[key] ?? DEFAULTS[key];
 }
 
 /**

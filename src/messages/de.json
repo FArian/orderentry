@@ -52,6 +52,8 @@
     "adminMerge": "Duplikate",
     "adminOrgRules": "Org-Regeln",
     "adminNumberPool": "Nummernpool",
+    "adminOrderNumbers": "Auftragsnummern",
+    "adminAgents": "Local Agents",
     "accountSystem": "System",
     "connectedSection": "Verbundene Systeme",
     "groupClinical": "Klinisch",
@@ -165,6 +167,12 @@
     "lookupPlaceholder": "80756… (20 Stellen)",
     "lookupFound": "Gefunden",
     "noSasis": "Keine SASIS-Verbindung konfiguriert."
+  },
+  "org": {
+    "sender": "Sender",
+    "auftraggeber": "Auftraggeber",
+    "auftragnehmer": "Auftragnehmer",
+    "unknown": "Unbekannt"
   },
   "orders": {
     "title": "Aufträge",
@@ -451,7 +459,9 @@
       "editLink": "Variablen bearbeiten",
       "editVar": "Bearbeiten",
       "secretNote": "Secret-Wert — wird nach dem Speichern nicht mehr angezeigt.",
-      "clearNote": "Leer lassen um den Default-Wert zu verwenden."
+      "clearNote": "Leer lassen um den Default-Wert zu verwenden.",
+      "lockedByEnv": "Durch Umgebungsvariable gesperrt",
+      "lockedByEnvNote": "Dieser Wert wird durch eine Systemumgebungsvariable gesetzt (z. B. docker-compose) und kann hier nicht bearbeitet werden."
     }
   },
   "auth": {
@@ -925,6 +935,18 @@
       "replayMsg": "Dieser Link wurde bereits verwendet. Aus Sicherheitsgründen kann jeder Link nur einmal geöffnet werden. Bitte fordern Sie einen neuen Link an.",
       "contactHint": "Falls das Problem weiterhin besteht, wenden Sie sich an den IT-Support.",
       "goHome": "Zur Patientenliste"
+    },
+    "orderNumbers": {
+      "title": "Auftragsnummern",
+      "subtitle": "Org-Regeln, Nummernpool und Alarm-Überwachung",
+      "tabOrgRules": "Org-Regeln",
+      "tabNumberPool": "Nummernpool",
+      "tabMonitoring": "Überwachung",
+      "noAlerts": "Keine offenen Alarme",
+      "noAlertsDesc": "Alle Pools sind ausreichend gefüllt.",
+      "alertSummary": "{n} offene Pool-Alarme",
+      "goToPool": "Pool auffüllen",
+      "resolve": "Erledigt"
     }
   }
 }

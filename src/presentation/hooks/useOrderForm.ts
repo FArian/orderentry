@@ -237,12 +237,19 @@ export function useOrderForm(
         body: JSON.stringify({ orgGln, serviceType, patientId: id }),
       });
       if (!res.ok) {
-        // Fall back gracefully to timestamp-based local number
+        const errBody = await res.json().catch(() => ({})) as { error?: string };
+        if (res.status === 503) {
+          // Pool empty — surface the error so the user sees it, do not silently proceed.
+          throw new Error(errBody.error ?? "Kein Nummernpool verfügbar. Bitte Administrator informieren.");
+        }
+        // Other API errors (4xx config/validation) — fall back to timestamp draft number.
         return generateOrderNumber();
       }
       const data = await res.json() as { orderNumber: string };
       return data.orderNumber;
-    } catch {
+    } catch (err) {
+      // Re-throw pool-empty errors; swallow transient network errors with fallback.
+      if (err instanceof Error && err.message.includes("Nummernpool")) throw err;
       return generateOrderNumber();
     }
   }, [patientData, id, generateOrderNumber]);

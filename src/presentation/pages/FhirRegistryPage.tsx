@@ -588,8 +588,12 @@ function PractsTab({ t }: { t: (k: string) => string }) {
                 <td className="px-4 py-[11px] text-[13px] font-mono text-zt-text-secondary">{p.gln}</td>
                 <td className="px-4 py-[11px] text-[13px] text-zt-text-secondary">{p.organizationName || p.organizationId || <span className="italic text-zt-text-tertiary">—</span>}</td>
                 <td className="px-4 py-[11px]">
-                  {p.roleCode
-                    ? <span className="font-mono text-[11px] bg-zt-bg-page border border-zt-border px-2 py-0.5 rounded text-zt-text-secondary">{p.roleCode}</span>
+                  {p.roleDisplay || p.roleCode
+                    ? (
+                      <span title={p.roleCode} className="text-[13px] text-zt-text-secondary">
+                        {p.roleDisplay || p.roleCode}
+                      </span>
+                    )
                     : <span className="italic text-[12px] text-zt-text-tertiary">—</span>
                   }
                 </td>

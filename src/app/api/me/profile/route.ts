@@ -3,6 +3,7 @@ import { getSessionFromCookies } from "@/lib/auth";
 import { getUserById, updateUserProfile } from "@/lib/userStore";
 import type { UserProfile } from "@/lib/userStore";
 import { fhirBase } from "@/config";
+import { EnvConfig } from "@/infrastructure/config/EnvConfig";
 import { createLogger } from "@/infrastructure/logging/Logger";
 
 const log = createLogger("me-profile");
@@ -75,7 +76,7 @@ export async function PUT(req: NextRequest) {
 
 // ─── FHIR helpers ────────────────────────────────────────────────────────────
 
-const GLN_SYSTEM      = "urn:oid:2.51.1.3";
+const GLN_SYSTEM      = EnvConfig.fhirSystems.gln;
 const LOCAL_ID_SYSTEM = "https://www.zetlab.ch/fhir/identifier/local-id";
 
 type FhirBundle = { entry?: { resource?: { id?: string } }[] };

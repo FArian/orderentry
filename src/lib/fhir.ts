@@ -98,8 +98,13 @@ export async function handleResponse(res: Response): Promise<unknown | string> {
   return res.text();
 }
 
+/** Proxy base: routes browser FHIR calls through Next.js server (/api/fhir → EnvConfig.fhirBaseUrl).
+ *  Server-side calls (API routes, server components) also work — they reach the same endpoint.
+ *  FHIR_BASE is kept for identifier system URIs (FHIR_SYSTEMS) only — not for HTTP calls. */
+const FHIR_PROXY_BASE = "/api/fhir";
+
 export async function fhirGet(path: string, init?: RequestInit) {
-  const url = `${FHIR_BASE}${path.startsWith("/") ? "" : "/"}${path}`;
+  const url = `${FHIR_PROXY_BASE}${path.startsWith("/") ? "" : "/"}${path}`;
   const res = await fetch(url, {
     method: "GET",
     headers: { accept: "application/fhir+json" },
@@ -110,7 +115,7 @@ export async function fhirGet(path: string, init?: RequestInit) {
 }
 
 export async function fhirPost(path: string, body: Record<string, unknown>, init?: RequestInit) {
-  const url = `${FHIR_BASE}${path.startsWith("/") ? "" : "/"}${path}`;
+  const url = `${FHIR_PROXY_BASE}${path.startsWith("/") ? "" : "/"}${path}`;
   const res = await fetch(url, {
     method: "POST",
     headers: {

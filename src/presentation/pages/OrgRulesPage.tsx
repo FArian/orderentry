@@ -526,7 +526,7 @@ function RuleRow({
 
 // ── OrgRulesPage ───────────────────────────────────────────────────────────────
 
-export default function OrgRulesPage() {
+export default function OrgRulesPage({ mode = "page" }: { mode?: "page" | "tab" }) {
   const { t } = useTranslation();
   const { rules, loading, error, createRule, updateRule, deleteRule } = useOrgRules();
   const { serviceTypes } = useServiceTypes();
@@ -580,26 +580,27 @@ export default function OrgRulesPage() {
     await deleteRule(id).catch(() => undefined);
   }
 
-  return (
-    <div className="flex flex-1 min-h-0">
-      <AppSidebar />
+  const inner = (
+    <div className={mode === "tab" ? "py-4" : "px-8 py-7 max-w-[1200px] mx-auto"}>
 
-      <div className="flex-1 overflow-y-auto bg-zt-bg-page">
-        <div className="px-8 py-7 max-w-[1200px] mx-auto">
+      {mode === "page" && (
+        <nav className="flex items-center gap-1.5 text-[12px] text-zt-text-tertiary mb-4">
+          <BackButton />
+          <span>|</span>
+          <Link href="/" className="text-zt-primary hover:underline">{t("nav.home")}</Link>
+          <span>/</span>
+          <span className="text-zt-text-primary">{t("nav.adminOrgRules")}</span>
+        </nav>
+      )}
 
-          <nav className="flex items-center gap-1.5 text-[12px] text-zt-text-tertiary mb-4">
-            <BackButton />
-            <span>|</span>
-            <Link href="/" className="text-zt-primary hover:underline">{t("nav.home")}</Link>
-            <span>/</span>
-            <span className="text-zt-text-primary">{t("nav.adminOrgRules")}</span>
-          </nav>
-
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-[20px] font-medium text-zt-text-primary">{t("orgRules.title")}</h1>
-              <p className="text-[13px] text-zt-text-tertiary mt-0.5">{t("orgRules.subtitle")}</p>
-            </div>
+      <div className="flex items-center justify-between mb-6">
+        {mode === "page" && (
+          <div>
+            <h1 className="text-[20px] font-medium text-zt-text-primary">{t("orgRules.title")}</h1>
+            <p className="text-[13px] text-zt-text-tertiary mt-0.5">{t("orgRules.subtitle")}</p>
+          </div>
+        )}
+        {mode === "tab" && <div />}
             {!showForm && (
               <button
                 onClick={handleNewClick}
@@ -676,7 +677,16 @@ export default function OrgRulesPage() {
             </div>
           )}
 
-        </div>
+    </div>
+  );
+
+  if (mode === "tab") return inner;
+
+  return (
+    <div className="flex flex-1 min-h-0">
+      <AppSidebar />
+      <div className="flex-1 overflow-y-auto bg-zt-bg-page">
+        {inner}
       </div>
     </div>
   );

@@ -1,0 +1,210 @@
+{
+	"resourceType": "Bundle",
+	"id": "bundle-transaction-b976dc37-cc84-4d4b-9855-850adc9437f9",
+	"type": "transaction",
+	"timestamp": "2025-08-25T18:27:54.987+02:00",
+	"entry": [
+		{
+			"resource": {
+				"resourceType": "ActivityDefinition",
+				"id": "actdef-BOPAPBR",
+				"extension": [
+					{
+						"url": "https://www.zetlab.ch/fhir/StructureDefinition/minimal-volume-microliter",
+						"valueQuantity": {
+							"value": 230,
+							"unit": "µl",
+							"system": "http://unitsofmeasure.org",
+							"code": "uL"
+						}
+					},
+					{
+						"url": "https://www.zetlab.ch/StructureDefinition/specimen-definition",
+						"valueReference": {
+							"identifier": {
+								"system": "https://www.zetlab.ch/fhir/specimen",
+								"value": "AT"
+							}
+						}
+					}
+				],
+				"url": "https://www.zetlab.ch/fhir/activity/BOPAPBR",
+				"subtitle": "Abstrich Bronch./Trachealsekret",
+				"status": "active",
+				"description": "Bordetella parapertussis",
+				"topic": [
+					{
+						"coding": [
+							{
+								"system": "https://www.zetlab.ch/fhir/category",
+								"code": "MIBI",
+								"display": "Mikrobiologie"
+							}
+						]
+					}
+				],
+				"kind": "ServiceRequest",
+				"code": {
+					"coding": [
+						{
+							"extension": [
+								{
+									"url": "http://hl7.org/fhir/StructureDefinition/translation",
+									"extension": [
+										{ "url": "lang", "valueCode": "de" },
+										{ "url": "content", "valueString": "Bordetella parapertussis" }
+									]
+								},
+								{
+									"url": "http://hl7.org/fhir/StructureDefinition/translation",
+									"extension": [
+										{ "url": "lang", "valueCode": "en" },
+										{ "url": "content", "valueString": "Bordetella parapertussis" }
+									]
+								}
+							],
+							"system": "https://www.zetlab.ch/lis/codes",
+							"code": "#BOPAPBR",
+							"display": "Bordetella parapertussis"
+						}
+					]
+				},
+				"location": {
+					"identifier": {
+						"system": "https://www.zetlab.ch/fhir/groups-observation",
+						"value": "RISCHMB"
+					}
+				}
+			},
+			"request": { "method": "PUT", "url": "ActivityDefinition/actdef-BOPAPBR" }
+		},
+		{
+			"resource": {
+				"resourceType": "SpecimenDefinition",
+				"id": "specdef-AT",
+				"extension": [
+					{
+						"url": "http://hl7.org/fhir/StructureDefinition/instance-url",
+						"valueUri": "https://www.zetlab.ch/fhir/specimen/AT"
+					},
+					{
+						"url": "http://hl7.org/fhir/StructureDefinition/resource-status",
+						"valueCode": "active"
+					}
+				],
+				"identifier": {
+					"system": "https://www.zetlab.ch/fhir/specimen",
+					"value": "AT"
+				},
+				"typeCollected": {
+					"coding": [
+						{
+							"system": "https://www.zetlab.ch/fhir/specimen-types",
+							"code": "AT",
+							"display": "Abstrich Bronch./Trachealsekret"
+						},
+						{
+							"system": "http://snomed.info/sct",
+							"code": "257261003",
+							"display": "Swab specimen"
+						}
+					],
+					"text": "Abstrich Bronch. / Trachealsekret"
+				},
+				"typeTested": [
+					{
+						"preference": "preferred",
+						"container": {
+							"description": "Steriles Transportgefäss oder Abstrich-Transportmedium",
+							"minimumVolumeQuantity": {
+								"value": 0.5,
+								"unit": "mL",
+								"system": "http://unitsofmeasure.org",
+								"code": "mL"
+							}
+						},
+						"retentionTime": {
+							"value": 24,
+							"unit": "h",
+							"system": "http://unitsofmeasure.org",
+							"code": "h"
+						},
+						"rejectionCriterion": [
+							{
+								"coding": [
+									{
+										"system": "http://terminology.hl7.org/CodeSystem/rejection-criteria",
+										"code": "INSUFFICIENT",
+										"display": "Insufficient quantity"
+									}
+								],
+								"text": "Unzureichende Probenmenge; Probe länger als 24h bei Raumtemperatur"
+							}
+						],
+						"handling": [
+							{
+								"temperatureQualifier": {
+									"coding": [
+										{
+											"system": "http://terminology.hl7.org/CodeSystem/handling-condition",
+											"code": "room",
+											"display": "Room Temperature"
+										}
+									],
+									"text": "Raumtemperatur"
+								},
+								"temperatureRange": {
+									"low":  { "value": 15, "unit": "°C", "system": "http://unitsofmeasure.org", "code": "Cel" },
+									"high": { "value": 25, "unit": "°C", "system": "http://unitsofmeasure.org", "code": "Cel" }
+								},
+								"maxDuration": {
+									"value": 24,
+									"unit": "h",
+									"system": "http://unitsofmeasure.org",
+									"code": "h"
+								},
+								"instruction": "Bei Raumtemperatur lagern. Innerhalb von 24h ins Labor senden. Nicht einfrieren."
+							}
+						]
+					}
+				]
+			},
+			"request": { "method": "PUT", "url": "SpecimenDefinition/specdef-AT" }
+		},
+		{
+			"resource": {
+				"resourceType": "ObservationDefinition",
+				"id": "obsdef-BOPAPBR",
+				"category": [
+					{
+						"coding": [
+							{
+								"system": "http://terminology.hl7.org/CodeSystem/observation-category",
+								"code": "laboratory",
+								"display": "Laboratory"
+							}
+						]
+					}
+				],
+				"code": {
+					"coding": [
+						{
+							"system": "https://www.zetlab.ch/lis/codes",
+							"code": "obsdef-BOPAPBR",
+							"display": "Bordetella parapertussis"
+						}
+					],
+					"text": "Bordetella parapertussis"
+				},
+				"identifier": [
+					{
+						"system": "https://www.zetlab.ch/lis/codes",
+						"value": "#BOPAPBR"
+					}
+				],
+				"preferredReportName": "Bordetella parapertussis"
+			},
+			"request": { "method": "PUT", "url": "ObservationDefinition/obsdef-BOPAPBR" }
+		}
+	]
+}

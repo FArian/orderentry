@@ -29,8 +29,9 @@ import type {
   CreatePractitionerRequestDto,
   UpdatePractitionerRequestDto,
 } from "../dto/FhirRegistryDto";
+import { EnvConfig } from "@/infrastructure/config/EnvConfig";
 
-const GLN_SYSTEM  = "urn:oid:2.51.1.3";
+const GLN_SYSTEM  = EnvConfig.fhirSystems.gln;
 const ROLE_SYSTEM = "urn:oid:2.51.1.3.roleType";
 
 // ── FHIR resource types ────────────────────────────────────────────────────────
@@ -49,7 +50,7 @@ export interface FhirPractitionerRole {
   active?:       boolean;
   practitioner?: { reference?: string };
   organization?: { reference?: string };
-  code?:         Array<{ coding?: Array<{ system?: string; code?: string }>; text?: string }>;
+  code?:         Array<{ coding?: Array<{ system?: string; code?: string; display?: string }>; text?: string }>;
   [key: string]: unknown;
 }
 

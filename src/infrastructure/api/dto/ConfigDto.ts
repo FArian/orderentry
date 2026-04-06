@@ -5,8 +5,15 @@
  * can show which layer is currently active for each variable.
  */
 
-/** Which priority layer is currently providing the resolved value. */
-export type ConfigSource = "override" | "env" | "default";
+/**
+ * Which priority layer is currently providing the resolved value.
+ *
+ * - "locked"   — process.env is set; config.json override is ignored (ENV wins)
+ * - "override" — config.json override is active (no ENV var set)
+ * - "env"      — (unused, kept for compatibility) alias for "locked"
+ * - "default"  — no ENV and no override; hardcoded fallback is used
+ */
+export type ConfigSource = "locked" | "override" | "env" | "default";
 
 /** A single config entry as returned by GET /api/config. */
 export interface ConfigEntryDto {

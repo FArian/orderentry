@@ -7,7 +7,7 @@
  * operations that need data from multiple domains (canSubmit, submitOrder).
  */
 
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { useTranslation } from "@/lib/i18n";
 import { useSubmitOrder } from "@/presentation/hooks/useSubmitOrder";
 import { useOrderCatalog } from "@/presentation/hooks/useOrderCatalog";
@@ -28,6 +28,9 @@ export default function OrderCreatePage({ id, srId }: OrderCreatePageProps) {
   const { submitBundle } = useSubmitOrder();
 
   // ── Hooks ─────────────────────────────────────────────────────────────────────
+
+  /** Stores the pool/Orchestra order number resolved during the last submit. */
+  const resolvedOrderNumber = useRef<string | undefined>(undefined);
 
   const catalog = useOrderCatalog(AppConfig.labOrgId);
   const form = useOrderForm(
@@ -52,7 +55,7 @@ export default function OrderCreatePage({ id, srId }: OrderCreatePageProps) {
     encounterClass: form.encounterClass,
     clinicalNote: form.clinicalNote,
     getPatientIdentifiers: form.getPatientIdentifiers,
-    generateOrderNumber: form.generateOrderNumber,
+    generateOrderNumber: () => resolvedOrderNumber.current ?? form.generateOrderNumber(),
     locale,
     tr,
   };
@@ -75,10 +78,16 @@ export default function OrderCreatePage({ id, srId }: OrderCreatePageProps) {
     form.setSubmitMsg(null);
     form.setSubmitErr(null);
     try {
-      // Fetch a real order number from the Order Number Engine (Orchestra → Pool fallback)
-      const orderNumber = await form.fetchOrderNumber(
-        form.priority === "urgent" ? "MIBI" : "ROUTINE",
+      // Derive service type from selected tests' topic (MIBI takes precedence over ROUTINE).
+      const hasMibi = catalog.selectedTests.some(
+        (t) => t.topic?.toUpperCase().includes("MIBI"),
       );
+      const orderServiceType: "MIBI" | "ROUTINE" | "POC" = hasMibi ? "MIBI" : "ROUTINE";
+
+      // Fetch a real order number from the Order Number Engine (Orchestra → Pool fallback)
+      const orderNumber = await form.fetchOrderNumber(orderServiceType);
+      // Store for reuse by printLabel and other document builders
+      resolvedOrderNumber.current = orderNumber;
       // Reuse existing SR id when editing a draft, otherwise generate new
       const activeSrId = form.currentSrId || `sr-${orderNumber}`;
       const encId = `enc-${orderNumber}`;
@@ -243,6 +252,7 @@ export default function OrderCreatePage({ id, srId }: OrderCreatePageProps) {
       catalog.setMaterialsFromAnalyses({});
       catalog.setAnalysisContribs({});
       form.setCurrentSrId(undefined);
+      resolvedOrderNumber.current = undefined;
       try { localStorage.removeItem(`order:${id}`); } catch { /* ignore */ }
     } catch (e: unknown) {
       form.setSubmitErr(e instanceof Error ? e.message : String(e));

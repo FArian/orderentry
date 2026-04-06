@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionFromCookies }     from "@/lib/auth";
+import { requirePermission }         from "@/infrastructure/api/middleware/RequirePermission";
+import { PERMISSIONS }               from "@/domain/valueObjects/Permission";
 import { EnvConfig }                 from "@/infrastructure/config/EnvConfig";
 import { GlnLookupController }       from "@/infrastructure/api/controllers/GlnLookupController";
 import { glnAdapterV1 }              from "@/application/adapters/GlnAdapterV1";
@@ -11,10 +12,8 @@ import { glnAdapterV1 }              from "@/application/adapters/GlnAdapterV1";
  * Stable versioned alias: GET /api/v1/gln-lookup (re-export, identical handler).
  */
 export async function GET(req: NextRequest) {
-  const session = await getSessionFromCookies();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const perm = await requirePermission(req, PERMISSIONS.GLN_READ);
+  if (!perm.ok) return perm.response;
 
   const endpointUrl = EnvConfig.refdataSoapUrl;
   if (!endpointUrl) {

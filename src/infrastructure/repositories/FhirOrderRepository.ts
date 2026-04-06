@@ -5,9 +5,11 @@ import type {
 } from "@/application/interfaces/repositories/IOrderRepository";
 import type { Order, OrderStatus } from "@/domain/entities/Order";
 import { OrderFactory } from "@/domain/factories/OrderFactory";
+import { resolveOrganizations } from "@/application/services/OrganizationResolver";
 import { HttpClient } from "@/infrastructure/api/HttpClient";
 import { type FhirBundle } from "@/infrastructure/fhir/FhirTypes";
 import { FHIR_SYSTEMS } from "@/lib/fhir";
+import { AppConfig } from "@/shared/config/AppConfig";
 import { createClientLogger } from "@/shared/utils/clientLogger";
 
 const log = createClientLogger("FhirOrderRepository");
@@ -23,6 +25,7 @@ function extractOrderNumber(ids?: Array<{ system?: string; value?: string }>): s
 
 // ── Minimal FHIR type for ServiceRequest ─────────────────────────────────────
 interface FhirIdentifier { system?: string; value?: string }
+interface FhirReference  { reference?: string; display?: string }
 interface FhirServiceRequest {
   resourceType: "ServiceRequest";
   id?:          string;
@@ -32,13 +35,25 @@ interface FhirServiceRequest {
   authoredOn?:  string;
   identifier?:  FhirIdentifier[];
   specimen?:    Array<{ reference?: string }>;
-  subject?:     { reference?: string };
+  subject?:     FhirReference;
+  requester?:   FhirReference;
+  performer?:   FhirReference[];
   meta?:        { lastUpdated?: string };
 }
 
 function mapToOrder(sr: FhirServiceRequest): Order {
   const patientRef = sr.subject?.reference ?? "";
   const patientId  = patientRef.startsWith("Patient/") ? patientRef.slice("Patient/".length) : "";
+
+  const { sender, receivers } = resolveOrganizations(
+    {
+      ...(sr.requester !== undefined && { requester: sr.requester }),
+      ...(sr.performer !== undefined && { performer: sr.performer }),
+    },
+    {},
+    AppConfig.labOrgId,
+  );
+
   return OrderFactory.create({
     id:            sr.id ?? "",
     ...(sr.status !== undefined && { status: sr.status as OrderStatus }),
@@ -48,6 +63,8 @@ function mapToOrder(sr: FhirServiceRequest): Order {
     orderNumber:   extractOrderNumber(sr.identifier),
     specimenCount: Array.isArray(sr.specimen) ? sr.specimen.length : 0,
     patientId,
+    ...(sender !== undefined && { sender }),
+    receivers,
   });
 }
 

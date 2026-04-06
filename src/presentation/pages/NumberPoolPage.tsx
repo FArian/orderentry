@@ -353,7 +353,7 @@ function AddNumbersForm({
 
 // ── NumberPoolPage ─────────────────────────────────────────────────────────────
 
-export default function NumberPoolPage() {
+export default function NumberPoolPage({ mode = "page" }: { mode?: "page" | "tab" }) {
   const { t } = useTranslation();
   const { serviceTypes } = useServiceTypes();
   const {
@@ -385,29 +385,27 @@ export default function NumberPoolPage() {
     }
   }
 
-  return (
-    <div className="flex flex-1 min-h-0">
-      <AppSidebar />
+  const inner = (
+    <div className={mode === "tab" ? "space-y-7 py-4" : "px-8 py-7 max-w-[1100px] mx-auto space-y-7"}>
 
-      <div className="flex-1 overflow-y-auto bg-zt-bg-page">
-        <div className="px-8 py-7 max-w-[1100px] mx-auto space-y-7">
+      {mode === "page" && (
+        <nav className="flex items-center gap-1.5 text-[12px] text-zt-text-tertiary">
+          <BackButton />
+          <span>|</span>
+          <Link href="/" className="text-zt-primary hover:underline">{t("nav.home")}</Link>
+          <span>/</span>
+          <span className="text-zt-text-primary">{t("nav.adminNumberPool")}</span>
+        </nav>
+      )}
 
-          {/* Breadcrumb */}
-          <nav className="flex items-center gap-1.5 text-[12px] text-zt-text-tertiary">
-            <BackButton />
-            <span>|</span>
-            <Link href="/" className="text-zt-primary hover:underline">{t("nav.home")}</Link>
-            <span>/</span>
-            <span className="text-zt-text-primary">{t("nav.adminNumberPool")}</span>
-          </nav>
+      {mode === "page" && (
+        <div>
+          <h1 className="text-[20px] font-medium text-zt-text-primary">{t("pool.title")}</h1>
+          <p className="text-[13px] text-zt-text-tertiary mt-0.5">{t("pool.subtitle")}</p>
+        </div>
+      )}
 
-          {/* Header */}
-          <div>
-            <h1 className="text-[20px] font-medium text-zt-text-primary">{t("pool.title")}</h1>
-            <p className="text-[13px] text-zt-text-tertiary mt-0.5">{t("pool.subtitle")}</p>
-          </div>
-
-          {/* Loading */}
+      {/* Loading */}
           {loading && (
             <div className="space-y-2">
               {Array.from({ length: 3 }, (_, i) => (
@@ -563,7 +561,16 @@ export default function NumberPoolPage() {
             </>
           )}
 
-        </div>
+    </div>
+  );
+
+  if (mode === "tab") return inner;
+
+  return (
+    <div className="flex flex-1 min-h-0">
+      <AppSidebar />
+      <div className="flex-1 overflow-y-auto bg-zt-bg-page">
+        {inner}
       </div>
     </div>
   );

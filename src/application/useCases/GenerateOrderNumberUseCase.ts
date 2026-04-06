@@ -78,11 +78,7 @@ function resolveStrategy(serviceType: ServiceType, rule: OrgRule | null) {
 /** Resolve service type through org mapping (e.g. "MIKRO" → "MIBI"). */
 function resolveServiceType(requested: ServiceType, rule: OrgRule | null): ServiceType {
   if (!rule) return requested;
-  const mapped = rule.serviceTypeMapping[requested];
-  if (mapped && (mapped === "MIBI" || mapped === "ROUTINE" || mapped === "POC")) {
-    return mapped;
-  }
-  return requested;
+  return rule.serviceTypeMapping[requested] ?? requested;
 }
 
 export class GenerateOrderNumberUseCase {
@@ -125,8 +121,12 @@ export class GenerateOrderNumberUseCase {
 
     await this.pool.markUsed(reserved.id, patientId);
 
-    const remaining = await this.pool.countAvailable();
-    await this.notifications.checkAndNotify(remaining);
+    const remaining = await this.pool.countAvailable(serviceType);
+    await this.notifications.checkAndNotify(
+      remaining,
+      serviceType,
+      ...(orgFhirId !== null ? [orgFhirId] : []),
+    );
 
     return {
       orderNumber: reserved.number,

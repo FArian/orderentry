@@ -1,0 +1,210 @@
+{
+	"resourceType": "Bundle",
+	"id": "bundle-transaction-87a09a0c-b22d-406b-9966-71b849295fad",
+	"type": "transaction",
+	"timestamp": "2025-08-25T18:27:50.488+02:00",
+	"entry": [
+		{
+			"resource": {
+				"resourceType": "ActivityDefinition",
+				"id": "actdef-ADENPNA",
+				"extension": [
+					{
+						"url": "https://www.zetlab.ch/fhir/StructureDefinition/minimal-volume-microliter",
+						"valueQuantity": {
+							"value": 230,
+							"unit": "µl",
+							"system": "http://unitsofmeasure.org",
+							"code": "uL"
+						}
+					},
+					{
+						"url": "https://www.zetlab.ch/StructureDefinition/specimen-definition",
+						"valueReference": {
+							"identifier": {
+								"system": "https://www.zetlab.ch/fhir/specimen",
+								"value": "91"
+							}
+						}
+					}
+				],
+				"url": "https://www.zetlab.ch/fhir/activity/ADENPNA",
+				"subtitle": "Nasopharyngialabstrich",
+				"status": "active",
+				"description": "Adenoviren",
+				"topic": [
+					{
+						"coding": [
+							{
+								"system": "https://www.zetlab.ch/fhir/category",
+								"code": "MIBI",
+								"display": "Mikrobiologie"
+							}
+						]
+					}
+				],
+				"kind": "ServiceRequest",
+				"code": {
+					"coding": [
+						{
+							"extension": [
+								{
+									"url": "http://hl7.org/fhir/StructureDefinition/translation",
+									"extension": [
+										{ "url": "lang", "valueCode": "de" },
+										{ "url": "content", "valueString": "Adenoviren" }
+									]
+								},
+								{
+									"url": "http://hl7.org/fhir/StructureDefinition/translation",
+									"extension": [
+										{ "url": "lang", "valueCode": "en" },
+										{ "url": "content", "valueString": "Adenoviruses" }
+									]
+								}
+							],
+							"system": "https://www.zetlab.ch/lis/codes",
+							"code": "#ADENPNA",
+							"display": "Adenoviren"
+						}
+					]
+				},
+				"location": {
+					"identifier": {
+						"system": "https://www.zetlab.ch/fhir/groups-observation",
+						"value": "RISCHMB"
+					}
+				}
+			},
+			"request": { "method": "PUT", "url": "ActivityDefinition/actdef-ADENPNA" }
+		},
+		{
+			"resource": {
+				"resourceType": "SpecimenDefinition",
+				"id": "specdef-91",
+				"extension": [
+					{
+						"url": "http://hl7.org/fhir/StructureDefinition/instance-url",
+						"valueUri": "https://www.zetlab.ch/fhir/specimen/91"
+					},
+					{
+						"url": "http://hl7.org/fhir/StructureDefinition/resource-status",
+						"valueCode": "active"
+					}
+				],
+				"identifier": {
+					"system": "https://www.zetlab.ch/fhir/specimen",
+					"value": "91"
+				},
+				"typeCollected": {
+					"coding": [
+						{
+							"system": "https://www.zetlab.ch/fhir/specimen-types",
+							"code": "91",
+							"display": "Nasopharyngialabstrich"
+						},
+						{
+							"system": "http://snomed.info/sct",
+							"code": "258500001",
+							"display": "Nasopharyngeal swab (specimen)"
+						}
+					],
+					"text": "Nasopharyngialabstrich"
+				},
+				"typeTested": [
+					{
+						"preference": "preferred",
+						"container": {
+							"description": "Nasopharyngeal-Abstrich-Transportmedium (z.B. Copan FLOQSwab + UTM)",
+							"minimumVolumeQuantity": {
+								"value": 1.0,
+								"unit": "mL",
+								"system": "http://unitsofmeasure.org",
+								"code": "mL"
+							}
+						},
+						"retentionTime": {
+							"value": 48,
+							"unit": "h",
+							"system": "http://unitsofmeasure.org",
+							"code": "h"
+						},
+						"rejectionCriterion": [
+							{
+								"coding": [
+									{
+										"system": "http://terminology.hl7.org/CodeSystem/rejection-criteria",
+										"code": "INSUFFICIENT",
+										"display": "Insufficient quantity"
+									}
+								],
+								"text": "Getrockneter oder unzureichender Abstrich; falsches Transportmedium"
+							}
+						],
+						"handling": [
+							{
+								"temperatureQualifier": {
+									"coding": [
+										{
+											"system": "http://terminology.hl7.org/CodeSystem/handling-condition",
+											"code": "room",
+											"display": "Room Temperature"
+										}
+									],
+									"text": "Raumtemperatur"
+								},
+								"temperatureRange": {
+									"low":  { "value": 15, "unit": "°C", "system": "http://unitsofmeasure.org", "code": "Cel" },
+									"high": { "value": 25, "unit": "°C", "system": "http://unitsofmeasure.org", "code": "Cel" }
+								},
+								"maxDuration": {
+									"value": 48,
+									"unit": "h",
+									"system": "http://unitsofmeasure.org",
+									"code": "h"
+								},
+								"instruction": "Bei Raumtemperatur lagern. Nicht einfrieren. Schnellstmöglich ins Labor senden."
+							}
+						]
+					}
+				]
+			},
+			"request": { "method": "PUT", "url": "SpecimenDefinition/specdef-91" }
+		},
+		{
+			"resource": {
+				"resourceType": "ObservationDefinition",
+				"id": "obsdef-ADENPNA",
+				"category": [
+					{
+						"coding": [
+							{
+								"system": "http://terminology.hl7.org/CodeSystem/observation-category",
+								"code": "laboratory",
+								"display": "Laboratory"
+							}
+						]
+					}
+				],
+				"code": {
+					"coding": [
+						{
+							"system": "https://www.zetlab.ch/lis/codes",
+							"code": "obsdef-ADENPNA",
+							"display": "Adenoviren"
+						}
+					],
+					"text": "Adenoviren"
+				},
+				"identifier": [
+					{
+						"system": "https://www.zetlab.ch/lis/codes",
+						"value": "#ADENPNA"
+					}
+				],
+				"preferredReportName": "Adenoviruses"
+			},
+			"request": { "method": "PUT", "url": "ObservationDefinition/obsdef-ADENPNA" }
+		}
+	]
+}

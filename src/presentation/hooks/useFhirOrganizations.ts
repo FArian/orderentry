@@ -9,10 +9,11 @@ import type {
 } from "@/infrastructure/api/dto/FhirRegistryDto";
 import type { FhirOrganization } from "@/infrastructure/api/controllers/FhirOrganizationsController";
 
-const GLN_SYSTEM = "urn:oid:2.51.1.3";
+// Both systems are valid GS1 GLN URIs — check both for backward compatibility
+const GLN_SYSTEMS = ["https://www.gs1.org/gln", "urn:oid:2.51.1.3"];
 
 function extractGln(org: FhirOrganization): string {
-  return org.identifier?.find((i) => i.system === GLN_SYSTEM)?.value ?? "";
+  return org.identifier?.find((i) => i.system !== undefined && GLN_SYSTEMS.includes(i.system))?.value ?? "";
 }
 
 function orgToDto(

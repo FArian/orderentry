@@ -83,7 +83,10 @@ function useAdminEnv() {
     [entries],
   );
 
-  return { entries, loading, groups, isReadOnly, edit, startEdit, cancelEdit, saveEdit, saving, saveMsg, setEdit };
+  /** Keys that are present in .env.local (editable via POST /api/env). */
+  const localKeys = useMemo(() => new Set(vars.map((v) => v.key)), [vars]);
+
+  return { entries, loading, groups, isReadOnly, edit, startEdit, cancelEdit, saveEdit, saving, saveMsg, setEdit, localKeys };
 }
 
 // ── EnvEntryEdit ──────────────────────────────────────────────────────────────
@@ -128,18 +131,19 @@ function EnvEntryEdit({ entry, editValue, onChange, onSave, onCancel, saving }: 
 // ── EnvEntry ──────────────────────────────────────────────────────────────────
 
 interface EntryProps {
-  entry:      EnvSchemaEntryDto;
-  isEditing:  boolean;
-  editValue:  string;
-  isReadOnly: boolean;
-  onEdit:     () => void;
-  onChange:   (v: string) => void;
-  onSave:     () => void;
-  onCancel:   () => void;
-  saving:     boolean;
+  entry:          EnvSchemaEntryDto;
+  isEditing:      boolean;
+  editValue:      string;
+  isReadOnly:     boolean;
+  isLockedByEnv:  boolean;
+  onEdit:         () => void;
+  onChange:       (v: string) => void;
+  onSave:         () => void;
+  onCancel:       () => void;
+  saving:         boolean;
 }
 
-function EnvEntry({ entry, isEditing, editValue, isReadOnly, onEdit, onChange, onSave, onCancel, saving }: EntryProps) {
+function EnvEntry({ entry, isEditing, editValue, isReadOnly, isLockedByEnv, onEdit, onChange, onSave, onCancel, saving }: EntryProps) {
   const { t }       = useTranslation();
   const isModified  = !entry.secret && entry.currentValue !== entry.default && entry.currentValue !== "";
   const isEmpty     = entry.currentValue === "" || entry.currentValue === "••••••••";
@@ -153,7 +157,8 @@ function EnvEntry({ entry, isEditing, editValue, isReadOnly, onEdit, onChange, o
           {entry.secret          && <Badge variant="warning" label={t("admin.envSchema.secret")} />}
           {entry.writable        && <Badge variant="info"    label={t("admin.envSchema.writable")} />}
           {entry.restartRequired && <Badge variant="neutral" label={t("admin.envSchema.restart")} />}
-          {entry.writable && !isReadOnly && !isEditing && (
+          {isLockedByEnv         && <Badge variant="neutral" label="🔒 ENV" tooltip={t("admin.envSchema.lockedByEnv")} />}
+          {entry.writable && !isReadOnly && !isEditing && !isLockedByEnv && (
             <button
               onClick={onEdit}
               className="ml-1 text-[11px] text-zt-primary hover:underline"
@@ -183,6 +188,12 @@ function EnvEntry({ entry, isEditing, editValue, isReadOnly, onEdit, onChange, o
             )}
           </code>
         </div>
+      )}
+
+      {isLockedByEnv && !isEditing && (
+        <p className="mt-1.5 text-[11px] text-zt-text-tertiary italic">
+          {t("admin.envSchema.lockedByEnvNote")}
+        </p>
       )}
 
       {isEditing && (
@@ -295,6 +306,7 @@ export function AdminEnvPage() {
                     isEditing={hook.edit?.key === entry.key}
                     editValue={hook.edit?.key === entry.key ? hook.edit.value : ""}
                     isReadOnly={hook.isReadOnly}
+                    isLockedByEnv={!hook.localKeys.has(entry.key) && entry.currentValue !== "" && entry.currentValue !== "••••••••"}
                     onEdit={() => hook.startEdit(entry.key)}
                     onChange={(v) => hook.setEdit((prev) => prev ? { ...prev, value: v } : null)}
                     onSave={hook.saveEdit}

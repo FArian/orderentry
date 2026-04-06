@@ -156,13 +156,43 @@ model ReservedOrderNumber {
 // ── PoolNotificationLog ───────────────────────────────────────────────────────
 
 /// Anti-spam log for pool threshold email notifications.
-/// An email is only sent once per threshold level until the pool is refilled.
+/// An email is only sent once per (serviceType + level) until the pool is refilled.
 model PoolNotificationLog {
   id             String   @id @default(uuid())
   level          String   /// "info" | "warn" | "error"
+  /// Service type this notification was sent for (MIBI, ROUTINE, POC, …). null = global.
+  serviceType    String?
   sentAt         DateTime @default(now())
   remainingCount Int
   poolRefilled   Boolean  @default(false)
+  /// AdminTask that was created alongside this notification (nullable = no task created).
+  taskId         String?
+}
+
+// ── AdminTask ─────────────────────────────────────────────────────────────────
+
+/// Internal admin tasks created by the system for pool alerts and other events.
+/// Type "ORDER_NUMBER_POOL_ALERT" = pool threshold crossed.
+/// Status "OPEN" = needs attention; "RESOLVED" = admin confirmed fix.
+model AdminTask {
+  id          String    @id @default(uuid())
+  /// Task category — currently only "ORDER_NUMBER_POOL_ALERT"
+  type        String
+  /// Severity: "INFO" | "WARNING" | "CRITICAL"
+  severity    String
+  /// FHIR Organisation ID if the alert is org-specific. null = global pool.
+  orgId       String?
+  /// ServiceType (MIBI, ROUTINE, POC, …) this alert belongs to.
+  serviceType String?
+  /// Human-readable alert message (German).
+  message     String
+  /// JSON metadata: remainingCount, threshold level, pool stats.
+  metadata    String    @default("{}")
+  /// Task lifecycle: "OPEN" | "RESOLVED"
+  status      String    @default("OPEN")
+  resolvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 // ── PoolThresholdConfig ───────────────────────────────────────────────────────

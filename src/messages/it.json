@@ -52,6 +52,8 @@
     "adminMerge": "Duplicati",
     "adminOrgRules": "Regole org.",
     "adminNumberPool": "Pool numeri",
+    "adminOrderNumbers": "Numeri ordine",
+    "adminAgents": "Local Agents",
     "accountSystem": "Sistema",
     "connectedSection": "Sistemi collegati",
     "groupClinical": "Clinica",
@@ -165,6 +167,12 @@
     "lookupPlaceholder": "80756… (20 cifre)",
     "lookupFound": "Trovato",
     "noSasis": "Nessuna connessione SASIS configurata."
+  },
+  "org": {
+    "sender": "Mittente",
+    "auftraggeber": "Richiedente",
+    "auftragnehmer": "Laboratorio",
+    "unknown": "Sconosciuto"
   },
   "orders": {
     "title": "Richieste",
@@ -451,7 +459,9 @@
       "editLink": "Modifica variabili",
       "editVar": "Modifica",
       "secretNote": "Valore segreto — non verrà più visualizzato dopo il salvataggio.",
-      "clearNote": "Lasciare vuoto per utilizzare il valore predefinito."
+      "clearNote": "Lasciare vuoto per utilizzare il valore predefinito.",
+      "lockedByEnv": "Bloccato da variabile d'ambiente",
+      "lockedByEnvNote": "Questo valore è impostato da una variabile d'ambiente di sistema (es. docker-compose) e non può essere modificato qui."
     }
   },
   "auth": {
@@ -925,6 +935,18 @@
       "replayMsg": "Questo link è già stato utilizzato. Per motivi di sicurezza, ogni link può essere aperto una sola volta. Richiedere un nuovo link.",
       "contactHint": "Se il problema persiste, contattare il supporto IT.",
       "goHome": "Vai all'elenco pazienti"
+    },
+    "orderNumbers": {
+      "title": "Numeri ordine",
+      "subtitle": "Regole org., pool numeri e monitoraggio allarmi",
+      "tabOrgRules": "Regole org.",
+      "tabNumberPool": "Pool numeri",
+      "tabMonitoring": "Monitoraggio",
+      "noAlerts": "Nessun allarme aperto",
+      "noAlertsDesc": "Tutti i pool sono sufficientemente riempiti.",
+      "alertSummary": "{n} allarmi pool aperti",
+      "goToPool": "Riempire pool",
+      "resolve": "Risolto"
     }
   }
 }

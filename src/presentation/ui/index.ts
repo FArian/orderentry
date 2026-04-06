@@ -39,3 +39,6 @@ export type { DropdownProps, DropdownItemProps } from "./Dropdown";
 
 export { RoleTagInput } from "./RoleTagInput";
 export type { RoleTagInputProps } from "./RoleTagInput";
+
+export { OrgBadge, OrgBadgeOrDash } from "./OrgBadge";
+export type { OrgBadgeProps, OrgBadgeVariant } from "./OrgBadge";

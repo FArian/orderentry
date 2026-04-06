@@ -566,7 +566,8 @@ export default function PatientDetailClient({ id }: { id: string }) {
           const vnrId   = findById(["vnr", "vertragsnr", "versicherungsnr", "policynr", "membernr"]);
           const vnrNumber   = vnrId?.value || "";
           const insuranceId = ikId || vnrId || vekaId;
-          const insurerName = insuranceId?.assigner?.display || p.managingOrganization?.display || "";
+          const insurerName = insuranceId?.assigner?.display || "";
+          const clinicName  = p.managingOrganization?.display || "";
 
           const leftCol = [
             { label: tr("patient.name"),    value: nameToString(p.name) },
@@ -682,9 +683,9 @@ export default function PatientDetailClient({ id }: { id: string }) {
                         {tr("patient.active")}
                       </span>
                     )}
-                    {insurerName && (
+                    {clinicName && (
                       <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-zt-primary-light text-zt-primary border border-zt-primary-border">
-                        {insurerName}
+                        {clinicName}
                       </span>
                     )}
                     {p.deceasedBoolean && (

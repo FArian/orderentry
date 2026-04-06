@@ -3,7 +3,10 @@
  *
  * A "task" is any record that requires admin attention:
  *   - Organization without a GLN
- *   - Practitioner without a GLN
+ *   - Practitioner without a GLN (clinical roles only)
+ *
+ * Administrative roles (e.g. Administrative officer) are exempt from the GLN requirement
+ * because they have no medical responsibility and do not appear in lab orders.
  *
  * GET /api/admin/tasks → AdminTasksResponseDto
  */
@@ -12,8 +15,21 @@ import { fhirOrganizationsController, type FhirOrganization } from "./FhirOrgani
 import { fhirPractitionersController, type FhirPractitioner, type FhirPractitionerRole } from "./FhirPractitionersController";
 import type { FhirOrganizationDto, FhirPractitionerDto } from "../dto/FhirRegistryDto";
 import type { FhirBundle } from "@/infrastructure/fhir/FhirTypes";
+import { EnvConfig } from "@/infrastructure/config/EnvConfig";
 
-const GLN_SYSTEM = "urn:oid:2.51.1.3";
+const GLN_SYSTEMS = [EnvConfig.fhirSystems.gln, "urn:oid:2.51.1.3"];
+
+// Role codes that are exempt from the GLN requirement.
+// Administrative/non-clinical roles have no medical responsibility
+// and do not appear as ordering practitioners in lab workflows.
+const GLN_EXEMPT_ROLE_CODES = new Set([
+  // SNOMED CT — administrative roles
+  "224608005", // Administrative officer
+  "224599007", // Receptionist
+  "159561009", // Office clerk
+  "394738000", // Other categories
+  // Swiss OID urn:oid:2.51.1.3.roleType — none currently exempt
+]);
 
 export interface AdminTasksResponseDto {
   total:                   number;
@@ -39,7 +55,7 @@ export class AdminTasksController {
       .map((org) => ({
         id:   org.id!,
         name: org.name ?? "",
-        gln:  org.identifier?.find((i) => i.system === GLN_SYSTEM)?.value ?? "",
+        gln:  org.identifier?.find((i) => i.system !== undefined && GLN_SYSTEMS.includes(i.system))?.value ?? "",
       }));
 
     // Parse FHIR Bundle with PractitionerRole + included resources
@@ -63,20 +79,24 @@ export class AdminTasksController {
         const practId  = practRef.split("/").at(-1) ?? "";
         const pract    = practsById.get(practId);
         const name     = pract?.name?.[0];
+        const roleCode = role.code?.[0]?.coding?.[0]?.code ?? "";
         return {
           id:                 pract?.id ?? practId,
           firstName:          name?.given?.[0] ?? "",
           lastName:           name?.family ?? "",
-          gln:                pract?.identifier?.find((i) => i.system === GLN_SYSTEM)?.value ?? "",
+          gln:                pract?.identifier?.find((i) => i.system !== undefined && GLN_SYSTEMS.includes(i.system))?.value ?? "",
           organizationId:     "",
           organizationName:   "",
-          roleCode:           "",
+          roleCode,
+          roleDisplay:        role.code?.[0]?.coding?.[0]?.display ?? role.code?.[0]?.text ?? "",
           practitionerRoleId: role.id!,
         };
       });
 
     const orgsWithoutGln          = allOrgs.filter((o) => !o.gln?.trim());
-    const practitionersWithoutGln = allPracts.filter((p) => !p.gln?.trim());
+    const practitionersWithoutGln = allPracts.filter(
+      (p) => !p.gln?.trim() && !GLN_EXEMPT_ROLE_CODES.has(p.roleCode),
+    );
     const total                   = orgsWithoutGln.length + practitionersWithoutGln.length;
     return { total, orgsWithoutGln, practitionersWithoutGln };
   }

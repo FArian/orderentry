@@ -104,8 +104,13 @@ export class PrismaReservedNumberRepository implements IReservedNumberRepository
     return { total, available, used: total - available };
   }
 
-  async countAvailable(): Promise<number> {
-    return prisma.reservedOrderNumber.count({ where: { status: "available" } });
+  async countAvailable(serviceType?: string): Promise<number> {
+    return prisma.reservedOrderNumber.count({
+      where: {
+        status: "available",
+        ...(serviceType !== undefined && { serviceType }),
+      },
+    });
   }
 
   async getThresholds(): Promise<PoolThresholdData> {

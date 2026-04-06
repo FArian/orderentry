@@ -42,9 +42,10 @@ function parseLevel(raw: string): LogLevel {
 // ── Singleton config (read once at module load) ───────────────────────────────
 
 const _configuredLevel: LogLevel = parseLevel(
-  process.env.LOG_LEVEL ?? "info",
+  process.env[`${(process.env.APP_NAME ?? "ORDERENTRY").toUpperCase()}_LOG__LEVEL`] ?? "info",
 );
-const _logFile: string | null = process.env.LOG_FILE?.trim() || null;
+const _logFile: string | null =
+  (process.env[`${(process.env.APP_NAME ?? "ORDERENTRY").toUpperCase()}_LOG__FILE`] ?? "").trim() || null;
 
 // ── Formatter ─────────────────────────────────────────────────────────────────
 

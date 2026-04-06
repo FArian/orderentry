@@ -1,0 +1,210 @@
+{
+	"resourceType": "Bundle",
+	"id": "bundle-transaction-ea985616-910d-40dd-a5aa-084cb86ce00e",
+	"type": "transaction",
+	"timestamp": "2025-08-25T18:27:52.525+02:00",
+	"entry": [
+		{
+			"resource": {
+				"resourceType": "ActivityDefinition",
+				"id": "actdef-BAKPAU",
+				"extension": [
+					{
+						"url": "https://www.zetlab.ch/fhir/StructureDefinition/minimal-volume-microliter",
+						"valueQuantity": {
+							"value": 230,
+							"unit": "µl",
+							"system": "http://unitsofmeasure.org",
+							"code": "uL"
+						}
+					},
+					{
+						"url": "https://www.zetlab.ch/StructureDefinition/specimen-definition",
+						"valueReference": {
+							"identifier": {
+								"system": "https://www.zetlab.ch/fhir/specimen",
+								"value": "AA"
+							}
+						}
+					}
+				],
+				"url": "https://www.zetlab.ch/fhir/activity/BAKPAU",
+				"subtitle": "Abstrich Auge/Nase/Mund/Ohr",
+				"status": "active",
+				"description": "Bakterielle Breitband-PCR",
+				"topic": [
+					{
+						"coding": [
+							{
+								"system": "https://www.zetlab.ch/fhir/category",
+								"code": "MIBI",
+								"display": "Mikrobiologie"
+							}
+						]
+					}
+				],
+				"kind": "ServiceRequest",
+				"code": {
+					"coding": [
+						{
+							"extension": [
+								{
+									"url": "http://hl7.org/fhir/StructureDefinition/translation",
+									"extension": [
+										{ "url": "lang", "valueCode": "de" },
+										{ "url": "content", "valueString": "Bakterielle Breitband-PCR" }
+									]
+								},
+								{
+									"url": "http://hl7.org/fhir/StructureDefinition/translation",
+									"extension": [
+										{ "url": "lang", "valueCode": "en" },
+										{ "url": "content", "valueString": "Bacterial broadband PCR" }
+									]
+								}
+							],
+							"system": "https://www.zetlab.ch/lis/codes",
+							"code": "#BAKPAU",
+							"display": "Bakterielle Breitband-PCR"
+						}
+					]
+				},
+				"location": {
+					"identifier": {
+						"system": "https://www.zetlab.ch/fhir/groups-observation",
+						"value": "RISCHMB"
+					}
+				}
+			},
+			"request": { "method": "PUT", "url": "ActivityDefinition/actdef-BAKPAU" }
+		},
+		{
+			"resource": {
+				"resourceType": "SpecimenDefinition",
+				"id": "specdef-AA",
+				"extension": [
+					{
+						"url": "http://hl7.org/fhir/StructureDefinition/instance-url",
+						"valueUri": "https://www.zetlab.ch/fhir/specimen/AA"
+					},
+					{
+						"url": "http://hl7.org/fhir/StructureDefinition/resource-status",
+						"valueCode": "active"
+					}
+				],
+				"identifier": {
+					"system": "https://www.zetlab.ch/fhir/specimen",
+					"value": "AA"
+				},
+				"typeCollected": {
+					"coding": [
+						{
+							"system": "https://www.zetlab.ch/fhir/specimen-types",
+							"code": "AA",
+							"display": "Abstrich Auge/Nase/Mund/Ohr"
+						},
+						{
+							"system": "http://snomed.info/sct",
+							"code": "119399004",
+							"display": "Specimen from eye (specimen)"
+						}
+					],
+					"text": "Abstrich Auge / Nase / Mund / Ohr"
+				},
+				"typeTested": [
+					{
+						"preference": "preferred",
+						"container": {
+							"description": "Abstrich-Transportmedium (z.B. Copan ESwab 480C)",
+							"minimumVolumeQuantity": {
+								"value": 0.5,
+								"unit": "mL",
+								"system": "http://unitsofmeasure.org",
+								"code": "mL"
+							}
+						},
+						"retentionTime": {
+							"value": 48,
+							"unit": "h",
+							"system": "http://unitsofmeasure.org",
+							"code": "h"
+						},
+						"rejectionCriterion": [
+							{
+								"coding": [
+									{
+										"system": "http://terminology.hl7.org/CodeSystem/rejection-criteria",
+										"code": "INSUFFICIENT",
+										"display": "Insufficient quantity"
+									}
+								],
+								"text": "Getrockneter oder unzureichender Abstrich"
+							}
+						],
+						"handling": [
+							{
+								"temperatureQualifier": {
+									"coding": [
+										{
+											"system": "http://terminology.hl7.org/CodeSystem/handling-condition",
+											"code": "room",
+											"display": "Room Temperature"
+										}
+									],
+									"text": "Raumtemperatur"
+								},
+								"temperatureRange": {
+									"low":  { "value": 15, "unit": "°C", "system": "http://unitsofmeasure.org", "code": "Cel" },
+									"high": { "value": 25, "unit": "°C", "system": "http://unitsofmeasure.org", "code": "Cel" }
+								},
+								"maxDuration": {
+									"value": 48,
+									"unit": "h",
+									"system": "http://unitsofmeasure.org",
+									"code": "h"
+								},
+								"instruction": "Bei Raumtemperatur lagern. Nicht einfrieren. Schnellstmöglich ins Labor senden."
+							}
+						]
+					}
+				]
+			},
+			"request": { "method": "PUT", "url": "SpecimenDefinition/specdef-AA" }
+		},
+		{
+			"resource": {
+				"resourceType": "ObservationDefinition",
+				"id": "obsdef-BAKPAU",
+				"category": [
+					{
+						"coding": [
+							{
+								"system": "http://terminology.hl7.org/CodeSystem/observation-category",
+								"code": "laboratory",
+								"display": "Laboratory"
+							}
+						]
+					}
+				],
+				"code": {
+					"coding": [
+						{
+							"system": "https://www.zetlab.ch/lis/codes",
+							"code": "obsdef-BAKPAU",
+							"display": "Bakterielle Breitband-PCR"
+						}
+					],
+					"text": "Bakterielle Breitband-PCR"
+				},
+				"identifier": [
+					{
+						"system": "https://www.zetlab.ch/lis/codes",
+						"value": "#BAKPAU"
+					}
+				],
+				"preferredReportName": "Bacterial broadband PCR"
+			},
+			"request": { "method": "PUT", "url": "ObservationDefinition/obsdef-BAKPAU" }
+		}
+	]
+}

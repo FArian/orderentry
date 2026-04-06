@@ -52,6 +52,8 @@
     "adminMerge": "Doublons",
     "adminOrgRules": "Règles org.",
     "adminNumberPool": "Pool de numéros",
+    "adminOrderNumbers": "Numéros de commande",
+    "adminAgents": "Local Agents",
     "accountSystem": "Système",
     "connectedSection": "Systèmes connectés",
     "groupClinical": "Clinique",
@@ -165,6 +167,12 @@
     "lookupPlaceholder": "80756… (20 chiffres)",
     "lookupFound": "Trouvé",
     "noSasis": "Aucune connexion SASIS configurée."
+  },
+  "org": {
+    "sender": "Expéditeur",
+    "auftraggeber": "Demandeur",
+    "auftragnehmer": "Destinataire",
+    "unknown": "Inconnu"
   },
   "orders": {
     "title": "Demandes",
@@ -451,7 +459,9 @@
       "editLink": "Modifier les variables",
       "editVar": "Modifier",
       "secretNote": "Valeur secrète — ne sera plus affichée après l'enregistrement.",
-      "clearNote": "Laisser vide pour utiliser la valeur par défaut."
+      "clearNote": "Laisser vide pour utiliser la valeur par défaut.",
+      "lockedByEnv": "Verrouillé par variable d'environnement",
+      "lockedByEnvNote": "Cette valeur est définie par une variable d'environnement système (p. ex. docker-compose) et ne peut pas être modifiée ici."
     }
   },
   "auth": {
@@ -925,6 +935,18 @@
       "replayMsg": "Ce lien a déjà été utilisé. Pour des raisons de sécurité, chaque lien ne peut être ouvert qu'une seule fois. Veuillez demander un nouveau lien.",
       "contactHint": "Si ce problème persiste, veuillez contacter le support informatique.",
       "goHome": "Aller à la liste des patients"
+    },
+    "orderNumbers": {
+      "title": "Numéros de commande",
+      "subtitle": "Règles org., pool de numéros et surveillance des alertes",
+      "tabOrgRules": "Règles org.",
+      "tabNumberPool": "Pool de numéros",
+      "tabMonitoring": "Surveillance",
+      "noAlerts": "Aucune alerte ouverte",
+      "noAlertsDesc": "Tous les pools sont suffisamment remplis.",
+      "alertSummary": "{n} alertes pool ouvertes",
+      "goToPool": "Remplir le pool",
+      "resolve": "Résoudre"
     }
   }
 }

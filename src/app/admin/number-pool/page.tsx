@@ -1,7 +1,5 @@
-"use client";
-
-import NumberPoolPage from "@/presentation/pages/NumberPoolPage";
+import { redirect } from "next/navigation";
 
 export default function AdminNumberPoolRoute() {
-  return <NumberPoolPage />;
+  redirect("/admin/order-numbers?tab=number-pool");
 }

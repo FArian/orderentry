@@ -58,7 +58,10 @@ export function useNavCounts(authenticated: boolean): NavCounts {
       fetchTotal("/api/roles"),
       fetchTotal("/api/admin/tasks"),
       fetchTotal("/api/admin/merge"),
-    ]).then(([patients, orders, results, users, fhirOrgs, roles, tasks, mergeCount]) => {
+      fetchTotal("/api/v1/admin/pool-tasks"),
+    ]).then(([patients, orders, results, users, fhirOrgs, roles, fhirTasks, mergeCount, poolTasks]) => {
+      // Combine FHIR registry tasks + pool alert tasks into one badge
+      const tasks = (fhirTasks ?? 0) + (poolTasks ?? 0) || null;
       setCounts({ patients, orders, results, users, fhirOrgs, roles, tasks, mergeCount });
     });
   }, [authenticated, refreshCount]);

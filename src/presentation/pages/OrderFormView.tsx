@@ -6,7 +6,6 @@
  */
 
 import Link from "next/link";
-import { FHIR_BASE } from "@/lib/fhir";
 import { formatDate } from "@/shared/utils/formatDate";
 import type { OrderCatalog } from "@/presentation/hooks/useOrderCatalog";
 import type { OrderForm } from "@/presentation/hooks/useOrderForm";
@@ -104,7 +103,6 @@ export function OrderFormView({
   const gender = pd?.gender ?? "";
   const { ahv } = getPatientIdentifiers();
 
-  const fhirHost = FHIR_BASE.replace(/^https?:\/\//, "").replace(/\/$/, "");
 
   // ── Loading overlay ────────────────────────────────────────────────────────
 
@@ -137,7 +135,7 @@ export function OrderFormView({
           <span className="text-zt-text-primary">{tr("order.newOrder")}</span>
         </nav>
         <span className="text-[11px] text-zt-success bg-zt-success-light px-2.5 py-0.5 rounded-full border border-zt-success-border">
-          FHIR {fhirHost}
+          FHIR verbunden
         </span>
       </div>
 

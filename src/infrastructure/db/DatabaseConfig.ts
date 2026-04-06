@@ -2,18 +2,20 @@
  * DatabaseConfig — resolves the active database configuration.
  *
  * Priority order (highest → lowest):
- *   1. ENV variables (DB_PROVIDER, DATABASE_URL)
+ *   1. ENV variables (ORDERENTRY_DB__PROVIDER, DATABASE_URL)
  *   2. Defaults (sqlite + local file)
  *
- * The Prisma client reads DATABASE_URL and DB_PROVIDER directly from process.env
- * (set via `env()` in schema.prisma). This module provides the resolved values
- * for health checks, settings UI display, and startup validation.
+ * DATABASE_URL is read by Prisma directly (cannot be renamed — framework constraint).
+ * ORDERENTRY_DB__PROVIDER is read via EnvConfig.dbProvider (namespaced pattern).
+ * This module provides the resolved values for health checks and the settings UI.
  *
  * Supported providers:
  *   sqlite      → file:./data/orderentry.db   (default, no extra service needed)
  *   postgresql  → postgresql://user:pwd@host:5432/db
  *   sqlserver   → sqlserver://host:1433;database=db;user=u;password=p;trustServerCertificate=true
  */
+
+import { EnvConfig } from "@/infrastructure/config/EnvConfig";
 
 export type DbProvider = "sqlite" | "postgresql" | "sqlserver";
 
@@ -34,7 +36,7 @@ function resolveProvider(raw: string | undefined): DbProvider {
 }
 
 export function resolveDbConfig(): ResolvedDbConfig {
-  const provider = resolveProvider(process.env.DB_PROVIDER);
+  const provider = resolveProvider(EnvConfig.dbProvider);
   const url      = process.env.DATABASE_URL?.trim() || DEFAULTS.url;
   const isDefault =
     provider === DEFAULTS.provider && url === DEFAULTS.url;

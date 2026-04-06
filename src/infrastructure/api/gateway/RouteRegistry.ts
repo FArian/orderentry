@@ -121,9 +121,10 @@ export const V1_ROUTES: readonly RouteEntry[] = [
   // ── Insurance ────────────────────────────────────────────────────────────────
   { method: "GET",    path: "/v1/insurance-lookup",                      version: "v1", tag: "Insurance",     auth: "public", summary: "Look up VeKa insurance card (SASIS)" },
 
-  // ── User profile ─────────────────────────────────────────────────────────────
+  // ── User profile & permissions ───────────────────────────────────────────────
   { method: "GET",    path: "/v1/me/profile",                            version: "v1", tag: "Auth",          auth: "public", summary: "Get current user profile" },
   { method: "PUT",    path: "/v1/me/profile",                            version: "v1", tag: "Auth",          auth: "public", summary: "Update current user profile" },
+  { method: "GET",    path: "/v1/me/permissions",                        version: "v1", tag: "Auth",          auth: "public", summary: "Get permissions for the current user" },
 
   // ── Logs ────────────────────────────────────────────────────────────────────
   { method: "GET",    path: "/v1/logs",                                  version: "v1", tag: "Observability", auth: "admin",  summary: "Tail structured log file (admin)" },

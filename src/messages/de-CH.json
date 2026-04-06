@@ -52,6 +52,8 @@
     "adminMerge": "Duplikate",
     "adminOrgRules": "Org-Regle",
     "adminNumberPool": "Nummerernpool",
+    "adminOrderNumbers": "Auftragsnummere",
+    "adminAgents": "Local Agents",
     "accountSystem": "System",
     "connectedSection": "Verbundeni Systeme",
     "groupClinical": "Klinisch",
@@ -165,6 +167,12 @@
     "lookupPlaceholder": "80756… (20 Stelle)",
     "lookupFound": "Gfunde",
     "noSasis": "Kei SASIS-Verbindig konfiguriert."
+  },
+  "org": {
+    "sender": "Sender",
+    "auftraggeber": "Uftraggeber",
+    "auftragnehmer": "Uftragneemer",
+    "unknown": "Unbekannt"
   },
   "orders": {
     "title": "Ufträg",
@@ -448,7 +456,9 @@
       "editLink": "Variable bearbeite",
       "editVar": "Bearbeite",
       "secretNote": "Secret-Wert — wird nach em Speichere nöd meh azeigt.",
-      "clearNote": "Leer lah um de Default-Wert z'verwende."
+      "clearNote": "Leer lah um de Default-Wert z'verwende.",
+      "lockedByEnv": "Durech Umgebigsvariable gsperrt",
+      "lockedByEnvNote": "De Wert wird durech e Systemumgebigsvariable gsetzt (z. B. docker-compose) und cha hie nöd bearbeitet werde."
     }
   },
   "auth": {
@@ -917,6 +927,18 @@
       "replayMsg": "De Link isch scho verwendet worde. Bittä forderet en neue Link ah.",
       "contactHint": "Falls s'Problem weiterhin besteht, wende Si sich ah de IT-Support.",
       "goHome": "Zur Patientälischt"
+    },
+    "orderNumbers": {
+      "title": "Auftragsnummere",
+      "subtitle": "Org-Regle, Nummerepool und Alarm-Überwachig",
+      "tabOrgRules": "Org-Regle",
+      "tabNumberPool": "Nummerepool",
+      "tabMonitoring": "Überwachig",
+      "noAlerts": "Käni offene Alarme",
+      "noAlertsDesc": "Alli Pools sind gnueg gfüllt.",
+      "alertSummary": "{n} offeni Pool-Alarme",
+      "goToPool": "Pool uffülle",
+      "resolve": "Erledigt"
     }
   }
 }

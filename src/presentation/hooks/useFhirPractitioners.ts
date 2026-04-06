@@ -13,7 +13,8 @@ import type {
   FhirPractitionerRole,
 } from "@/infrastructure/api/controllers/FhirPractitionersController";
 
-const GLN_SYSTEM = "urn:oid:2.51.1.3";
+// Both systems are valid GS1 GLN URIs — check both for backward compatibility
+const GLN_SYSTEMS = ["https://www.gs1.org/gln", "urn:oid:2.51.1.3"];
 
 type BundleResource = FhirPractitioner | FhirPractitionerRole | { resourceType: string; id?: string; name?: string };
 
@@ -24,7 +25,7 @@ function extractId(ref?: string): string {
 }
 
 function extractGln(identifiers?: Array<{ system?: string; value?: string }>): string {
-  return identifiers?.find((i) => i.system === GLN_SYSTEM)?.value ?? "";
+  return identifiers?.find((i) => i.system !== undefined && GLN_SYSTEMS.includes(i.system))?.value ?? "";
 }
 
 function bundleToDtos(bundle: FhirBundle<BundleResource>): FhirPractitionerDto[] {
@@ -63,6 +64,7 @@ function bundleToDtos(bundle: FhirBundle<BundleResource>): FhirPractitionerDto[]
       organizationId:     orgId,
       organizationName:   org?.name ?? orgId,
       roleCode:           role.code?.[0]?.coding?.[0]?.code ?? "",
+      roleDisplay:        role.code?.[0]?.coding?.[0]?.display ?? role.code?.[0]?.text ?? "",
       practitionerRoleId: role.id,
     });
   }
@@ -134,6 +136,7 @@ export function useFhirPractitioners(): UseFhirPractitionersResult {
         organizationId:     dto.organizationId,
         organizationName:   "",
         roleCode:           dto.roleCode,
+        roleDisplay:        "",
         practitionerRoleId: data.id ?? "",
       };
     },

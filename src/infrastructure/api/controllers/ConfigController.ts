@@ -2,7 +2,7 @@
  * ConfigController — handles GET /api/config and POST /api/config.
  *
  * Implements the runtime override layer:
- *   resolved value = config.json override ?? process.env ?? default
+ *   resolved value = process.env ?? config.json override ?? default
  *
  * Cross-environment design:
  *   GET  → always works; returns resolved values + source metadata.
@@ -49,9 +49,10 @@ export class ConfigController {
       const override = overrides[key] ?? null;
       const envValue = process.env[key] ?? null;
       const defaultValue = DEFAULTS[key];
+      // ENV always wins — if process.env is set, show "locked" regardless of override.
       const source =
+        envValue !== null ? "locked" :
         override !== null ? "override" :
-        envValue !== null ? "env" :
         "default";
 
       return {

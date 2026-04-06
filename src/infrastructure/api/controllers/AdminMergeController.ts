@@ -106,7 +106,8 @@ function parsePractBundle(
         gln:                pract?.identifier?.find((i) => i.system === EnvConfig.fhirSystems.gln)?.value ?? "",
         organizationId:     orgId,
         organizationName:   "",
-        roleCode:           (role.code?.[0] as { coding?: Array<{ code?: string }> } | undefined)?.coding?.[0]?.code ?? "",
+        roleCode:           (role.code?.[0] as { coding?: Array<{ code?: string; display?: string }> } | undefined)?.coding?.[0]?.code ?? "",
+        roleDisplay:        (role.code?.[0] as { coding?: Array<{ code?: string; display?: string }>; text?: string } | undefined)?.coding?.[0]?.display ?? (role.code?.[0] as { text?: string } | undefined)?.text ?? "",
         practitionerRoleId: role.id!,
       };
     });
@@ -153,17 +154,24 @@ export class AdminMergeController {
   }
 
   private findPractDuplicates(practs: FhirPractitionerDto[]): DuplicatePractGroup[] {
-    const byGln = new Map<string, FhirPractitionerDto[]>();
+    // Duplicate = same GLN AND same organization (different orgs are legitimate PractitionerRoles)
+    const byGlnOrg = new Map<string, FhirPractitionerDto[]>();
     for (const p of practs) {
       const gln = p.gln?.trim();
       if (!gln) continue;
-      const group = byGln.get(gln) ?? [];
+      const key   = `${gln}|${p.organizationId ?? ""}`;
+      const group = byGlnOrg.get(key) ?? [];
       group.push(p);
-      byGln.set(gln, group);
+      byGlnOrg.set(key, group);
     }
-    return [...byGln.entries()]
-      .filter(([, g]) => g.length > 1)
-      .map(([gln, practs]) => ({ gln, practs }));
+    // Re-group by GLN for display — only include GLNs that have at least one org-collision
+    const byGln = new Map<string, FhirPractitionerDto[]>();
+    for (const [key, group] of byGlnOrg.entries()) {
+      if (group.length < 2) continue;
+      const gln = key.split("|")[0]!;
+      byGln.set(gln, [...(byGln.get(gln) ?? []), ...group]);
+    }
+    return [...byGln.entries()].map(([gln, practs]) => ({ gln, practs }));
   }
 
   // ── Merge organisations ──────────────────────────────────────────────────────

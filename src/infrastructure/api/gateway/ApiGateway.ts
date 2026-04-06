@@ -28,8 +28,9 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createLogger } from "@/infrastructure/logging/Logger";
-import { checkAdminAccess } from "@/lib/auth";
+import { createLogger }          from "@/infrastructure/logging/Logger";
+import { requirePermission }     from "@/infrastructure/api/middleware/RequirePermission";
+import { PERMISSIONS }           from "@/domain/valueObjects/Permission";
 
 const log = createLogger("ApiGateway");
 
@@ -74,12 +75,12 @@ class ApiGateway {
 
     // ── Auth ────────────────────────────────────────────────────────────────
     if (auth === "admin") {
-      const result = await checkAdminAccess(req);
-      if (!result.authorized) {
-        const status = result.httpStatus;
+      const perm = await requirePermission(req, PERMISSIONS.ADMIN_ACCESS);
+      if (!perm.ok) {
+        const status = perm.response.status as 401 | 403;
         const title  = status === 403 ? "Forbidden" : "Unauthorized";
         log.warn(`✗ ${req.method} ${fullPath} ${status}`, { requestId });
-        return buildProblemResponse(title, status, `admin role required`, fullPath, requestId);
+        return buildProblemResponse(title, status, `permission '${PERMISSIONS.ADMIN_ACCESS}' required`, fullPath, requestId);
       }
     }
 
