@@ -1,5 +1,5 @@
-import type { Result } from "@/domain/entities/Result";
-import { ResultStatus } from "@/domain/entities/Result";
+import type { Result } from "../entities/Result";
+import { ResultStatus } from "../entities/Result";
 
 const VALID_STATUSES: readonly ResultStatus[] = [
   ResultStatus.REGISTERED,

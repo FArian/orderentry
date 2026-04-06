@@ -37,7 +37,7 @@
  *     FHIR_AUTH_PASSWORD=secret
  */
 
-import { EnvConfig } from "@/infrastructure/config/EnvConfig";
+import { EnvConfig } from "../config/EnvConfig";
 import type { AuthConfig } from "./types/AuthConfig";
 import { AuthorizationService } from "./AuthorizationService";
 

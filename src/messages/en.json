@@ -935,18 +935,18 @@
       "replayMsg": "This link has already been used. For security reasons, each link can only be opened once. Please request a new link.",
       "contactHint": "If this problem persists, please contact IT support.",
       "goHome": "Go to Patient List"
-    },
-    "orderNumbers": {
-      "title": "Order Numbers",
-      "subtitle": "Org rules, number pool, and alert monitoring",
-      "tabOrgRules": "Org Rules",
-      "tabNumberPool": "Number Pool",
-      "tabMonitoring": "Monitoring",
-      "noAlerts": "No open alerts",
-      "noAlertsDesc": "All pools are sufficiently filled.",
-      "alertSummary": "{n} open pool alerts",
-      "goToPool": "Refill pool",
-      "resolve": "Resolve"
     }
+  },
+  "orderNumbers": {
+    "title": "Order Numbers",
+    "subtitle": "Org rules, number pool, and alert monitoring",
+    "tabOrgRules": "Org Rules",
+    "tabNumberPool": "Number Pool",
+    "tabMonitoring": "Monitoring",
+    "noAlerts": "No open alerts",
+    "noAlertsDesc": "All pools are sufficiently filled.",
+    "alertSummary": "{n} open pool alerts",
+    "goToPool": "Refill pool",
+    "resolve": "Resolve"
   }
 }

@@ -2,7 +2,7 @@ import type {
   IOrderRepository,
   OrderSearchQuery,
   PagedOrders,
-} from "@/application/interfaces/repositories/IOrderRepository";
+} from "../interfaces/repositories/IOrderRepository";
 
 /**
  * Use case: retrieve a paginated list of lab orders (ServiceRequests).

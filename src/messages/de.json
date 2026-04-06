@@ -935,18 +935,18 @@
       "replayMsg": "Dieser Link wurde bereits verwendet. Aus Sicherheitsgründen kann jeder Link nur einmal geöffnet werden. Bitte fordern Sie einen neuen Link an.",
       "contactHint": "Falls das Problem weiterhin besteht, wenden Sie sich an den IT-Support.",
       "goHome": "Zur Patientenliste"
-    },
-    "orderNumbers": {
-      "title": "Auftragsnummern",
-      "subtitle": "Org-Regeln, Nummernpool und Alarm-Überwachung",
-      "tabOrgRules": "Org-Regeln",
-      "tabNumberPool": "Nummernpool",
-      "tabMonitoring": "Überwachung",
-      "noAlerts": "Keine offenen Alarme",
-      "noAlertsDesc": "Alle Pools sind ausreichend gefüllt.",
-      "alertSummary": "{n} offene Pool-Alarme",
-      "goToPool": "Pool auffüllen",
-      "resolve": "Erledigt"
     }
+  },
+  "orderNumbers": {
+    "title": "Auftragsnummern",
+    "subtitle": "Org-Regeln, Nummernpool und Alarm-Überwachung",
+    "tabOrgRules": "Org-Regeln",
+    "tabNumberPool": "Nummernpool",
+    "tabMonitoring": "Überwachung",
+    "noAlerts": "Keine offenen Alarme",
+    "noAlertsDesc": "Alle Pools sind ausreichend gefüllt.",
+    "alertSummary": "{n} offene Pool-Alarme",
+    "goToPool": "Pool auffüllen",
+    "resolve": "Erledigt"
   }
 }

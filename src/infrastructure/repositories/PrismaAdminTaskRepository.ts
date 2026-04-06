@@ -1,6 +1,6 @@
 import type { IAdminTaskRepository }      from "@/application/interfaces/repositories/IAdminTaskRepository";
 import type { AdminTask, AdminTaskInput, AdminTaskType } from "@/domain/entities/AdminTask";
-import { prisma }                          from "@/infrastructure/db/prismaClient";
+import { prisma }                          from "../db/prismaClient";
 import { randomUUID }                      from "crypto";
 
 function toAdminTask(row: {

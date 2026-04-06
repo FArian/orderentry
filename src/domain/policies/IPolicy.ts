@@ -5,7 +5,7 @@
  * can make purely functional decisions without side effects.
  */
 
-import type { Permission } from "@/domain/valueObjects/Permission";
+import type { Permission } from "../valueObjects/Permission";
 
 export interface PolicyContext {
   readonly role: string;

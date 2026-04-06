@@ -14,7 +14,7 @@
 
 import { deepLinkAuthStrategy } from "./DeepLinkAuthStrategyFactory";
 import { auditDeepLink }        from "./DeepLinkAuditLogger";
-import { fhirGet }              from "@/infrastructure/fhir/FhirClient";
+import { fhirGet }              from "../fhir/FhirClient";
 import type { DeepLinkContext } from "@/domain/entities/DeepLinkContext";
 
 // ── Result types ──────────────────────────────────────────────────────────────

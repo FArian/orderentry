@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { sasísApiBase } from "@/config";
+import { EnvConfig } from "@/infrastructure/config/EnvConfig";
 
-const SASIS_CONFIGURED = !!process.env.SASIS_API_BASE;
+const SASIS_CONFIGURED = !!EnvConfig.sasisApiBase;
 
 type SasisInsurance = {
   ean_party?: string;
@@ -64,7 +64,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const url = `${sasísApiBase}/${encodeURIComponent(cardNumber)}/${encodeURIComponent(date)}`;
+    const url = `${EnvConfig.sasisApiBase}/${encodeURIComponent(cardNumber)}/${encodeURIComponent(date)}`;
     const res = await fetch(url, {
       headers: { accept: "application/json" },
       cache: "no-store",

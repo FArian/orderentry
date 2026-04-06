@@ -24,10 +24,10 @@ import { MibiStrategy }                  from "@/domain/strategies/MibiStrategy"
 import { RoutineStrategy }               from "@/domain/strategies/RoutineStrategy";
 import { PocStrategy }                   from "@/domain/strategies/PocStrategy";
 import type { OrgRule }                  from "@/domain/entities/OrgRule";
-import type { IOrchestraOrderService }   from "@/application/interfaces/services/IOrchestraOrderService";
-import type { IReservedNumberRepository } from "@/application/interfaces/repositories/IReservedNumberRepository";
-import type { IPoolNotificationService } from "@/application/interfaces/services/IPoolNotificationService";
-import type { IOrgRuleRepository }       from "@/application/interfaces/repositories/IOrgRuleRepository";
+import type { IOrchestraOrderService }   from "../interfaces/services/IOrchestraOrderService";
+import type { IReservedNumberRepository } from "../interfaces/repositories/IReservedNumberRepository";
+import type { IPoolNotificationService } from "../interfaces/services/IPoolNotificationService";
+import type { IOrgRuleRepository }       from "../interfaces/repositories/IOrgRuleRepository";
 
 export interface GenerateOrderNumberInput {
   orgGln:      string;

@@ -2,7 +2,7 @@ import type {
   IResultRepository,
   PagedResults,
   ResultSearchQuery,
-} from "@/application/interfaces/repositories/IResultRepository";
+} from "../interfaces/repositories/IResultRepository";
 
 /**
  * Use case: full-text / filtered search for results.

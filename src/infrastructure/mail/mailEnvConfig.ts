@@ -5,7 +5,7 @@
  * can return a NullMailService instead of a misconfigured transporter.
  */
 
-import { EnvConfig } from "@/infrastructure/config/EnvConfig";
+import { EnvConfig } from "../config/EnvConfig";
 import type { MailConfig, MailProvider, MailAuthType } from "./types/MailConfig";
 import { MAIL_PROVIDERS, MAIL_AUTH_TYPES, PROVIDER_AUTH_MATRIX } from "./types/MailConfig";
 

@@ -935,18 +935,18 @@
       "replayMsg": "Ce lien a déjà été utilisé. Pour des raisons de sécurité, chaque lien ne peut être ouvert qu'une seule fois. Veuillez demander un nouveau lien.",
       "contactHint": "Si ce problème persiste, veuillez contacter le support informatique.",
       "goHome": "Aller à la liste des patients"
-    },
-    "orderNumbers": {
-      "title": "Numéros de commande",
-      "subtitle": "Règles org., pool de numéros et surveillance des alertes",
-      "tabOrgRules": "Règles org.",
-      "tabNumberPool": "Pool de numéros",
-      "tabMonitoring": "Surveillance",
-      "noAlerts": "Aucune alerte ouverte",
-      "noAlertsDesc": "Tous les pools sont suffisamment remplis.",
-      "alertSummary": "{n} alertes pool ouvertes",
-      "goToPool": "Remplir le pool",
-      "resolve": "Résoudre"
     }
+  },
+  "orderNumbers": {
+    "title": "Numéros de commande",
+    "subtitle": "Règles org., pool de numéros et surveillance des alertes",
+    "tabOrgRules": "Règles org.",
+    "tabNumberPool": "Pool de numéros",
+    "tabMonitoring": "Surveillance",
+    "noAlerts": "Aucune alerte ouverte",
+    "noAlertsDesc": "Tous les pools sont suffisamment remplis.",
+    "alertSummary": "{n} alertes pool ouvertes",
+    "goToPool": "Remplir le pool",
+    "resolve": "Résoudre"
   }
 }

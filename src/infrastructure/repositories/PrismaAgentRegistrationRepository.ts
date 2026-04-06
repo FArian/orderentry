@@ -3,7 +3,7 @@ import type {
   AgentRegistrationData,
   CreateAgentRegistrationInput,
 } from "@/application/interfaces/repositories/IAgentRegistrationRepository";
-import { prisma } from "@/infrastructure/db/prismaClient";
+import { prisma } from "../db/prismaClient";
 
 export class PrismaAgentRegistrationRepository implements IAgentRegistrationRepository {
   async create(input: CreateAgentRegistrationInput): Promise<AgentRegistrationData> {

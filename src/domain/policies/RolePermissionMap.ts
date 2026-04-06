@@ -10,8 +10,8 @@
  * managed via the admin UI or Keycloak role mapper.
  */
 
-import { PERMISSIONS }  from "@/domain/valueObjects/Permission";
-import type { Permission } from "@/domain/valueObjects/Permission";
+import { PERMISSIONS }  from "../valueObjects/Permission";
+import type { Permission } from "../valueObjects/Permission";
 
 const ALL_PERMISSIONS = new Set<Permission>(
   Object.values(PERMISSIONS) as Permission[],

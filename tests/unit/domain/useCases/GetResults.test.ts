@@ -1,4 +1,4 @@
-import { GetResults } from "@/domain/useCases/GetResults";
+import { GetResults } from "@/application/useCases/GetResults";
 import { MockResultRepository } from "../../../mocks/MockResultRepository";
 import { ResultStatus } from "@/domain/entities/Result";
 

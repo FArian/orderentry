@@ -935,18 +935,18 @@
       "replayMsg": "Questo link è già stato utilizzato. Per motivi di sicurezza, ogni link può essere aperto una sola volta. Richiedere un nuovo link.",
       "contactHint": "Se il problema persiste, contattare il supporto IT.",
       "goHome": "Vai all'elenco pazienti"
-    },
-    "orderNumbers": {
-      "title": "Numeri ordine",
-      "subtitle": "Regole org., pool numeri e monitoraggio allarmi",
-      "tabOrgRules": "Regole org.",
-      "tabNumberPool": "Pool numeri",
-      "tabMonitoring": "Monitoraggio",
-      "noAlerts": "Nessun allarme aperto",
-      "noAlertsDesc": "Tutti i pool sono sufficientemente riempiti.",
-      "alertSummary": "{n} allarmi pool aperti",
-      "goToPool": "Riempire pool",
-      "resolve": "Risolto"
     }
+  },
+  "orderNumbers": {
+    "title": "Numeri ordine",
+    "subtitle": "Regole org., pool numeri e monitoraggio allarmi",
+    "tabOrgRules": "Regole org.",
+    "tabNumberPool": "Pool numeri",
+    "tabMonitoring": "Monitoraggio",
+    "noAlerts": "Nessun allarme aperto",
+    "noAlertsDesc": "Tutti i pool sono sufficientemente riempiti.",
+    "alertSummary": "{n} allarmi pool aperti",
+    "goToPool": "Riempire pool",
+    "resolve": "Risolto"
   }
 }

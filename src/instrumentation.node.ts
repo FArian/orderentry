@@ -21,11 +21,11 @@ import {
   ATTR_SERVICE_NAME,
   ATTR_SERVICE_VERSION,
 } from "@opentelemetry/semantic-conventions";
+import { runMigrations } from "@/infrastructure/db/runMigrations";
 
 // ── 1. DB migrations ──────────────────────────────────────────────────────────
 async function runStartupMigrations(): Promise<void> {
   try {
-    const { runMigrations } = await import("@/infrastructure/db/runMigrations");
     await runMigrations();
   } catch (err) {
     console.error("[db] Migration failed — server will not start:", err);

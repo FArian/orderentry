@@ -26,7 +26,8 @@ if (existsSync(envLocalPath)) {
     const eq = trimmed.indexOf("=");
     if (eq === -1) continue;
     const key = trimmed.slice(0, eq).trim();
-    const val = trimmed.slice(eq + 1).trim();
+    const raw = trimmed.slice(eq + 1).trim();
+    const val = raw.replace(/^["']|["']$/g, "");
     if (!(key in process.env)) process.env[key] = val;
   }
 }

@@ -2,10 +2,10 @@ import type { IOrgRuleRepository }        from "@/application/interfaces/reposit
 import type { OrgRule, OrgRuleInput }     from "@/domain/entities/OrgRule";
 import type { ServiceType }              from "@/domain/strategies/IOrderNumberStrategy";
 import { isServiceType }                 from "@/domain/strategies/IOrderNumberStrategy";
-import { prisma }                         from "@/infrastructure/db/prismaClient";
+import { prisma }                         from "../db/prismaClient";
 import type { OrgRule as PrismaOrgRule }  from "@prisma/client";
 import { randomUUID }                     from "crypto";
-import { createLogger }                   from "@/infrastructure/logging/Logger";
+import { createLogger }                   from "../logging/Logger";
 
 const log = createLogger("PrismaOrgRuleRepository");
 

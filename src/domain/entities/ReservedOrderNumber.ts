@@ -1,6 +1,6 @@
 // Domain entity — a pre-reserved order number in the fallback pool.
 
-import type { ServiceType } from "@/domain/strategies/IOrderNumberStrategy";
+import type { ServiceType } from "../strategies/IOrderNumberStrategy";
 
 export type ReservedNumberStatus = "available" | "used";
 

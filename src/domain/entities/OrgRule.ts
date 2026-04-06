@@ -1,7 +1,7 @@
 // Domain entity — org-specific rules for order numbers, patient IDs, and HL7 mapping.
 // No framework dependencies. Pure data shape + factory.
 
-import type { ServiceType } from "@/domain/strategies/IOrderNumberStrategy";
+import type { ServiceType } from "../strategies/IOrderNumberStrategy";
 
 export interface OrgRule {
   id:            string;

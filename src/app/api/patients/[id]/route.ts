@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { FHIR_BASE, FHIR_SYSTEMS } from "@/lib/fhir";
 import { EnvConfig } from "@/infrastructure/config/EnvConfig";
+import { getSessionFromCookies } from "@/lib/auth";
 
 export async function GET(
   _request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
+  const session = await getSessionFromCookies();
+  if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+
   const { id } = await context.params;
   if (!id) {
     return NextResponse.json({ error: "Missing id" }, { status: 400 });
@@ -48,6 +52,9 @@ export async function PUT(
   request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
+  const session = await getSessionFromCookies();
+  if (!session) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+
   const { id } = await context.params;
   if (!id) {
     return NextResponse.json({ error: "Missing id" }, { status: 400 });

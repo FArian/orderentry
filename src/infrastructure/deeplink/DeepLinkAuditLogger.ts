@@ -7,7 +7,7 @@
  * it easy to detect brute-force or replay attacks in log analysis.
  */
 
-import { createLogger } from "@/infrastructure/logging/Logger";
+import { createLogger } from "../logging/Logger";
 import type { DeepLinkContext } from "@/domain/entities/DeepLinkContext";
 import type { DeepLinkAuthError } from "@/application/interfaces/IDeepLinkAuthStrategy";
 

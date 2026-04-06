@@ -15,8 +15,8 @@ import type { IPoolNotificationService }  from "@/application/interfaces/service
 import type { IAdminTaskRepository }      from "@/application/interfaces/repositories/IAdminTaskRepository";
 import type { IReservedNumberRepository } from "@/application/interfaces/repositories/IReservedNumberRepository";
 import { PoolThreshold, type AlertLevel } from "@/domain/valueObjects/PoolThreshold";
-import { createLogger }                   from "@/infrastructure/logging/Logger";
-import { prisma }                         from "@/infrastructure/db/prismaClient";
+import { createLogger }                   from "../logging/Logger";
+import { prisma }                         from "../db/prismaClient";
 import { randomUUID }                     from "crypto";
 
 const log = createLogger("PoolNotificationService");

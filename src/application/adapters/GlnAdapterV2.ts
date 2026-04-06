@@ -1,6 +1,6 @@
 import type { IGlnAdapter }    from "./IGlnAdapter";
 import type { GlnLookupResult } from "@/domain/entities/GlnLookupResult";
-import type { GlnResponseV2 }  from "@/infrastructure/api/dto/GlnDto";
+import type { GlnResponseV2 }  from "../dto/GlnDto";
 
 /**
  * Adapter: GlnLookupResult → GlnResponseV2 (nested, richer structure).

@@ -13,8 +13,8 @@
 
 import type { IOrchestraOrderService, OrchestraOrderNumberResult } from "@/application/interfaces/services/IOrchestraOrderService";
 import type { ServiceType }  from "@/domain/strategies/IOrderNumberStrategy";
-import { createLogger }      from "@/infrastructure/logging/Logger";
-import { EnvConfig }         from "@/infrastructure/config/EnvConfig";
+import { createLogger }      from "../logging/Logger";
+import { EnvConfig }         from "../config/EnvConfig";
 
 const log = createLogger("OrchestraOrderService");
 

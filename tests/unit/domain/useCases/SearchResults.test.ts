@@ -1,4 +1,4 @@
-import { SearchResults } from "@/domain/useCases/SearchResults";
+import { SearchResults } from "@/application/useCases/SearchResults";
 import { MockResultRepository } from "../../../mocks/MockResultRepository";
 import type { Result } from "@/domain/entities/Result";
 import { ResultStatus } from "@/domain/entities/Result";

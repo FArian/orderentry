@@ -1,6 +1,6 @@
 // Domain entity — framework-independent, no React, no API calls.
 
-import type { OrganizationRef } from "@/domain/valueObjects/OrganizationRef";
+import type { OrganizationRef } from "../valueObjects/OrganizationRef";
 
 export enum OrderStatus {
   DRAFT            = "draft",

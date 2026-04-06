@@ -927,18 +927,18 @@
       "replayMsg": "De Link isch scho verwendet worde. Bittä forderet en neue Link ah.",
       "contactHint": "Falls s'Problem weiterhin besteht, wende Si sich ah de IT-Support.",
       "goHome": "Zur Patientälischt"
-    },
-    "orderNumbers": {
-      "title": "Auftragsnummere",
-      "subtitle": "Org-Regle, Nummerepool und Alarm-Überwachig",
-      "tabOrgRules": "Org-Regle",
-      "tabNumberPool": "Nummerepool",
-      "tabMonitoring": "Überwachig",
-      "noAlerts": "Käni offene Alarme",
-      "noAlertsDesc": "Alli Pools sind gnueg gfüllt.",
-      "alertSummary": "{n} offeni Pool-Alarme",
-      "goToPool": "Pool uffülle",
-      "resolve": "Erledigt"
     }
+  },
+  "orderNumbers": {
+    "title": "Auftragsnummere",
+    "subtitle": "Org-Regle, Nummerepool und Alarm-Überwachig",
+    "tabOrgRules": "Org-Regle",
+    "tabNumberPool": "Nummerepool",
+    "tabMonitoring": "Überwachig",
+    "noAlerts": "Käni offene Alarme",
+    "noAlertsDesc": "Alli Pools sind gnueg gfüllt.",
+    "alertSummary": "{n} offeni Pool-Alarme",
+    "goToPool": "Pool uffülle",
+    "resolve": "Erledigt"
   }
 }

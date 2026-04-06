@@ -2,9 +2,9 @@ import type { IReservedNumberRepository, PoolStats } from "@/application/interfa
 import type { ReservedOrderNumber, ReservedNumberInput } from "@/domain/entities/ReservedOrderNumber";
 import type { ServiceType }                              from "@/domain/strategies/IOrderNumberStrategy";
 import type { PoolThresholdData }                        from "@/domain/valueObjects/PoolThreshold";
-import { prisma }                                        from "@/infrastructure/db/prismaClient";
+import { prisma }                                        from "../db/prismaClient";
 import { randomUUID }                                    from "crypto";
-import { createLogger }                                  from "@/infrastructure/logging/Logger";
+import { createLogger }                                  from "../logging/Logger";
 
 const log = createLogger("PrismaReservedNumberRepository");
 

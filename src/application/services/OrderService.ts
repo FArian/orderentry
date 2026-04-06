@@ -1,10 +1,10 @@
-import { GetOrders } from "@/domain/useCases/GetOrders";
-import { CreateOrder } from "@/domain/useCases/CreateOrder";
-import type { IOrderRepository } from "@/application/interfaces/repositories/IOrderRepository";
+import { GetOrders } from "../useCases/GetOrders";
+import { CreateOrder } from "../useCases/CreateOrder";
+import type { IOrderRepository } from "../interfaces/repositories/IOrderRepository";
 import type {
   OrderSearchQuery,
   PagedOrders,
-} from "@/application/interfaces/repositories/IOrderRepository";
+} from "../interfaces/repositories/IOrderRepository";
 import type { Order } from "@/domain/entities/Order";
 
 /**

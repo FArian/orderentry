@@ -1,5 +1,5 @@
 import type { Order } from "@/domain/entities/Order";
-import type { IOrderRepository } from "@/application/interfaces/repositories/IOrderRepository";
+import type { IOrderRepository } from "../interfaces/repositories/IOrderRepository";
 
 /**
  * Use case: create a new lab order (ServiceRequest) in the FHIR server.

@@ -7,8 +7,8 @@
 
 import type { ServiceType }               from "@/domain/strategies/IOrderNumberStrategy";
 import { orderNumberStrategyRegistry }    from "@/domain/strategies/OrderNumberStrategyRegistry";
-import type { IReservedNumberRepository } from "@/application/interfaces/repositories/IReservedNumberRepository";
-import type { IPoolNotificationService }  from "@/application/interfaces/services/IPoolNotificationService";
+import type { IReservedNumberRepository } from "../interfaces/repositories/IReservedNumberRepository";
+import type { IPoolNotificationService }  from "../interfaces/services/IPoolNotificationService";
 
 export interface ReserveNumbersInput {
   numbers:     string[];

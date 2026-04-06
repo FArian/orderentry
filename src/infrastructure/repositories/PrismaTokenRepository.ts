@@ -6,7 +6,7 @@
  */
 
 import crypto from "crypto";
-import { prisma } from "@/infrastructure/db/prismaClient";
+import { prisma } from "../db/prismaClient";
 
 const TTL_MS = 60 * 60 * 1000; // 1 hour
 

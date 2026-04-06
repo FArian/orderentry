@@ -58,7 +58,7 @@ if [[ "${1:-}" == "--local" ]]; then
   echo "✓ Build fertig. Image lokal verfügbar: $IMAGE:latest"
   echo ""
   echo "Starten mit:"
-  echo "  cd devops/docker && docker compose up -d orderentry"
+  echo "  cd infrastructure/docker && docker compose up -d orderentry"
 else
   # Multi-arch Build + Push zu Docker Hub
   echo "[mode] Multi-arch Build (linux/amd64 + linux/arm64) + Push"

@@ -12,9 +12,9 @@
  * stored back on the ManagedUser (fhirPractitionerId, fhirPractitionerRoleId).
  */
 
-import { FHIR_BASE } from "@/infrastructure/fhir/FhirClient";
-import { createLogger, type Logger } from "@/infrastructure/logging/Logger";
-import { EnvConfig } from "@/infrastructure/config/EnvConfig";
+import { FHIR_BASE } from "./FhirClient";
+import { createLogger, type Logger } from "../logging/Logger";
+import { EnvConfig } from "../config/EnvConfig";
 import type { ManagedUserProfile } from "@/domain/entities/ManagedUser";
 
 // ── Constants ─────────────────────────────────────────────────────────────────

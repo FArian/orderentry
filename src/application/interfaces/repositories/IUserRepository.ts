@@ -2,7 +2,7 @@
  * IUserRepository — application-layer contract for user persistence.
  */
 
-import type { User, UserProfile, UserRole, UserStatus, UserFhirSyncStatus } from "@/lib/userStore";
+import type { User, UserProfile, UserRole, UserStatus, UserFhirSyncStatus } from "@/domain/entities/User";
 
 export interface IUserRepository {
   findAll(): Promise<User[]>;

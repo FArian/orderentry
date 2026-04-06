@@ -10,8 +10,8 @@
  */
 
 import type { IUserRepository } from "@/application/interfaces/repositories/IUserRepository";
-import type { User, UserProfile, UserRole, UserStatus, UserFhirSyncStatus } from "@/lib/userStore";
-import { prisma } from "@/infrastructure/db/prismaClient";
+import type { User, UserProfile, UserRole, UserStatus, UserFhirSyncStatus } from "@/domain/entities/User";
+import { prisma } from "../db/prismaClient";
 import type { User as PrismaUser } from "@prisma/client";
 
 function parseExtraPermissions(raw: string): string[] {

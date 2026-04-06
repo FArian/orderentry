@@ -13,12 +13,12 @@
  *   HTTP status, and duration. OpenTelemetry auto-instrumentations handle
  *   trace context propagation automatically when ENABLE_TRACING=true.
  */
-import { fhirBase } from "@/config";
-import { prometheusService } from "@/infrastructure/metrics/PrometheusService";
-import { fhirAuthService }   from "@/infrastructure/authorization/fhirAuthConfig";
-import { applyAuth }         from "@/infrastructure/authorization/AuthorizationService";
+import { EnvConfig }          from "../config/EnvConfig";
+import { prometheusService } from "../metrics/PrometheusService";
+import { fhirAuthService }   from "../authorization/fhirAuthConfig";
+import { applyAuth }         from "../authorization/AuthorizationService";
 
-export const FHIR_BASE: string = fhirBase;
+export const FHIR_BASE: string = EnvConfig.fhirBaseUrl;
 
 const BASE_FHIR_HEADERS: Record<string, string> = { accept: "application/fhir+json" };
 

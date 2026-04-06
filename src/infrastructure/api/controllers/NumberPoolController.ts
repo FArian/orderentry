@@ -1,3 +1,4 @@
+import "@/infrastructure/services/OrderNumberStrategyConfig";
 import { createLogger }                  from "@/infrastructure/logging/Logger";
 import { reservedNumberRepository }      from "@/infrastructure/repositories/PrismaReservedNumberRepository";
 import { orgRuleRepository }             from "@/infrastructure/repositories/PrismaOrgRuleRepository";

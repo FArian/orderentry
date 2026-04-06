@@ -12,65 +12,12 @@
 import crypto from "crypto";
 import { userRepository } from "@/infrastructure/repositories/PrismaUserRepository";
 import { createLogger } from "@/infrastructure/logging/Logger";
+import type { User, UserProfile, UserRole, UserStatus, UserProviderType, UserFhirSyncStatus } from "@/domain/entities/User";
+
+// Re-exported so all existing callers of @/lib/userStore continue to work unchanged.
+export type { User, UserProfile, UserRole, UserStatus, UserProviderType, UserFhirSyncStatus } from "@/domain/entities/User";
 
 const log = createLogger("userStore");
-
-// ── Re-exported types (kept here so callers don't need to change imports) ─────
-
-export type UserProfile = {
-  gln?:         string;
-  ahv?:         string;
-  localId?:     string;
-  ptype?:       string;
-  roleType?:    string;
-  roleTypes?:   string[];
-  firstName?:   string;
-  lastName?:    string;
-  organization?: string;
-  street?:      string;
-  streetNo?:    string;
-  zip?:         string;
-  city?:        string;
-  canton?:      string;
-  country?:     string;
-  email?:       string;
-  phone?:       string;
-  orgGln?:      string;
-  orgName?:     string;
-  orgFhirId?:   string;
-  locationId?:   string;
-  locationName?: string;
-  zsr?:          string;
-  uid?:          string;
-  bur?:          string;
-};
-
-export type UserRole           = "admin" | "user";
-export type UserStatus         = "active" | "pending" | "suspended";
-export type UserProviderType   = "local" | "external";
-export type UserFhirSyncStatus = "not_synced" | "synced" | "error";
-
-export type User = {
-  id:                     string;
-  username:               string;
-  passwordHash:           string;
-  salt:                   string;
-  createdAt:              string;
-  profile?:               UserProfile;
-  role?:                  UserRole;
-  status?:                UserStatus;
-  providerType?:          UserProviderType;
-  externalId?:            string;
-  fhirSyncStatus?:        UserFhirSyncStatus;
-  fhirSyncedAt?:          string;
-  fhirSyncError?:         string;
-  fhirPractitionerId?:    string;
-  fhirPractitionerRoleId?: string;
-  apiTokenHash?:          string;
-  apiTokenCreatedAt?:     string;
-  /** Individual permissions granted beyond the base role. Resolved at auth time. */
-  extraPermissions?:      string[];
-};
 
 // ── Password helpers ──────────────────────────────────────────────────────────
 

@@ -1,10 +1,10 @@
-import { GetResults } from "@/domain/useCases/GetResults";
-import { SearchResults } from "@/domain/useCases/SearchResults";
-import type { IResultRepository } from "@/application/interfaces/repositories/IResultRepository";
+import { GetResults } from "../useCases/GetResults";
+import { SearchResults } from "../useCases/SearchResults";
+import type { IResultRepository } from "../interfaces/repositories/IResultRepository";
 import type {
   PagedResults,
   ResultSearchQuery,
-} from "@/application/interfaces/repositories/IResultRepository";
+} from "../interfaces/repositories/IResultRepository";
 
 /**
  * Application service that orchestrates result-related use cases.

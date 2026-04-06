@@ -1,7 +1,7 @@
 import type { GlnLookupResult } from "@/domain/entities/GlnLookupResult";
 import { parseRefDataXml }       from "./RefDataXmlParser";
 import { mapToGlnLookupResult }  from "./RefDataToDomainMapper";
-import { createLogger }           from "@/infrastructure/logging/Logger";
+import { createLogger }           from "../logging/Logger";
 
 const log = createLogger("RefDataSoapClient");
 

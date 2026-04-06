@@ -1,6 +1,6 @@
 import type { IAuthStrategy, AuthResult } from "./IAuthStrategy";
 import type { OAuth2AuthConfig } from "../types/AuthConfig";
-import { createLogger } from "@/infrastructure/logging/Logger";
+import { createLogger } from "../../logging/Logger";
 
 const logger = createLogger("OAuth2Strategy");
 

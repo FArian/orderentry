@@ -1,5 +1,5 @@
-import { GetOrders } from "@/domain/useCases/GetOrders";
-import { CreateOrder } from "@/domain/useCases/CreateOrder";
+import { GetOrders } from "@/application/useCases/GetOrders";
+import { CreateOrder } from "@/application/useCases/CreateOrder";
 import { MockOrderRepository } from "../../../mocks/MockOrderRepository";
 import type { Order } from "@/domain/entities/Order";
 import { OrderStatus } from "@/domain/entities/Order";

@@ -2,7 +2,7 @@ import type {
   IResultRepository,
   PagedResults,
   ResultSearchQuery,
-} from "@/application/interfaces/repositories/IResultRepository";
+} from "../interfaces/repositories/IResultRepository";
 
 /**
  * Use case: retrieve a paginated list of results (DiagnosticReports).

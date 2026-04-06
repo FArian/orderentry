@@ -15,7 +15,7 @@
  *   sqlserver   → sqlserver://host:1433;database=db;user=u;password=p;trustServerCertificate=true
  */
 
-import { EnvConfig } from "@/infrastructure/config/EnvConfig";
+import { EnvConfig } from "../config/EnvConfig";
 
 export type DbProvider = "sqlite" | "postgresql" | "sqlserver";
 

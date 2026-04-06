@@ -7,7 +7,7 @@
 
 import type { IAgentJobRepository, CreateAgentJobInput } from "@/application/interfaces/repositories/IAgentJobRepository";
 import type { AgentJob, AgentJobPayload } from "@/domain/entities/AgentJob";
-import { prisma } from "@/infrastructure/db/prismaClient";
+import { prisma } from "../db/prismaClient";
 import crypto from "node:crypto";
 import type { AgentJob as PrismaAgentJob } from "@prisma/client";
 

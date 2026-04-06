@@ -4,35 +4,46 @@
  * Centralises strategy lookup so new service types can be added by
  * registering a new strategy here — no other code changes required.
  *
- * Strategies are initialized with ENV-driven config so prefix / length
- * values come from environment variables, not hardcoded.
+ * Pure domain: no I/O, no process.env.
+ * Configuration is injected via StrategyConfig or by calling register()
+ * from the infrastructure layer after construction.
  */
 
 import type { IOrderNumberStrategy } from "./IOrderNumberStrategy";
-import { MibiStrategy }       from "./MibiStrategy";
-import { RoutineStrategy }    from "./RoutineStrategy";
-import { PocStrategy }        from "./PocStrategy";
-import { PassthroughStrategy } from "./PassthroughStrategy";
+import { MibiStrategy }              from "./MibiStrategy";
+import { RoutineStrategy }           from "./RoutineStrategy";
+import { PocStrategy }               from "./PocStrategy";
+import { PassthroughStrategy }       from "./PassthroughStrategy";
+
+/** Config values for the built-in strategies. All fields are optional. */
+export interface StrategyConfig {
+  mibiPrefix?:    string;
+  mibiStart?:     string;
+  mibiLength?:    number;
+  routineLength?: number;
+  pocPrefix?:     string;
+  pocLength?:     number;
+}
 
 class OrderNumberStrategyRegistry {
   private readonly registry = new Map<string, IOrderNumberStrategy>();
 
-  constructor() {
-    this.registerDefaults();
+  constructor(config: StrategyConfig = {}) {
+    this.registerDefaults(config);
   }
 
-  private registerDefaults(): void {
+  private registerDefaults(config: StrategyConfig): void {
     this.register(new MibiStrategy(
-      process.env.ORDER_MI_PREFIX    ?? "MI",
-      process.env.ORDER_MI_START     ?? "4",
-      parseInt(process.env.ORDER_MI_LENGTH ?? "11", 10),
+      config.mibiPrefix    ?? "MI",
+      config.mibiStart     ?? "4",
+      config.mibiLength    ?? 11,
     ));
     this.register(new RoutineStrategy(
-      parseInt(process.env.ORDER_ROUTINE_LENGTH ?? "10", 10),
+      config.routineLength ?? 10,
     ));
     this.register(new PocStrategy(
-      process.env.ORDER_POC_PREFIX ?? "PO",
-      parseInt(process.env.ORDER_POC_LENGTH ?? "7", 10),
+      config.pocPrefix     ?? "PO",
+      config.pocLength     ?? 7,
     ));
   }
 
@@ -55,5 +66,11 @@ class OrderNumberStrategyRegistry {
   }
 }
 
-/** Module-level singleton — import this in infrastructure/application code. */
+/**
+ * Module-level singleton with pure strategy defaults.
+ *
+ * Infrastructure code must call register() with ENV-configured strategies
+ * before this registry is first used in a request context.
+ * See: infrastructure/services/OrderNumberStrategyConfig.ts
+ */
 export const orderNumberStrategyRegistry = new OrderNumberStrategyRegistry();

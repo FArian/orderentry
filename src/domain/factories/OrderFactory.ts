@@ -1,5 +1,5 @@
-import type { Order } from "@/domain/entities/Order";
-import { OrderStatus } from "@/domain/entities/Order";
+import type { Order } from "../entities/Order";
+import { OrderStatus } from "../entities/Order";
 
 const VALID_STATUSES: readonly OrderStatus[] = [
   OrderStatus.DRAFT,
